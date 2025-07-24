@@ -13,5 +13,7 @@ UCLASS()
 class DRG_API ADrgGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
 	ADrgGameModeBase();
 };
