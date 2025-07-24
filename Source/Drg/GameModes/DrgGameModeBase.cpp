@@ -9,5 +9,4 @@
 ADrgGameModeBase::ADrgGameModeBase()
 {
 	DefaultPawnClass = ADrgBaseCharacter::StaticClass();
-	PlayerControllerClass = ADrgPlayerController::StaticClass();
 }
