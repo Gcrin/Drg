@@ -2,3 +2,12 @@
 
 
 #include "DrgGameModeBase.h"
+
+#include "Drg/Character/DrgBaseCharacter.h"
+#include "Drg/Player/DrgPlayerController.h"
+
+ADrgGameModeBase::ADrgGameModeBase()
+{
+	DefaultPawnClass = ADrgBaseCharacter::StaticClass();
+	PlayerControllerClass = ADrgPlayerController::StaticClass();
+}
