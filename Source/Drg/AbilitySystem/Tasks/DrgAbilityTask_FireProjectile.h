@@ -23,6 +23,7 @@ public:
 	static UDrgAbilityTask_FireProjectile* FireProjectile(
        UGameplayAbility* OwningAbility,
        TSubclassOf<ADrgProjectile> InProjectileClass,
+       FName SocketName,
        int32 InNumberOfProjectiles = 1,
        float InDelayBetweenShots = 0.0f
     );
@@ -42,6 +43,7 @@ private:
 	void FireNextProjectile();
 	
 	TSubclassOf<ADrgProjectile> ProjectileClass;
+	FName SocketName;
 	int32 NumberOfProjectiles;
 	float DelayBetweenShots;
 
