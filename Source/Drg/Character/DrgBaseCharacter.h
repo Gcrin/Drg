@@ -36,7 +36,7 @@ protected:
 
 	virtual void HandleOnDeath(AActor* DeadActor);
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Data")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Data", meta = (ExposeOnSpawn = "true"))
 	TObjectPtr<UDrgCharacterData> CharacterData;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
