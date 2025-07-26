@@ -38,8 +38,4 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
 	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
-	TObjectPtr<class USpringArmComponent> SpringArmComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
-	TObjectPtr<class UCameraComponent> CameraComponent;
 };
