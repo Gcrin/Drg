@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/PlayerController.h"
 #include "DrgPlayerController.generated.h"
 
@@ -29,7 +30,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Input")
 	TObjectPtr<UInputAction> MoveAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Input")
+	TObjectPtr<UInputAction> AttackAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Input")
+	FGameplayTag AttackInputTag;
 
 private:
 	void Move(const FInputActionValue& Value);
+	void Attack(const FInputActionValue& Value);
 };

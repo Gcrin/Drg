@@ -3,8 +3,10 @@
 
 #include "DrgPlayerController.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Drg/AbilitySystem/Abilities/DrgGameplayAbility.h"
 
 ADrgPlayerController::ADrgPlayerController()
 {
@@ -30,6 +32,8 @@ void ADrgPlayerController::SetupInputComponent()
 	{
 		check(MoveAction);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADrgPlayerController::Move);
+		check(AttackAction);
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ADrgPlayerController::Attack);
 	}
 }
 
@@ -51,5 +55,13 @@ void ADrgPlayerController::Move(const FInputActionValue& Value)
 			const FVector MovementDirection = MovementRotation.RotateVector(FVector::ForwardVector);
 			ControlledPawn->AddMovementInput(MovementDirection, MovementVector.Y);
 		}
+	}
+}
+
+void ADrgPlayerController::Attack(const FInputActionValue& Value)
+{
+	if (AttackInputTag.IsValid())
+	{
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetPawn(), AttackInputTag, FGameplayEventData());
 	}
 }
