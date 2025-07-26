@@ -37,24 +37,40 @@ void ADrgBaseCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// 서버에서 GAS 초기화
-	InitializeAttributes();
+	if (AbilitySystemComponent)
+	{
+		// PlayerState가 있는 경우 (플레이어)
+		if (GetPlayerState())
+		{
+			AbilitySystemComponent->InitAbilityActorInfo(GetPlayerState(), this);
+		}
+		// PlayerState가 없는 경우 (AI)
+		else
+		{
+			// Owner는 자기 자신, Avatar는 컨트롤러가 조종하는 폰(자기 자신)으로 초기화
+			AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		}
+
+		// 속성 적용 및 어빌리티 부여
+		InitializeAttributes();
+		GrantAbilities();
+	}
 }
 
 void ADrgBaseCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	// 클라이언트에서 GAS 초기화
-	InitializeAttributes();
+	if (AbilitySystemComponent && GetPlayerState())
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(GetPlayerState(), this);
+	}
 }
 
 void ADrgBaseCharacter::InitializeAttributes()
 {
-	if (AbilitySystemComponent && GetPlayerState())
+	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->InitAbilityActorInfo(GetPlayerState(), this);
-
 		check(DefaultAttributes);
 
 		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
@@ -67,8 +83,6 @@ void ADrgBaseCharacter::InitializeAttributes()
 		{
 			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		}
-
-		GrantAbilities();
 	}
 }
 
@@ -81,6 +95,6 @@ void ADrgBaseCharacter::GrantAbilities()
 
 	for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
 	{
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, -1, this));
 	}
 }
