@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayAbilitySet.h"
+#include "Abilities/GameplayAbility.h"
 #include "DrgGameplayAbility.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class DRG_API UDrgGameplayAbility : public UGameplayAbilitySet
+class DRG_API UDrgGameplayAbility : public UGameplayAbility
 {
 	GENERATED_BODY()
 	

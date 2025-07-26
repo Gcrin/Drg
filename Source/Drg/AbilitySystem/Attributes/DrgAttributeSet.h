@@ -4,7 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
+#include "AbilitySystemComponent.h"
 #include "DrgAttributeSet.generated.h"
+
+#define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
+GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
+GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
+GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
+GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
 /**
  * 
@@ -13,5 +20,17 @@ UCLASS()
 class DRG_API UDrgAttributeSet : public UAttributeSet
 {
 	GENERATED_BODY()
-	
+
+public:
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Health")
+	FGameplayAttributeData Health;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, Health);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Health")
+	FGameplayAttributeData MaxHealth;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MaxHealth);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Movement")
+	FGameplayAttributeData MoveSpeed;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MoveSpeed);
 };
