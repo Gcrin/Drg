@@ -6,6 +6,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
+#include "Drg/Character/DrgBaseCharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 // Sets default values
@@ -47,6 +48,13 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	// 발사한 주인과는 충돌하지 않도록 처리
 	if (OtherActor == GetOwner())
 	{
+		return;
+	}
+
+	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
+	if (TargetCharacter && TargetCharacter->IsDead())
+	{
+		// 만약 죽은 캐릭터라면, 아무것도 하지 않고 함수를 종료
 		return;
 	}
 

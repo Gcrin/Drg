@@ -17,6 +17,8 @@ class DRG_API ADrgAIController : public AAIController
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
+	virtual void HandleOnDeath(AActor* DeadActor);
+	
 	// 사용할 행동 트리 애셋
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|AI")
 	TObjectPtr<UBehaviorTree> BehaviorTree;

@@ -18,7 +18,11 @@ class DRG_API ADrgBaseCharacter : public ACharacter, public IAbilitySystemInterf
 public:
 	ADrgBaseCharacter();
 
+	UFUNCTION(BlueprintPure, Category = "Drg|CharacterState")
+	bool IsDead() const;
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	TObjectPtr<UDrgAttributeSet> GetAttributeSet() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -29,6 +33,8 @@ protected:
 	virtual void InitializeAttributes();
 	virtual void GrantAbilities();
 
+	virtual void HandleOnDeath(AActor* DeadActor);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
 	TObjectPtr<UDrgAbilitySystemComponent> AbilitySystemComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
@@ -38,4 +44,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
 	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|CharacterState")
+	bool bIsDead;
 };

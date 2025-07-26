@@ -13,6 +13,8 @@ GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnDeath, AActor*);
+
 /**
  * 
  */
@@ -22,6 +24,13 @@ class DRG_API UDrgAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 
 public:
+	UDrgAttributeSet();
+	
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
+	
+	FOnDeath OnDeath;
+	
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Health")
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, Health);

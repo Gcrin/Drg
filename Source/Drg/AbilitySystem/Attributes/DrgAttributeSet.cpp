@@ -3,3 +3,36 @@
 
 #include "DrgAttributeSet.h"
 
+#include "GameplayEffectExtension.h"
+
+UDrgAttributeSet::UDrgAttributeSet()
+{
+}
+
+void UDrgAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+	Super::PreAttributeChange(Attribute, NewValue);
+
+	if (Attribute == GetHealthAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
+	}
+}
+
+void UDrgAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		// SetHealth를 호출하여 PreAttributeChange의 Clamp 로직이 실행되도록 유도.
+		SetHealth(GetHealth());
+
+		// 체력이 0 이하가 되었는지 확인
+		if (GetHealth() <= 0.0f)
+		{
+			// OnDeath 이벤트를 구독하고 있는 모든 대상에게 신호를 보냄.
+			OnDeath.Broadcast(GetOwningActor());
+		}
+	}
+}
