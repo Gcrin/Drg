@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "DrgBaseCharacter.generated.h"
 
+class UDrgCharacterData;
 class UDrgAttributeSet;
 class UDrgAbilitySystemComponent;
 
@@ -35,14 +36,13 @@ protected:
 
 	virtual void HandleOnDeath(AActor* DeadActor);
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Data")
+	TObjectPtr<UDrgCharacterData> CharacterData;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
 	TObjectPtr<UDrgAbilitySystemComponent> AbilitySystemComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
 	TObjectPtr<UDrgAttributeSet> AttributeSet;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
-	TSubclassOf<class UGameplayEffect> DefaultAttributes;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
-	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|CharacterState")
 	bool bIsDead;

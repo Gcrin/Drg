@@ -4,6 +4,8 @@
 #include "DrgBaseCharacter.h"
 
 #include "Components/CapsuleComponent.h"
+#include "Data/DrgCharacterData.h"
+#include "Data/DrgCharacterStats.h"
 #include "Drg/AbilitySystem/DrgAbilitySystemComponent.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -42,6 +44,19 @@ TObjectPtr<UDrgAttributeSet> ADrgBaseCharacter::GetAttributeSet() const
 void ADrgBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (CharacterData && CharacterData->IsValidData())
+	{
+		if (USkeletalMeshComponent* MeshComponent = GetMesh())
+		{
+			MeshComponent->SetSkeletalMesh(CharacterData->SkeletalMesh);
+			MeshComponent->SetAnimInstanceClass(CharacterData->AnimClass);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DrgBaseCharacter] : %s에 할당된 CharacterData가 유효하지 않습니다!"), *GetName());
+	}
 }
 
 void ADrgBaseCharacter::PossessedBy(AController* NewController)
@@ -85,33 +100,75 @@ void ADrgBaseCharacter::OnRep_PlayerState()
 
 void ADrgBaseCharacter::InitializeAttributes()
 {
-	if (AbilitySystemComponent)
+	if (!AbilitySystemComponent)
 	{
-		check(DefaultAttributes);
+		UE_LOG(LogTemp, Error, TEXT("[DrgBaseCharacter] : %s의 AbilitySystemComponent가 유효하지 않습니다!"), *GetName());
+		return;
+	}
 
-		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-		EffectContext.AddSourceObject(this);
+	if (!CharacterData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DrgBaseCharacter] : %s에 CharacterData가 할당되지 않았습니다!"), *GetName());
+		return;
+	}
 
-		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(
-			DefaultAttributes, 1, EffectContext);
-
-		if (SpecHandle.IsValid())
+	if (CharacterData->IsValidData())
+	{
+		const FDrgCharacterStats* StatsRow = CharacterData->CharacterStatsTable->FindRow<FDrgCharacterStats>(
+			CharacterData->CharacterStatsID, TEXT(""));
+		if (StatsRow)
 		{
-			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			TSubclassOf<UGameplayEffect> InitEffectClass = CharacterData->StatsInitializerEffect;
+			if (!InitEffectClass)
+			{
+				return;
+			}
+
+			FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+			EffectContext.AddSourceObject(this);
+			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(
+				InitEffectClass, 1, EffectContext);
+
+			if (SpecHandle.IsValid())
+			{
+				for (const FAttributeInitializationData& InitData : StatsRow->InitialAttributes)
+				{
+					FString AttributeName = InitData.Attribute.AttributeName;
+					FString TagString = FString::Printf(TEXT("Stat.%s"), *AttributeName);
+					FGameplayTag Tag = FGameplayTag::RequestGameplayTag(*TagString);
+					SpecHandle.Data->SetSetByCallerMagnitude(Tag, InitData.BaseValue);
+				}
+
+				AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			}
 		}
 	}
 }
 
 void ADrgBaseCharacter::GrantAbilities()
 {
-	if (!HasAuthority() || !AbilitySystemComponent)
+	if (!HasAuthority())
 	{
 		return;
 	}
 
-	for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
+	if (!AbilitySystemComponent)
 	{
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, -1, this));
+		UE_LOG(LogTemp, Error, TEXT("[DrgBaseCharacter] : %s의 AbilitySystemComponent가 유효하지 않습니다!"), *GetName());
+		return;
+	}
+
+	if (!CharacterData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DrgBaseCharacter] : %s에 CharacterData가 할당되지 않았습니다!"), *GetName());
+		return;
+	}
+	if (CharacterData->IsValidData())
+	{
+		for (TSubclassOf<UGameplayAbility>& Ability : CharacterData->DefaultAbilities)
+		{
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, -1, this));
+		}
 	}
 }
 
