@@ -23,6 +23,7 @@ void UDrgAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMod
 {
 	Super::PostGameplayEffectExecute(Data);
 
+	// 이번에 변경된 Attribute가 Health인지 확인
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
 		// SetHealth를 호출하여 PreAttributeChange의 Clamp 로직이 실행되도록 유도.
