@@ -47,7 +47,7 @@ void UDrgExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExec
 {
 	UAbilitySystemComponent* SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
 	UAbilitySystemComponent* TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
-	
+
 	AActor* SourceActor = SourceASC ? SourceASC->GetAvatarActor() : nullptr;
 	AActor* TargetActor = TargetASC ? TargetASC->GetAvatarActor() : nullptr;
 
@@ -59,9 +59,15 @@ void UDrgExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExec
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().AttackDamageDef,
 	                                                           FAggregatorEvaluateParameters(), AttackDamage);
 
+	const float DamageMultiplier = Spec.GetSetByCallerMagnitude(
+		FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), false, 1.0f);
+
 	// 최종 데미지 계산
-	const float FinalDamage = AttackDamage;
-	UE_LOG(LogTemp, Warning, TEXT("FinalDamage : %f"), FinalDamage);
+	const float FinalDamage = AttackDamage * DamageMultiplier;
+
+	UE_LOG(LogTemp, Warning, TEXT("FinalDamage : %.1f (AttackDamage: %.1f * Multiplier: %.1f)"),
+	       FinalDamage, AttackDamage, DamageMultiplier);
+
 	if (FinalDamage > 0.f)
 	{
 		// 계산된 최종 데미지를 'Health' 어트리뷰트에 적용하라고 출력

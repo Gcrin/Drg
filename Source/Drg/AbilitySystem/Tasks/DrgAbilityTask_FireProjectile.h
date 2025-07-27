@@ -26,7 +26,8 @@ public:
 		TSubclassOf<UGameplayEffect> InDamageEffectClass,
 		FName SocketName,
 		int32 InNumberOfProjectiles = 1,
-		float InDelayBetweenShots = 0.0f
+		float InDelayBetweenShots = 0.0f,
+		float InEffectMultiplier = 1.0f
 	);
 
 	// 한 발 발사될 때마다 실행
@@ -50,6 +51,7 @@ private:
 	FName SocketName;
 	int32 NumberOfProjectiles;
 	float DelayBetweenShots;
+	float EffectMultiplier;
 
 	int32 ProjectilesFired;
 	FTimerHandle TimerHandle;

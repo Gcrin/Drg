@@ -4,6 +4,7 @@
 #include "DrgAbilityTask_FireProjectile.h"
 
 #include "AbilitySystemComponent.h"
+#include "Drg/AbilitySystem/Abilities/DrgGameplayAbility.h"
 #include "Drg/Weapons/DrgProjectile.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
@@ -16,7 +17,8 @@ UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(U
                                                                                InDamageEffectClass,
                                                                                FName SocketName,
                                                                                int32 InNumberOfProjectiles,
-                                                                               float InDelayBetweenShots)
+                                                                               float InDelayBetweenShots,
+                                                                               float InEffectMultiplier)
 {
 	UDrgAbilityTask_FireProjectile* Task = NewAbilityTask<UDrgAbilityTask_FireProjectile>(OwningAbility);
 	Task->ProjectileClass = InProjectileClass;
@@ -24,6 +26,7 @@ UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(U
 	Task->SocketName = SocketName;
 	Task->NumberOfProjectiles = FMath::Max(1, InNumberOfProjectiles); // 최소 1발 보장
 	Task->DelayBetweenShots = InDelayBetweenShots;
+	Task->EffectMultiplier = InEffectMultiplier;
 	Task->ProjectilesFired = 0;
 
 	return Task;
@@ -119,11 +122,18 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 				FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
 				ContextHandle.AddSourceObject(AvatarActor);
 				ContextHandle.AddInstigator(AvatarActor, SpawnedProjectile);
-				SpawnedProjectile->DamageEffectSpecHandle = SourceASC->MakeOutgoingSpec(
+				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(
 					DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
+
+				if (SpecHandle.IsValid())
+				{
+					SpecHandle.Data->SetSetByCallerMagnitude(
+						FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), EffectMultiplier);
+					SpawnedProjectile->DamageEffectSpecHandle = SpecHandle;
+				}
 			}
 		}
-		
+
 		// 스폰 완료: 준비된 액터를 월드에 최종적으로 배치.
 		UGameplayStatics::FinishSpawningActor(SpawnedProjectile, SpawnTransform);
 	}
