@@ -41,9 +41,9 @@ public:
 	 * @param Data 적용된 GameplayEffect에 대한 상세 정보 (원인, 변경된 어트리뷰트 등 포함).
 	 */
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
-	
+
 	FOnDeath OnDeath;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Health")
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MaxHealth);
@@ -55,4 +55,8 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Movement")
 	FGameplayAttributeData MoveSpeed;
 	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MoveSpeed);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Damage")
+	FGameplayAttributeData AttackDamage;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, AttackDamage);
 };

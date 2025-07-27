@@ -19,18 +19,15 @@ class DRG_API ADrgProjectile : public AActor
 public:
 	ADrgProjectile();
 
-	FGameplayEffectContextHandle DamageEffectContextHandle;
+	FGameplayEffectSpecHandle DamageEffectSpecHandle;
 
 protected:
 	virtual void BeginPlay() override;
-	
+
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	                     int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	// 이 발사체가 적에게 적용할 게임플레이 이펙트
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Effects")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
 	// 충돌을 감지할 구체 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<USphereComponent> SphereComponent;

@@ -45,26 +45,24 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                      const FHitResult& SweepResult)
 {
-	// 발사한 주인과는 충돌하지 않도록 처리
-	if (OtherActor == GetOwner())
-	{
-		return;
-	}
+	if (!IsValid(OtherActor)) return;
+
+	if (OtherActor == this || OtherActor == GetOwner()) return;
 
 	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
-	if (TargetCharacter && TargetCharacter->IsDead())
-	{
-		// 만약 죽은 캐릭터라면, 아무것도 하지 않고 함수를 종료
-		return;
-	}
+	if (TargetCharacter && TargetCharacter->IsDead()) return;
 
-	// 충돌한 액터의 AbilitySystemComponent를 가져옴
 	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
-	if (TargetAsc && DamageEffectClass)
+	if (TargetAsc && DamageEffectSpecHandle.IsValid())
 	{
-		if (DamageEffectContextHandle.IsValid())
+		if (FGameplayEffectSpec* SpecToApply = DamageEffectSpecHandle.Data.Get())
 		{
-			TargetAsc->ApplyGameplayEffectToSelf(DamageEffectClass.GetDefaultObject(), 1.f, DamageEffectContextHandle);
+			UAbilitySystemComponent* SourceAsc = SpecToApply->GetContext().GetInstigatorAbilitySystemComponent();
+
+			if (SourceAsc)
+			{
+				SourceAsc->ApplyGameplayEffectSpecToTarget(*SpecToApply, TargetAsc);
+			}
 		}
 	}
 

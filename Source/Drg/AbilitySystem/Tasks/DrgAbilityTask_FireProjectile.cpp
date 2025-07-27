@@ -3,6 +3,7 @@
 
 #include "DrgAbilityTask_FireProjectile.h"
 
+#include "AbilitySystemComponent.h"
 #include "Drg/Weapons/DrgProjectile.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
@@ -11,12 +12,15 @@
 UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(UGameplayAbility* OwningAbility,
                                                                                TSubclassOf<ADrgProjectile>
                                                                                InProjectileClass,
+                                                                               TSubclassOf<UGameplayEffect>
+                                                                               InDamageEffectClass,
                                                                                FName SocketName,
                                                                                int32 InNumberOfProjectiles,
                                                                                float InDelayBetweenShots)
 {
 	UDrgAbilityTask_FireProjectile* Task = NewAbilityTask<UDrgAbilityTask_FireProjectile>(OwningAbility);
 	Task->ProjectileClass = InProjectileClass;
+	Task->DamageEffectClass = InDamageEffectClass;
 	Task->SocketName = SocketName;
 	Task->NumberOfProjectiles = FMath::Max(1, InNumberOfProjectiles); // 최소 1발 보장
 	Task->DelayBetweenShots = InDelayBetweenShots;
@@ -107,8 +111,19 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	if (SpawnedProjectile)
 	{
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
-		SpawnedProjectile->DamageEffectContextHandle = Ability->MakeEffectContext(
-			Ability->GetCurrentAbilitySpecHandle(), Ability->GetCurrentActorInfo());
+		if (DamageEffectClass)
+		{
+			UAbilitySystemComponent* SourceASC = Ability->GetAbilitySystemComponentFromActorInfo();
+			if (SourceASC)
+			{
+				FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
+				ContextHandle.AddSourceObject(AvatarActor);
+				ContextHandle.AddInstigator(AvatarActor, SpawnedProjectile);
+				SpawnedProjectile->DamageEffectSpecHandle = SourceASC->MakeOutgoingSpec(
+					DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
+			}
+		}
+		
 		// 스폰 완료: 준비된 액터를 월드에 최종적으로 배치.
 		UGameplayStatics::FinishSpawningActor(SpawnedProjectile, SpawnTransform);
 	}

@@ -27,7 +27,8 @@ void UDrgAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMod
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
 		// SetHealth를 호출하여 PreAttributeChange의 Clamp 로직이 실행되도록 유도.
-		SetHealth(GetHealth());
+		// ExecutionCalculation 도입 후 중복 호출로 제거 나중에 관련 문제 생기면 다시 사용할 것
+		//SetHealth(GetHealth());
 
 		// 체력이 0 이하가 되었는지 확인
 		if (GetHealth() <= 0.0f)
