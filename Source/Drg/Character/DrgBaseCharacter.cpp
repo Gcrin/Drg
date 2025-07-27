@@ -76,13 +76,20 @@ void ADrgBaseCharacter::PossessedBy(AController* NewController)
 			AbilitySystemComponent->InitAbilityActorInfo(this, this);
 		}
 
+		InitializeAttributes();
+
 		if (AttributeSet)
 		{
 			AttributeSet->OnDeath.AddUObject(this, &ADrgBaseCharacter::HandleOnDeath);
+
+			// MoveSpeed 어트리뷰트의 값 변경 델리게이트에 OnMoveSpeedAttributeChanged 함수를 구독
+			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+				AttributeSet->GetMoveSpeedAttribute()
+			).AddUObject(this, &ADrgBaseCharacter::HandleOnMoveSpeedChanged);
+
+			GetCharacterMovement()->MaxWalkSpeed = AttributeSet->GetMoveSpeed();
 		}
 
-		// 속성 적용 및 어빌리티 부여
-		InitializeAttributes();
 		GrantAbilities();
 	}
 }
@@ -184,4 +191,9 @@ void ADrgBaseCharacter::HandleOnDeath(AActor* DeadActor)
 	// 현재는 애니메이션 처리 미구현 상태이므로 임시 삭제 방식 사용
 	// 향후: 죽음 애니메이션 재생 완료 후 삭제되도록 변경 필요
 	SetLifeSpan(0.1f);
+}
+
+void ADrgBaseCharacter::HandleOnMoveSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
 }

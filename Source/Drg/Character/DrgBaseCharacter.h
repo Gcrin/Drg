@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
+#include "Drg/AbilitySystem/DrgAbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "DrgBaseCharacter.generated.h"
 
@@ -35,6 +36,7 @@ protected:
 	virtual void GrantAbilities();
 
 	virtual void HandleOnDeath(AActor* DeadActor);
+	virtual void HandleOnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Data", meta = (ExposeOnSpawn = "true"))
 	TObjectPtr<UDrgCharacterData> CharacterData;
