@@ -107,6 +107,8 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	if (SpawnedProjectile)
 	{
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
+		SpawnedProjectile->DamageEffectContextHandle = Ability->MakeEffectContext(
+			Ability->GetCurrentAbilitySpecHandle(), Ability->GetCurrentActorInfo());
 		// 스폰 완료: 준비된 액터를 월드에 최종적으로 배치.
 		UGameplayStatics::FinishSpawningActor(SpawnedProjectile, SpawnTransform);
 	}

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayEffectTypes.h"
 #include "GameFramework/Actor.h"
 #include "DrgProjectile.generated.h"
 
@@ -17,6 +18,8 @@ class DRG_API ADrgProjectile : public AActor
 
 public:
 	ADrgProjectile();
+
+	FGameplayEffectContextHandle DamageEffectContextHandle;
 
 protected:
 	virtual void BeginPlay() override;

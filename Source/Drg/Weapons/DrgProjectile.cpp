@@ -59,11 +59,13 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 
 	// 충돌한 액터의 AbilitySystemComponent를 가져옴
-	if (UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
+	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
+	if (TargetAsc && DamageEffectClass)
 	{
-		FGameplayEffectContextHandle EffectContext = TargetAsc->MakeEffectContext();
-		EffectContext.AddSourceObject(this);
-		TargetAsc->ApplyGameplayEffectToSelf(DamageEffectClass.GetDefaultObject(), 1.f, EffectContext);
+		if (DamageEffectContextHandle.IsValid())
+		{
+			TargetAsc->ApplyGameplayEffectToSelf(DamageEffectClass.GetDefaultObject(), 1.f, DamageEffectContextHandle);
+		}
 	}
 
 	Destroy();
