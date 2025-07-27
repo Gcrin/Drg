@@ -3,14 +3,25 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AttributeSet.h"
 #include "Engine/DataAsset.h"
 #include "DrgCharacterData.generated.h"
 
 class UGameplayAbility;
 class UGameplayEffect;
-/**
- * 
- */
+
+USTRUCT(BlueprintType)
+struct FAttributeInitializationData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGameplayAttribute Attribute;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float BaseValue;
+};
+
 UCLASS()
 class DRG_API UDrgCharacterData : public UPrimaryDataAsset
 {
@@ -20,17 +31,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Drg|Validation")
 	bool IsValidData() const;
 
-	// 캐릭터의 모든 스탯 정보가 담긴 데이터 테이블
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS")
-	TObjectPtr<UDataTable> CharacterStatsTable;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS|Stats")
+	TArray<FAttributeInitializationData> InitialAttributes;
 
 	// 캐릭터의 스탯을 초기화하는 데 사용할 게임플레이 이펙트 클래스
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS")
 	TSubclassOf<UGameplayEffect> StatsInitializerEffect;
-
-	// CharacterStatsTable에서 이 캐릭터의 스탯을 찾기 위한 행(Row) 이름을 지정
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS")
-	FName CharacterStatsID;
 
 	// 캐릭터가 시작 시점에 보유할 기본 어빌리티 목록
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS")

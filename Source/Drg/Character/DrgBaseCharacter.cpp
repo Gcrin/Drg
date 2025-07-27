@@ -5,7 +5,6 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Data/DrgCharacterData.h"
-#include "Data/DrgCharacterStats.h"
 #include "Drg/AbilitySystem/DrgAbilitySystemComponent.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -106,42 +105,27 @@ void ADrgBaseCharacter::InitializeAttributes()
 		return;
 	}
 
-	if (!CharacterData)
+	if (!CharacterData || !CharacterData->IsValidData())
 	{
 		UE_LOG(LogTemp, Error, TEXT("[DrgBaseCharacter] : %s에 CharacterData가 할당되지 않았습니다!"), *GetName());
 		return;
 	}
 
-	if (CharacterData->IsValidData())
+	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(
+		CharacterData->StatsInitializerEffect, 1, EffectContext);
+
+	if (SpecHandle.IsValid())
 	{
-		const FDrgCharacterStats* StatsRow = CharacterData->CharacterStatsTable->FindRow<FDrgCharacterStats>(
-			CharacterData->CharacterStatsID, TEXT(""));
-		if (StatsRow)
+		for (const FAttributeInitializationData& InitData : CharacterData->InitialAttributes)
 		{
-			TSubclassOf<UGameplayEffect> InitEffectClass = CharacterData->StatsInitializerEffect;
-			if (!InitEffectClass)
-			{
-				return;
-			}
-
-			FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-			EffectContext.AddSourceObject(this);
-			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(
-				InitEffectClass, 1, EffectContext);
-
-			if (SpecHandle.IsValid())
-			{
-				for (const FAttributeInitializationData& InitData : StatsRow->InitialAttributes)
-				{
-					FString AttributeName = InitData.Attribute.AttributeName;
-					FString TagString = FString::Printf(TEXT("Stat.%s"), *AttributeName);
-					FGameplayTag Tag = FGameplayTag::RequestGameplayTag(*TagString);
-					SpecHandle.Data->SetSetByCallerMagnitude(Tag, InitData.BaseValue);
-				}
-
-				AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-			}
+			FString TagString = FString::Printf(TEXT("Stat.%s"), *InitData.Attribute.AttributeName);
+			SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(*TagString),
+			                                         InitData.BaseValue);
 		}
+
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 	}
 }
 
