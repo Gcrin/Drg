@@ -12,21 +12,23 @@
 
 UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(UGameplayAbility* OwningAbility,
                                                                                TSubclassOf<ADrgProjectile>
-                                                                               InProjectileClass,
+                                                                               ProjectileClass,
                                                                                TSubclassOf<UGameplayEffect>
-                                                                               InDamageEffectClass,
+                                                                               DamageEffectClass,
                                                                                FName SocketName,
-                                                                               int32 InNumberOfProjectiles,
-                                                                               float InDelayBetweenShots,
-                                                                               float InEffectMultiplier)
+                                                                               float EffectMultiplier,
+                                                                               float InitialDelay,
+                                                                               int32 NumberOfProjectiles,
+                                                                               float DelayBetweenShots)
 {
 	UDrgAbilityTask_FireProjectile* Task = NewAbilityTask<UDrgAbilityTask_FireProjectile>(OwningAbility);
-	Task->ProjectileClass = InProjectileClass;
-	Task->DamageEffectClass = InDamageEffectClass;
+	Task->ProjectileClass = ProjectileClass;
+	Task->DamageEffectClass = DamageEffectClass;
 	Task->SocketName = SocketName;
-	Task->NumberOfProjectiles = FMath::Max(1, InNumberOfProjectiles); // 최소 1발 보장
-	Task->DelayBetweenShots = InDelayBetweenShots;
-	Task->EffectMultiplier = InEffectMultiplier;
+	Task->NumberOfProjectiles = FMath::Max(1, NumberOfProjectiles); // 최소 1발 보장
+	Task->InitialDelay = InitialDelay;
+	Task->DelayBetweenShots = DelayBetweenShots;
+	Task->EffectMultiplier = EffectMultiplier;
 	Task->ProjectilesFired = 0;
 
 	return Task;
@@ -40,8 +42,15 @@ void UDrgAbilityTask_FireProjectile::Activate()
 		return;
 	}
 
-	// 첫 발은 즉시 발사
-	FireNextProjectile();
+	if (InitialDelay > 0.0f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UDrgAbilityTask_FireProjectile::FireNextProjectile,
+		                                       InitialDelay, false);
+	}
+	else
+	{
+		FireNextProjectile();
+	}
 }
 
 void UDrgAbilityTask_FireProjectile::FireNextProjectile()
