@@ -31,6 +31,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Drg|Validation")
 	bool IsValidData() const;
 
+	// 캐릭터의 스탯을 초기화하는 데 사용할 어트리뷰트
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS|Stats")
 	TArray<FAttributeInitializationData> InitialAttributes;
 
@@ -46,7 +47,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Mesh")
 	TObjectPtr<USkeletalMesh> SkeletalMesh;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Mesh")
+	TArray<TSoftObjectPtr<UMaterialInterface>> MaterialOverrides;
+
 	// 캐릭터가 사용할 애니메이션 블루프린트
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Animation")
 	TSubclassOf<UAnimInstance> AnimClass;
+
+#if WITH_EDITOR
+	// 에디터에서 프로퍼티가 변경되었을 때 호출되는 함수
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 };

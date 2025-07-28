@@ -48,8 +48,35 @@ void ADrgBaseCharacter::BeginPlay()
 	{
 		if (USkeletalMeshComponent* MeshComponent = GetMesh())
 		{
-			MeshComponent->SetSkeletalMesh(CharacterData->SkeletalMesh);
-			MeshComponent->SetAnimInstanceClass(CharacterData->AnimClass);
+			if (CharacterData->SkeletalMesh)
+			{
+				MeshComponent->SetSkeletalMesh(CharacterData->SkeletalMesh);
+
+				// 2. 데이터 애셋의 머티리얼 오버라이드 배열을 순회하며 하나씩 적용
+				for (int32 i = 0; i < CharacterData->MaterialOverrides.Num(); ++i)
+				{
+					UMaterialInterface* MaterialToApply = CharacterData->MaterialOverrides[i].LoadSynchronous();
+
+					// 디자이너의 설정 실수를 대비한 if + UE_LOG 처리
+					// 배열에 항목은 있지만, 실제 애셋이 할당되지 않았을 경우를 대비
+					if (MaterialToApply)
+					{
+						MeshComponent->SetMaterial(i, MaterialToApply);
+					}
+					else
+					{
+						// 로그를 남겨서 어떤 데이터 애셋의 몇 번째 슬롯이 비어있는지 명확히 알려준다
+						UE_LOG(LogTemp, Warning, TEXT(
+							       "ADrgBaseCharacter: '%s' 데이터 애셋의 MaterialOverrides 배열 [%d] 슬롯이 비어있습니다. 원본 머티리얼이 사용됩니다."
+						       ), *CharacterData->GetName(), i);
+					}
+				}
+			}
+
+			if (CharacterData->AnimClass)
+			{
+				MeshComponent->SetAnimInstanceClass(CharacterData->AnimClass);
+			}
 		}
 	}
 	else
