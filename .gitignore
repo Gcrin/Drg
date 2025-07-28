@@ -80,3 +80,4 @@ DerivedDataCache/*
 .idea/
 /Plugins/Developer/RiderLink
 *.sln.DotSettings.user
+/Content/ThirdParty/*
