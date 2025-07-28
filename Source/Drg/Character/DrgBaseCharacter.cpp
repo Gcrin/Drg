@@ -105,6 +105,8 @@ void ADrgBaseCharacter::PossessedBy(AController* NewController)
 
 		InitializeAttributes();
 
+		AbilitySystemComponent->AddLooseGameplayTags(CharacterData->InitialTags);
+
 		if (AttributeSet)
 		{
 			AttributeSet->OnDeath.AddUObject(this, &ADrgBaseCharacter::HandleOnDeath);

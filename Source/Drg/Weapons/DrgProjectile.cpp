@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
 #include "Drg/Character/DrgBaseCharacter.h"
+#include "Drg/System/DrgGameplayStatics.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 // Sets default values
@@ -52,7 +53,14 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
 	if (TargetCharacter && TargetCharacter->IsDead()) return;
 
+	UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
 	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
+
+	if (UDrgGameplayStatics::AreTeamsFriendly(OwnerAsc, TargetAsc))
+	{
+		return;
+	}
+	
 	if (TargetAsc && DamageEffectSpecHandle.IsValid())
 	{
 		if (FGameplayEffectSpec* SpecToApply = DamageEffectSpecHandle.Data.Get())

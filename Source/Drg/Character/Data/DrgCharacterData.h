@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
+#include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
 #include "DrgCharacterData.generated.h"
 
@@ -30,6 +31,9 @@ class DRG_API UDrgCharacterData : public UPrimaryDataAsset
 public:
 	UFUNCTION(BlueprintPure, Category = "Drg|Validation")
 	bool IsValidData() const;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS|Tags")
+	FGameplayTagContainer InitialTags;
 
 	// 캐릭터의 스탯을 초기화하는 데 사용할 어트리뷰트
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS|Stats")
