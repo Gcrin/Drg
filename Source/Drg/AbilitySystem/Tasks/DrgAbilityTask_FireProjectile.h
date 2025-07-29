@@ -29,6 +29,8 @@ public:
 	 * @param InitialDelay 첫 발이 발사되기 전까지의 대기 시간 (초).
 	 * @param NumberOfProjectiles 발사할 총 발사체의 수.
 	 * @param DelayBetweenShots 여러 발을 쏠 경우, 각 발사 사이의 대기 시간 (초).
+	 * @param MaxRange				투사체의 최대거리
+
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Drg|Ability|Tasks",
 		meta = (DisplayName = "Fire Projectile Burst", HidePin = "OwningAbility", DefaultToSelf = "OwningAbility"))
@@ -40,7 +42,8 @@ public:
 		float EffectMultiplier = 1.0f,
 		float InitialDelay = 0.0f,
 		int32 NumberOfProjectiles = 1,
-		float DelayBetweenShots = 0.0f
+		float DelayBetweenShots = 0.0f,
+		float MaxRange = 1.f
 	);
 
 	// 한 발 발사될 때마다 실행
@@ -69,4 +72,10 @@ private:
 
 	int32 ProjectilesFired;
 	FTimerHandle TimerHandle;
+
+	float MaxRange;
+	float MoveDistance;
+	FTransform StartTransform;
+
+	void SetProjectileMaxRange(ADrgProjectile* pDrgProjectile);
 };

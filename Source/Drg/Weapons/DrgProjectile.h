@@ -23,6 +23,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -35,4 +36,16 @@ protected:
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
+
+	float MaxRange = 1.f;
+	float MoveDistance = 0.f;
+	FTransform StartTransform = FTransform();
+
+	void CalcDistance();
+	void CheckDistance();
+	virtual void DestroyProjectile();
+
+public:
+	void SetMaxRange(float ArgMaxRange);
+	void SetStartTransform(FTransform ArgStartTransform);
 };

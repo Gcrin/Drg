@@ -19,7 +19,9 @@ UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(U
                                                                                float EffectMultiplier,
                                                                                float InitialDelay,
                                                                                int32 NumberOfProjectiles,
-                                                                               float DelayBetweenShots)
+                                                                               float DelayBetweenShots,
+                                                                               float MaxRange
+)
 {
 	UDrgAbilityTask_FireProjectile* Task = NewAbilityTask<UDrgAbilityTask_FireProjectile>(OwningAbility);
 	Task->ProjectileClass = ProjectileClass;
@@ -30,6 +32,10 @@ UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(U
 	Task->DelayBetweenShots = DelayBetweenShots;
 	Task->EffectMultiplier = EffectMultiplier;
 	Task->ProjectilesFired = 0;
+
+	Task->MaxRange = MaxRange;
+	Task->MoveDistance = 0.f;
+	Task->StartTransform = FTransform();
 
 	return Task;
 }
@@ -100,6 +106,7 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	const FRotator SpawnRotation = AvatarActor->GetActorRotation();
 	const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
 
+	StartTransform = SpawnTransform;
 	/*
 	 * 지연된 스폰(Deferred Spawn)을 사용하는 이유:
 	 * 
@@ -123,6 +130,8 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	if (SpawnedProjectile)
 	{
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
+		SetProjectileMaxRange(SpawnedProjectile);
+
 		if (DamageEffectClass)
 		{
 			UAbilitySystemComponent* SourceASC = Ability->GetAbilitySystemComponentFromActorInfo();
@@ -134,7 +143,7 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(
 					DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
 
-				if (SpecHandle.IsValid())
+	            if (SpecHandle.IsValid())
 				{
 					SpecHandle.Data->SetSetByCallerMagnitude(
 						FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), EffectMultiplier);
@@ -179,4 +188,10 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 		OnFinished.Broadcast();
 		EndTask();
 	}
+}
+
+void UDrgAbilityTask_FireProjectile::SetProjectileMaxRange(ADrgProjectile* pDrgProjectile)
+{
+	pDrgProjectile->SetMaxRange(MaxRange);
+	pDrgProjectile->SetStartTransform(StartTransform);
 }
