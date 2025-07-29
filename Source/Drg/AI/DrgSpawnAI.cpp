@@ -52,32 +52,10 @@ bool ADrgSpawnAI::FindSafeRandomPointInNav(FVector& ResultLocation)
 		FVector TestLocation = GetActorLocation() + RandomOffset;
 		FNavLocation NavLocation;
 		bool bIsFound = NavSys->ProjectPointToNavigation(TestLocation, NavLocation);
-		if (bIsFound)
-		{
-			FVector Start = NavLocation.Location + FVector(0, 0, 1000.0f);
-			FVector End = NavLocation.Location - FVector(0, 0, 1000.0f);
+		if (!bIsFound) continue;
 
-			FHitResult HitResult;
-			FCollisionQueryParams QueryParams;
-			QueryParams.bTraceComplex = true;
-			QueryParams.bReturnPhysicalMaterial = false;
-
-			// 2. 라인트레이스로 지면 충돌 확인
-			bool bHit = GetWorld()->LineTraceSingleByChannel(
-				HitResult,
-				Start,
-				End,
-				ECC_Visibility,
-				QueryParams
-			);
-
-			// 3. 충돌이 지면이라면 해당 지점 사용
-			if (bHit && HitResult.bBlockingHit)
-			{
-				ResultLocation = HitResult.Location;
-				return true;
-			}
-		}
+		ResultLocation = NavLocation.Location;
+		return true;
 	}
 	return false;
 }
