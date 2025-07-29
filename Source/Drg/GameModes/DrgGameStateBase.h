@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DrgExperienceManagerComponent.h"
 #include "GameFramework/GameStateBase.h"
 #include "DrgGameStateBase.generated.h"
 
@@ -25,8 +24,6 @@ public:
 	ADrgGameStateBase();
 
 	virtual void BeginPlay() override;
-
-	TObjectPtr<UDrgExperienceManagerComponent> ExperienceManagerComponent;
 	
 	UFUNCTION(BlueprintPure, Category = "MatchState")
 	EMatchState GetCurrentMatchState() const;
