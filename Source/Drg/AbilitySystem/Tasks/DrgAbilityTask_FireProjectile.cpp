@@ -33,7 +33,6 @@ UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(U
 	Task->EffectMultiplier = EffectMultiplier;
 	Task->ProjectilesFired = 0;
 
-	//maxrange관련추가
 	Task->MaxRange = MaxRange;
 	Task->MoveDistance = 0.f;
 	Task->StartTransform = FTransform();
@@ -131,8 +130,7 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	if (SpawnedProjectile)
 	{
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
-		//MaxRange관련 set
-		Set_Projectile_MaxRange(SpawnedProjectile);
+		SetProjectileMaxRange(SpawnedProjectile);
 
 		if (DamageEffectClass)
 		{
@@ -144,7 +142,6 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 				ContextHandle.AddInstigator(AvatarActor, SpawnedProjectile);
 				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(
 					DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
-
 
 	            if (SpecHandle.IsValid())
 				{

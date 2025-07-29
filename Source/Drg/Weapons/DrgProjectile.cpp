@@ -13,7 +13,6 @@
 // Sets default values
 ADrgProjectile::ADrgProjectile()
 {
-	//틱 활성화
 	PrimaryActorTick.bCanEverTick = true;
 
 	// 충돌체인 SphereComponent 설정
@@ -35,11 +34,6 @@ ADrgProjectile::ADrgProjectile()
 	ProjectileMovement->InitialSpeed = 1500.f;
 	ProjectileMovement->MaxSpeed = 1500.f;
 	ProjectileMovement->ProjectileGravityScale = 0.f; // 중력 영향 안받음
-
-	MoveDistance = 0.f;
-	MaxRange = 1.f;
-	StartTransform = FTransform();
-	
 }
 
 void ADrgProjectile::BeginPlay()

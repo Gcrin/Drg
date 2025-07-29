@@ -37,9 +37,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
-	float MaxRange;
-	float MoveDistance;
-	FTransform StartTransform;
+	float MaxRange = 1.f;
+	float MoveDistance = 0.f;
+	FTransform StartTransform = FTransform();
 
 	void CalcDistance();
 	void CheckDistance();
