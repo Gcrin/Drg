@@ -146,9 +146,12 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 					DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
 
 
-				SpecHandle.Data->SetSetByCallerMagnitude(
-					FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), EffectMultiplier);
-				SpawnedProjectile->DamageEffectSpecHandle = SpecHandle;
+	            if (SpecHandle.IsValid())
+				{
+					SpecHandle.Data->SetSetByCallerMagnitude(
+						FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), EffectMultiplier);
+					SpawnedProjectile->DamageEffectSpecHandle = SpecHandle;
+				}
 			}
 		}
 
@@ -190,12 +193,8 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	}
 }
 
-void UDrgAbilityTask_FireProjectile::Set_Projectile_MaxRange(ADrgProjectile* pDrgProjectile)
+void UDrgAbilityTask_FireProjectile::SetProjectileMaxRange(ADrgProjectile* pDrgProjectile)
 {
-	if (!IsValid(pDrgProjectile))
-	{
-		return;
-	}
 	pDrgProjectile->SetMaxRange(MaxRange);
 	pDrgProjectile->SetStartTransform(StartTransform);
 }
