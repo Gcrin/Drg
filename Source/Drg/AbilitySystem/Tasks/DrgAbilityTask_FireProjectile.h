@@ -43,7 +43,7 @@ public:
 		float InitialDelay = 0.0f,
 		int32 NumberOfProjectiles = 1,
 		float DelayBetweenShots = 0.0f,
-		float MaxRange = 0.f
+		float MaxRange = 1.f
 	);
 
 	// 한 발 발사될 때마다 실행
@@ -77,5 +77,5 @@ private:
 	float MoveDistance;
 	FTransform StartTransform;
 
-	void Set_Projectile_MaxRange(ADrgProjectile* pDrgProjectile);
+	void SetProjectileMaxRange(ADrgProjectile* pDrgProjectile);
 };
