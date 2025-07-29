@@ -13,6 +13,9 @@
 // Sets default values
 ADrgProjectile::ADrgProjectile()
 {
+	//틱 활성화
+	PrimaryActorTick.bCanEverTick = true;
+
 	// 충돌체인 SphereComponent 설정
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
 	RootComponent = SphereComponent;
@@ -42,6 +45,14 @@ void ADrgProjectile::BeginPlay()
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgProjectile::OnSphereOverlap);
 }
 
+void ADrgProjectile::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+
+	Check_Distance();
+}
+
 void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                      const FHitResult& SweepResult)
@@ -60,7 +71,7 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	{
 		return;
 	}
-	
+
 	if (TargetAsc && DamageEffectSpecHandle.IsValid())
 	{
 		if (FGameplayEffectSpec* SpecToApply = DamageEffectSpecHandle.Data.Get())
@@ -74,5 +85,43 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 		}
 	}
 
+	Destroy_Projectile();
+}
+
+
+void ADrgProjectile::Set_MaxRange(float Arg_MaxRange)
+{
+	if (MaxRange > 0.f)
+		MaxRange = Arg_MaxRange;
+}
+
+void ADrgProjectile::Set_StartTransform(FTransform Arg_StartTransform)
+{
+	StartTransform = Arg_StartTransform;
+}
+
+void ADrgProjectile::Calc_Distance()
+{
+	if (MaxRange > 0.f)
+	{
+		FVector CurrentLocation = this->GetActorLocation();
+		FVector StartLocation = StartTransform.GetLocation();
+
+		MoveDistance = FVector::Dist(CurrentLocation, StartLocation);
+	}
+}
+
+void ADrgProjectile::Check_Distance()
+{
+	Calc_Distance();
+
+	if (MoveDistance >= MaxRange && MaxRange > 0.f)
+	{
+		Destroy_Projectile();
+	}
+}
+
+void ADrgProjectile::Destroy_Projectile()
+{
 	Destroy();
 }

@@ -19,7 +19,9 @@ UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(U
                                                                                float EffectMultiplier,
                                                                                float InitialDelay,
                                                                                int32 NumberOfProjectiles,
-                                                                               float DelayBetweenShots)
+                                                                               float DelayBetweenShots,
+                                                                               float MaxRange
+)
 {
 	UDrgAbilityTask_FireProjectile* Task = NewAbilityTask<UDrgAbilityTask_FireProjectile>(OwningAbility);
 	Task->ProjectileClass = ProjectileClass;
@@ -30,6 +32,11 @@ UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(U
 	Task->DelayBetweenShots = DelayBetweenShots;
 	Task->EffectMultiplier = EffectMultiplier;
 	Task->ProjectilesFired = 0;
+
+	//maxrange관련추가
+	Task->MaxRange = MaxRange;
+	Task->MoveDistance = 0.f;
+	Task->StartTransform = FTransform();
 
 	return Task;
 }
@@ -100,6 +107,7 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	const FRotator SpawnRotation = AvatarActor->GetActorRotation();
 	const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
 
+	Set_StartTransform(SpawnTransform);
 	/*
 	 * 지연된 스폰(Deferred Spawn)을 사용하는 이유:
 	 * 
@@ -123,6 +131,9 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	if (SpawnedProjectile)
 	{
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
+		//MaxRange관련 set
+		Set_Projectile_MaxRange(SpawnedProjectile);
+		
 		if (DamageEffectClass)
 		{
 			UAbilitySystemComponent* SourceASC = Ability->GetAbilitySystemComponentFromActorInfo();
@@ -179,4 +190,35 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 		OnFinished.Broadcast();
 		EndTask();
 	}
+}
+
+void UDrgAbilityTask_FireProjectile::Set_Projectile_MaxRange(ADrgProjectile* pDrgProjectile)
+{
+	if (!IsValid(pDrgProjectile))
+	{
+		return;
+	}
+		pDrgProjectile->Set_MaxRange(MaxRange);
+		pDrgProjectile->Set_StartTransform(StartTransform);
+	
+}
+
+FTransform UDrgAbilityTask_FireProjectile::Get_StartTransform() const
+{
+	return StartTransform;
+}
+
+void UDrgAbilityTask_FireProjectile::Set_MoveDistance(float Value)
+{
+	MoveDistance = Value;
+}
+
+void UDrgAbilityTask_FireProjectile::Set_StartTransform(FTransform Arg_Transform)
+{
+	StartTransform = Arg_Transform;
+}
+
+float UDrgAbilityTask_FireProjectile::Get_Task_MaxRange() const
+{
+	return MaxRange;
 }
