@@ -57,12 +57,6 @@ public:
 protected:
 	virtual void Activate() override;
 
-public:
-	FTransform Get_StartTransform() const;
-	float Get_Task_MaxRange() const;
-	void Set_MoveDistance(float Value);
-	void Set_StartTransform(FTransform Arg_Transform);
-
 private:
 	// 다음 발사를 처리하는 함수
 	UFUNCTION()
@@ -78,10 +72,10 @@ private:
 
 	int32 ProjectilesFired;
 	FTimerHandle TimerHandle;
-	//이동거리 -이준식
+
 	float MaxRange;
-	FTransform StartTransform; //투사체가 시작위치
-	float MoveDistance; //현재 날아간 거리
+	float MoveDistance;
+	FTransform StartTransform;
 
 	void Set_Projectile_MaxRange(ADrgProjectile* pDrgProjectile);
 };

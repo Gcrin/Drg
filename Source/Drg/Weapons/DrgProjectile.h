@@ -38,14 +38,14 @@ protected:
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
 	float MaxRange;
-	float MoveDistance; //현재 날아간 거리
-	FTransform StartTransform; //투사체가 시작위치
+	float MoveDistance;
+	FTransform StartTransform;
 
-	void Calc_Distance();
-	void Check_Distance();
-	virtual void Destroy_Projectile();
+	void CalcDistance();
+	void CheckDistance();
+	virtual void DestroyProjectile();
 
 public:
-	void Set_MaxRange(float Arg_MaxRange);
-	void Set_StartTransform(FTransform Arg_StartTransform);
+	void SetMaxRange(float ArgMaxRange);
+	void SetStartTransform(FTransform ArgStartTransform);
 };
