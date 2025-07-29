@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
-#include "DrgGameConfig.h"
 #include "DrgGameStateBase.generated.h"
 
 
@@ -24,22 +23,20 @@ class DRG_API ADrgGameStateBase : public AGameStateBase
 public:
 	ADrgGameStateBase();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	UDrgGameConfig* GameConfig; // 데이터에셋 // UI, BGM, 설정 등
+	virtual void BeginPlay() override;
 	
 	UFUNCTION(BlueprintPure, Category = "MatchState")
-	EMatchState GetCurrentMatchState() const; // Getter
+	EMatchState GetCurrentMatchState() const;
 
-	void SetMatchState(EMatchState NewState); // 게임모드에서 관리
+	void SetMatchState(EMatchState NewState);
 
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_MatchState)
-	EMatchState CurrentMatchState; // 현재 스테이트 상태 // 리플리케이트 대상
+	EMatchState CurrentMatchState;
 	
 	UFUNCTION()
-	void OnRep_MatchState(); // 복제, 변경 시도되면 호출
-
-	// 네트워크 복제 속성
+	void OnRep_MatchState();
+	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 };

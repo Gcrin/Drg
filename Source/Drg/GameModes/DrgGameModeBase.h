@@ -15,7 +15,6 @@ class DRG_API ADrgGameModeBase : public AGameModeBase
 public:
 	ADrgGameModeBase();
 	
-
 	UFUNCTION(BlueprintCallable, Category = "MatchState")
 	void SetCurrentMatchState(EMatchState NewState);
 	
