@@ -6,9 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "DrgGameModeBase.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
 class DRG_API ADrgGameModeBase : public AGameModeBase
 {
@@ -16,4 +14,9 @@ class DRG_API ADrgGameModeBase : public AGameModeBase
 
 public:
 	ADrgGameModeBase();
+	
+
+	UFUNCTION(BlueprintCallable, Category = "MatchState")
+	void SetCurrentMatchState(EMatchState NewState);
+	
 };
