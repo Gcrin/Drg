@@ -19,8 +19,7 @@ public class Drg : ModuleRules
 			"GameplayTags",
 			"GameplayTasks",
 			"UMG",
-			"ModularGameplay",
-			"NavigationSystem"
+			"ModularGameplay"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
