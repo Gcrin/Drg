@@ -49,8 +49,7 @@ void ADrgProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-
-	Check_Distance();
+	CheckDistance();
 }
 
 void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -85,22 +84,22 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 		}
 	}
 
-	Destroy_Projectile();
+	DestroyProjectile();
 }
 
 
-void ADrgProjectile::Set_MaxRange(float Arg_MaxRange)
+void ADrgProjectile::SetMaxRange(float ArgMaxRange)
 {
 	if (MaxRange > 0.f)
-		MaxRange = Arg_MaxRange;
+		MaxRange = ArgMaxRange;
 }
 
-void ADrgProjectile::Set_StartTransform(FTransform Arg_StartTransform)
+void ADrgProjectile::SetStartTransform(FTransform ArgStartTransform)
 {
-	StartTransform = Arg_StartTransform;
+	StartTransform = ArgStartTransform;
 }
 
-void ADrgProjectile::Calc_Distance()
+void ADrgProjectile::CalcDistance()
 {
 	if (MaxRange > 0.f)
 	{
@@ -111,17 +110,17 @@ void ADrgProjectile::Calc_Distance()
 	}
 }
 
-void ADrgProjectile::Check_Distance()
+void ADrgProjectile::CheckDistance()
 {
-	Calc_Distance();
+	CalcDistance();
 
 	if (MoveDistance >= MaxRange && MaxRange > 0.f)
 	{
-		Destroy_Projectile();
+		DestroyProjectile();
 	}
 }
 
-void ADrgProjectile::Destroy_Projectile()
+void ADrgProjectile::DestroyProjectile()
 {
 	Destroy();
 }

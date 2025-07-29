@@ -107,7 +107,7 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	const FRotator SpawnRotation = AvatarActor->GetActorRotation();
 	const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
 
-	Set_StartTransform(SpawnTransform);
+	StartTransform = SpawnTransform;
 	/*
 	 * 지연된 스폰(Deferred Spawn)을 사용하는 이유:
 	 * 
@@ -133,7 +133,7 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
 		//MaxRange관련 set
 		Set_Projectile_MaxRange(SpawnedProjectile);
-		
+
 		if (DamageEffectClass)
 		{
 			UAbilitySystemComponent* SourceASC = Ability->GetAbilitySystemComponentFromActorInfo();
@@ -145,12 +145,10 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(
 					DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
 
-				if (SpecHandle.IsValid())
-				{
-					SpecHandle.Data->SetSetByCallerMagnitude(
-						FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), EffectMultiplier);
-					SpawnedProjectile->DamageEffectSpecHandle = SpecHandle;
-				}
+
+				SpecHandle.Data->SetSetByCallerMagnitude(
+					FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), EffectMultiplier);
+				SpawnedProjectile->DamageEffectSpecHandle = SpecHandle;
 			}
 		}
 
@@ -198,27 +196,6 @@ void UDrgAbilityTask_FireProjectile::Set_Projectile_MaxRange(ADrgProjectile* pDr
 	{
 		return;
 	}
-		pDrgProjectile->Set_MaxRange(MaxRange);
-		pDrgProjectile->Set_StartTransform(StartTransform);
-	
-}
-
-FTransform UDrgAbilityTask_FireProjectile::Get_StartTransform() const
-{
-	return StartTransform;
-}
-
-void UDrgAbilityTask_FireProjectile::Set_MoveDistance(float Value)
-{
-	MoveDistance = Value;
-}
-
-void UDrgAbilityTask_FireProjectile::Set_StartTransform(FTransform Arg_Transform)
-{
-	StartTransform = Arg_Transform;
-}
-
-float UDrgAbilityTask_FireProjectile::Get_Task_MaxRange() const
-{
-	return MaxRange;
+	pDrgProjectile->SetMaxRange(MaxRange);
+	pDrgProjectile->SetStartTransform(StartTransform);
 }
