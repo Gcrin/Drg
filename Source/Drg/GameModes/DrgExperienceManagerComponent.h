@@ -20,8 +20,9 @@ public:
 
 	virtual void BeginPlay() override;
 
+	// 함수 세분화 필요
 	UFUNCTION(BlueprintCallable, Category = "ExperienceManager")
-	void GainExperience(float Amount);
+	void AddExperience(float Amount);
 	
 	UFUNCTION(BlueprintPure, Category = "ExperienceManager")
 	int32 GetCurrentLevel() const;
@@ -35,6 +36,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnExperienceGained OnExperienceGained;
 	
+	// 데이터 테이블로 변경
 	UPROPERTY(EditDefaultsOnly, Category = "ExperienceManager")
 	float MaxExperience;
 

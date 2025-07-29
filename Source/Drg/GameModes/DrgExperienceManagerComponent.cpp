@@ -23,7 +23,7 @@ void UDrgExperienceManagerComponent::BeginPlay()
 	
 }
 
-void UDrgExperienceManagerComponent::GainExperience(float Amount)
+void UDrgExperienceManagerComponent::AddExperience(float Amount)
 {
 	if (GetOwnerRole() == ROLE_Authority)
 	{

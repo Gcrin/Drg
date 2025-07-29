@@ -8,6 +8,9 @@
 
 ADrgGameStateBase::ADrgGameStateBase()
 {
+	ExperienceManagerComponent = CreateDefaultSubobject<UDrgExperienceManagerComponent>(
+		TEXT("DrgExperienceManagerComponent"));
+	
 	CurrentMatchState = EMatchState::WaitingToStart;
 	
 }
