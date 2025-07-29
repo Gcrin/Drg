@@ -52,11 +52,51 @@ public:
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, Health);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Drg|Movement")
-	FGameplayAttributeData MoveSpeed;
-	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MoveSpeed);
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Health")
+	FGameplayAttributeData HealthRegen;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, HealthRegen);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Damage")
 	FGameplayAttributeData AttackDamage;
 	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, AttackDamage);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Damage")
+	FGameplayAttributeData AttackSpeed;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, AttackSpeed);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Defense")
+	FGameplayAttributeData Defense;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, Defense);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Movement")
+	FGameplayAttributeData MoveSpeed;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MoveSpeed);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Stamina")
+	FGameplayAttributeData MaxStamina;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MaxStamina)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Stamina")
+	FGameplayAttributeData Stamina;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, Stamina);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Stamina")
+	FGameplayAttributeData StaminaRegen;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, StaminaRegen);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Pickup")
+	FGameplayAttributeData PickupRadius;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, PickupRadius);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Pickup")
+	FGameplayAttributeData CharacterLevel;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, CharacterLevel);;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Pickup")
+	FGameplayAttributeData MaxExperience;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MaxExperience);;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|Pickup")
+	FGameplayAttributeData Experience;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, Experience);;
 };
