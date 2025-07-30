@@ -37,4 +37,16 @@ void UDrgAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMod
 			OnDeath.Broadcast(GetOwningActor());
 		}
 	}
+
+	if (Data.EvaluatedData.Attribute == GetExperienceAttribute())
+	{
+		float CurrentExperience = GetExperience();
+		while (CurrentExperience >= GetMaxExperience() && GetMaxExperience() > 0.f)
+		{
+			CurrentExperience -= GetMaxExperience();
+			SetCharacterLevel(GetCharacterLevel() + 1.f);
+			OnLevelUp.Broadcast(GetOwningActor());
+		}
+		SetExperience(CurrentExperience);
+	}
 }
