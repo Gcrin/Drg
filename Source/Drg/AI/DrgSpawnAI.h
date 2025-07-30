@@ -15,6 +15,9 @@ public:
 	// Sets default values for this actor's properties
 	ADrgSpawnAI();
 
+	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
+	void SetCurrentWaveNumber(int32 NewWaveNumber);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	USceneComponent* SceneComp;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
@@ -40,6 +43,7 @@ protected:
 	struct FDrgWaveTableRow* CurrentWaveRow;
 	FTimerHandle SpawnTimerHandle;
 	int32 CurrentSpawnCount = 0;
+	bool bIsSpawnTimerRunning = false;
 
 	// 레벨 시작 시 AI 캐릭터 미리 스폰해서 InActiveAIPool에 추가
 	// 이 이상 AI 캐릭터 스폰하지 않음
@@ -47,7 +51,7 @@ protected:
 	void InitializePool();
 	// 현재 웨이브 스폰 타이머 시작. SpawnAILoop 반복 실행
 	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
-	void StartSpawnTimer(int32 NewWaveNumber);
+	void StartSpawnTimer();
 	// 현재 웨이브 스폰 타이머 종료
 	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
 	void StopSpawnTimer();
