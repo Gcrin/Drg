@@ -14,6 +14,7 @@ GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDeath, AActor*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnLevelUp, AActor*);
 
 /**
  * 
@@ -42,7 +43,10 @@ public:
 	 */
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 
+	float GetMaxExperienceForLevel(const UDataTable* DataTable, float CurrentLevel);
+
 	FOnDeath OnDeath;
+	FOnDeath OnLevelUp;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Health")
 	FGameplayAttributeData MaxHealth;
@@ -90,13 +94,13 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Pickup")
 	FGameplayAttributeData CharacterLevel;
-	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, CharacterLevel);;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, CharacterLevel);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Pickup")
 	FGameplayAttributeData MaxExperience;
-	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MaxExperience);;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, MaxExperience);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Pickup")
 	FGameplayAttributeData Experience;
-	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, Experience);;
+	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, Experience);
 };

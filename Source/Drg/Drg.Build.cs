@@ -17,7 +17,9 @@ public class Drg : ModuleRules
 			"EnhancedInput",
 			"GameplayAbilities",
 			"GameplayTags",
-			"GameplayTasks"
+			"GameplayTasks",
+			"UMG",
+			"ModularGameplay"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

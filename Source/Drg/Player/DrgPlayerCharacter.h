@@ -19,10 +19,20 @@ class DRG_API ADrgPlayerCharacter : public ADrgBaseCharacter
 public:
 	ADrgPlayerCharacter();
 
+	UDataTable* GetDataTable() const;
+
+	virtual void HandleOnLevelUp(AActor* Actor);
+
 protected:
+
+	virtual void PossessedBy(AController* NewController) override;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
 	TObjectPtr<USpringArmComponent> SpringArmComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
 	TObjectPtr<UCameraComponent> CameraComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Drg|Data")
+	UDataTable* MaxExperienceDataTable;
 };

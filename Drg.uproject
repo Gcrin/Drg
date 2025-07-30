@@ -12,7 +12,8 @@
 				"Engine",
 				"GameplayAbilities",
 				"AIModule",
-				"CoreUObject"
+				"CoreUObject",
+				"ModularGameplay"
 			]
 		}
 	],
@@ -26,6 +27,10 @@
 		},
 		{
 			"Name": "GameplayAbilities",
+			"Enabled": true
+		},
+		{
+			"Name": "ModularGameplay",
 			"Enabled": true
 		}
 	]
