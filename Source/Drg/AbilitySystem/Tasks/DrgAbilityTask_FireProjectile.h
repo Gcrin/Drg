@@ -12,6 +12,39 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFireProjectileFiredDelegate, int32,
 
 class ADrgProjectile;
 
+USTRUCT(BlueprintType)
+struct FDrgFireProjectileParams
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<ADrgProjectile> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<UGameplayEffect> DamageEffectClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName SocketName;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FTransform StartTransform = FTransform();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float EffectMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float InitialDelay = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 NumberOfProjectiles = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DelayBetweenShots = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxRange = 1.0f;
+};
+
 UCLASS()
 class DRG_API UDrgAbilityTask_FireProjectile : public UAbilityTask
 {
@@ -34,16 +67,10 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Drg|Ability|Tasks",
 		meta = (DisplayName = "Fire Projectile Burst", HidePin = "OwningAbility", DefaultToSelf = "OwningAbility"))
+
 	static UDrgAbilityTask_FireProjectile* FireProjectile(
 		UGameplayAbility* OwningAbility,
-		TSubclassOf<ADrgProjectile> ProjectileClass,
-		TSubclassOf<UGameplayEffect> DamageEffectClass,
-		FName SocketName,
-		float EffectMultiplier = 1.0f,
-		float InitialDelay = 0.0f,
-		int32 NumberOfProjectiles = 1,
-		float DelayBetweenShots = 0.0f,
-		float MaxRange = 1.f
+		const FDrgFireProjectileParams& Params
 	);
 
 	// 한 발 발사될 때마다 실행
@@ -76,6 +103,10 @@ private:
 	float MaxRange;
 	float MoveDistance;
 	FTransform StartTransform;
-
-	void SetProjectileMaxRange(ADrgProjectile* pDrgProjectile);
+	FVector SpawnLocation;
+	FRotator SpawnRotation;
+	
+	void SetProjectileMaxRange(ADrgProjectile* pDrgProjectile,const FTransform ArgTransform);
+	void CheckStartTransform(ACharacter* pCharacter);
+	void CheckSocketName(ACharacter* pCharacter);
 };
