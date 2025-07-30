@@ -20,12 +20,12 @@ struct FExperienceStatics
 
 	FExperienceStatics()
 	{
-		// UDrgAttributeSet에서 Source의 Experience를 Snapshot 모드로 캡처
-		DEFINE_ATTRIBUTE_CAPTUREDEF(UDrgAttributeSet, Experience, Source, true);
-		// UDrgAttributeSet에서 Source의 MaxExperience를 Snapshot 모드로 캡처
-		DEFINE_ATTRIBUTE_CAPTUREDEF(UDrgAttributeSet, MaxExperience, Source, true);
-		// UDrgAttributeSet에서 Source의 CharacterLevel를 Snapshot 모드로 캡처
-		DEFINE_ATTRIBUTE_CAPTUREDEF(UDrgAttributeSet, CharacterLevel, Source, true);
+		// UDrgAttributeSet에서 Target의 Experience를 Snapshot 모드로 캡처
+		DEFINE_ATTRIBUTE_CAPTUREDEF(UDrgAttributeSet, Experience, Target, true);
+		// UDrgAttributeSet에서 Target의 MaxExperience를 Snapshot 모드로 캡처
+		DEFINE_ATTRIBUTE_CAPTUREDEF(UDrgAttributeSet, MaxExperience, Target, true);
+		// UDrgAttributeSet에서 Target의 CharacterLevel를 Snapshot 모드로 캡처
+		DEFINE_ATTRIBUTE_CAPTUREDEF(UDrgAttributeSet, CharacterLevel, Target, true);
 	}
 };
 
@@ -75,8 +75,8 @@ void UDrgExecCalc_Experience::Execute_Implementation(const FGameplayEffectCustom
 	bool bIsLevelUp = false;
 
 	UE_LOG(LogTemp, Warning, TEXT("%.1f Exp Gain"), ExperienceAmount);
-
-	while (NewExperience > MaxExperience)
+	
+	while (NewExperience > MaxExperience && MaxExperience > 0)
 	{
 		NewExperience -= MaxExperience;
 		CharacterLevel += 1.f;

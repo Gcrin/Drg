@@ -12,13 +12,6 @@ ADrgGameStateBase::ADrgGameStateBase()
 	
 }
 
-void ADrgGameStateBase::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-
 void ADrgGameStateBase::OnRep_MatchState()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Current State : %s"),
@@ -27,13 +20,13 @@ void ADrgGameStateBase::OnRep_MatchState()
 	switch (CurrentMatchState)
 	{
 		case EMatchState::WaitingToStart:
-		// 로직 추가
+		// 게임 시작 대기 상태 // 메인 메뉴
 			break;
 		case EMatchState::Inprogress:
-		// 로직 추가
+		// 게임 진행 상태
 			break;
 		case EMatchState::RoundOver:
-		// 로직 추가
+		// 라운드 종료 상태
 			break;
 		default:
 			UE_LOG(LogTemp, Warning, TEXT("DrgGameState/FailedMatchState"));
@@ -42,21 +35,14 @@ void ADrgGameStateBase::OnRep_MatchState()
 
 void ADrgGameStateBase::SetMatchState(EMatchState NewState)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (CurrentMatchState != NewState)
 	{
-		if (CurrentMatchState != NewState)
-		{
-			CurrentMatchState = NewState;
-			OnRep_MatchState();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("DrgGameState/이미 스테이트가 변경되었습니다."));
-		}
+		CurrentMatchState = NewState;
+		OnRep_MatchState();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("DrgGameState/게임모드만 스테이트를 변경할 수 있습니다."));
+		UE_LOG(LogTemp, Warning, TEXT("DrgGameState/이미 스테이트가 변경되었습니다."));
 	}
 }
 

@@ -6,7 +6,6 @@
 #include "GameFramework/GameStateBase.h"
 #include "DrgGameStateBase.generated.h"
 
-
 UENUM(BlueprintType)
 enum class EMatchState : uint8
 {
@@ -22,8 +21,6 @@ class DRG_API ADrgGameStateBase : public AGameStateBase
 
 public:
 	ADrgGameStateBase();
-
-	virtual void BeginPlay() override;
 	
 	UFUNCTION(BlueprintPure, Category = "MatchState")
 	EMatchState GetCurrentMatchState() const;
