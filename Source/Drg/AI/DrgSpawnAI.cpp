@@ -19,6 +19,16 @@ ADrgSpawnAI::ADrgSpawnAI()
 	TotalSpawnCount = 200;
 }
 
+void ADrgSpawnAI::SetCurrentWaveNumber(int32 NewWaveNumber)
+{
+	CurrentWaveNumber = NewWaveNumber;
+	if (bIsSpawnTimerRunning)
+	{
+		StopSpawnTimer();
+	}
+	StartSpawnTimer();
+}
+
 void ADrgSpawnAI::InitializePool()
 {
 	for (int32 i = 0; i < TotalSpawnCount; i++)
@@ -36,10 +46,8 @@ void ADrgSpawnAI::InitializePool()
 	}
 }
 
-void ADrgSpawnAI::StartSpawnTimer(int32 NewWaveNumber)
+void ADrgSpawnAI::StartSpawnTimer()
 {
-	CurrentWaveNumber = NewWaveNumber;
-
 	CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	if (!CurrentWaveRow) return;
 
@@ -53,6 +61,8 @@ void ADrgSpawnAI::StartSpawnTimer(int32 NewWaveNumber)
 	);
 	UE_LOG(LogTemp, Warning,
 	       TEXT("DrgSpawnAI:: %d 웨이브 시작"), CurrentWaveNumber);
+
+	bIsSpawnTimerRunning = true;
 }
 
 void ADrgSpawnAI::StopSpawnTimer()
@@ -204,22 +214,6 @@ void ADrgSpawnAI::SpawnAILoop()
 		{
 			ActiveAIPool.Add(SpawnedAI);
 			CurrentSpawnCount++;
-		}
-	}
-	// 웨이브 넘버 연결 전에 테스트용
-	if (CurrentSpawnCount >= CurrentWaveRow->MaxSpawnCount)
-	{
-		StopSpawnTimer();
-		CurrentSpawnCount = 0;
-		CurrentWaveNumber++;
-		if (CurrentWaveNumber < 3)
-		{
-			StartSpawnTimer(CurrentWaveNumber);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning,
-			       TEXT("DrgSpawnAI::웨이브 종료"));
 		}
 	}
 }
