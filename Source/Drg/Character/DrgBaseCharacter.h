@@ -26,6 +26,11 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	TObjectPtr<UDrgAttributeSet> GetAttributeSet() const;
 
+	void SetCharacterData(const TObjectPtr<UDrgCharacterData>& NewCharacterData)
+	{
+		this->CharacterData = NewCharacterData;
+	}
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -41,6 +46,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Data", meta = (ExposeOnSpawn = "true"))
 	TObjectPtr<UDrgCharacterData> CharacterData;
 
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
 	TObjectPtr<UDrgAbilitySystemComponent> AbilitySystemComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
