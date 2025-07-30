@@ -4,6 +4,7 @@
 #include "DrgPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
 
 ADrgPlayerCharacter::ADrgPlayerCharacter()
@@ -22,4 +23,24 @@ ADrgPlayerCharacter::ADrgPlayerCharacter()
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComponent->SetupAttachment(SpringArmComponent);
 	CameraComponent->bUsePawnControlRotation = false;
+}
+
+UDataTable* ADrgPlayerCharacter::GetDataTable() const
+{
+	return MaxExperienceDataTable;
+}
+
+void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
+{
+	// ToDo: 레벨 업시 표시되는 UI 구현해주세요.
+}
+
+void ADrgPlayerCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AttributeSet)
+	{
+		AttributeSet->OnLevelUp.AddUObject(this, &ADrgPlayerCharacter::HandleOnLevelUp);
+	}
 }

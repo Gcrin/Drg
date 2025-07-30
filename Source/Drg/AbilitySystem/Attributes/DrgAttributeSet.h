@@ -43,6 +43,8 @@ public:
 	 */
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 
+	float GetMaxExperienceForLevel(const UDataTable* DataTable, float CurrentLevel);
+
 	FOnDeath OnDeath;
 	FOnDeath OnLevelUp;
 

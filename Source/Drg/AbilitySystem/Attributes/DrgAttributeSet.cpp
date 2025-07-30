@@ -4,6 +4,8 @@
 #include "DrgAttributeSet.h"
 
 #include "GameplayEffectExtension.h"
+#include "Drg/Player/DrgPlayerCharacter.h"
+#include "Drg/Player/Data/DrgExperienceData.h"
 
 UDrgAttributeSet::UDrgAttributeSet()
 {
@@ -40,13 +42,37 @@ void UDrgAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMod
 
 	if (Data.EvaluatedData.Attribute == GetExperienceAttribute())
 	{
-		float CurrentExperience = GetExperience();
-		while (CurrentExperience >= GetMaxExperience() && GetMaxExperience() > 0.f)
+		if (ADrgPlayerCharacter* DrgPlayer = Cast<ADrgPlayerCharacter>(GetOwningActor()))
 		{
-			CurrentExperience -= GetMaxExperience();
-			SetCharacterLevel(GetCharacterLevel() + 1.f);
-			OnLevelUp.Broadcast(GetOwningActor());
+			float CurrentExperience = GetExperience();
+			while (CurrentExperience >= GetMaxExperience() && GetMaxExperience() > 0.f)
+			{
+				CurrentExperience -= GetMaxExperience();
+				SetCharacterLevel(GetCharacterLevel() + 1.f);
+				SetMaxExperience(GetMaxExperienceForLevel(DrgPlayer->GetDataTable(), GetCharacterLevel()));
+				OnLevelUp.Broadcast(GetOwningActor());
+				UE_LOG(LogTemp, Warning, TEXT("Level Up!! / Lv: %.0f(%.1f/%.1f)"), GetCharacterLevel(),
+				       CurrentExperience, GetMaxExperience());
+			}
+			SetExperience(CurrentExperience);
 		}
-		SetExperience(CurrentExperience);
 	}
+}
+
+float UDrgAttributeSet::GetMaxExperienceForLevel(const UDataTable* DataTable, float CurrentLevel)
+{
+	check(DataTable != nullptr)
+
+	const FName RowName = FName(*FString::FromInt(CurrentLevel));
+	const FString ContextString(TEXT("GetExperienceForLevel"));
+
+	FDrgExperienceData* RowData = DataTable->FindRow<FDrgExperienceData>(RowName, ContextString);
+
+	if (RowData != nullptr)
+	{
+		return RowData->MaxExperience;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("DataTable Lv: %.0f의 행을 찾을 수 없습니다."), CurrentLevel);
+	return 100.0f;
 }
