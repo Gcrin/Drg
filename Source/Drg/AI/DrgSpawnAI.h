@@ -35,6 +35,8 @@ protected:
 	TArray<class ADrgBaseCharacter*> InActiveAIPool;
 	int32 MaxTryCount = 30;
 
+	FTimerHandle SpawnTimerHandle;
+
 	// 레벨 시작 시 AI 캐릭터 미리 스폰해서 InActiveAIPool에 추가
 	// 이 이상 AI 캐릭터 스폰하지 않음
 	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
@@ -49,4 +51,6 @@ protected:
 	// 현재 웨이브에 해당하는 AI 데이터에셋 랜덤하게 반환
 	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
 	class UDrgCharacterData* GetRandomAICharacterData(FDrgWaveTableRow CurrentWaveRow);
+	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
+	void SpawnAIFromPool(int32 WaveNumber);
 };

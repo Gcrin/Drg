@@ -5,6 +5,8 @@
 #include "DrgWaveTableRow.h"
 #include "Drg/Character/DrgBaseCharacter.h"
 #include "Drg/Character/Data/DrgCharacterData.h"
+#include "EntitySystem/MovieSceneEntitySystemRunner.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ADrgSpawnAI::ADrgSpawnAI()
@@ -108,4 +110,26 @@ UDrgCharacterData* ADrgSpawnAI::GetRandomAICharacterData(FDrgWaveTableRow Curren
 	}
 
 	return nullptr;
+}
+
+void ADrgSpawnAI::SpawnAIFromPool(int32 WaveNumber)
+{
+	FDrgWaveTableRow CurrentWaveRow = GetCurrentWaveDataRow(WaveNumber);
+	if (!CurrentWaveRow.AIData.Num()) return;
+	FVector SpawnLocation;
+	if (FindSafeRandomPointInNav(SpawnLocation))
+	{
+		FTransform SpawnTransform = FTransform(FRotator::ZeroRotator, SpawnLocation, FVector(1.f));
+		ADrgBaseCharacter* SpawnedAI = GetWorld()->SpawnActorDeferred<ADrgBaseCharacter>(
+			AICharacterClass,
+			SpawnTransform
+		);
+		SpawnedAI->SetCharacterData(GetRandomAICharacterData(CurrentWaveRow));
+		UGameplayStatics::FinishSpawningActor(SpawnedAI, SpawnTransform);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error,
+		       TEXT("DrgSpawnAI::SpawnLocation을 찾을 수 없습니다."));
+	}
 }
