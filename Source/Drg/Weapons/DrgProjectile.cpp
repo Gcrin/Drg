@@ -154,7 +154,7 @@ void ADrgProjectile::StartProjectileArc()
 		       *Target.ToString());
 	}
 
-	if (DbSuccess && ProjectileMovement)
+	if (bSuccess && ProjectileMovement)
 	{
 		ProjectileMovement->Velocity = LaunchVelocity;
 		ProjectileMovement->Velocity.Z += ProjectileParams.VelocityZ;
