@@ -47,5 +47,4 @@ protected:
 
 public:
 	void SetMaxRange(float ArgMaxRange);
-	void SetStartTransform(FTransform ArgStartTransform);
 };

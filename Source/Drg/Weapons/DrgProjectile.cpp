@@ -40,6 +40,8 @@ void ADrgProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
+	StartTransform = GetActorTransform();
+
 	// 오버랩 이벤트가 발생하면 OnSphereOverlap 함수를 호출하도록 바인딩
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgProjectile::OnSphereOverlap);
 }
@@ -91,11 +93,6 @@ void ADrgProjectile::SetMaxRange(float ArgMaxRange)
 {
 	if (MaxRange > 0.f)
 		MaxRange = ArgMaxRange;
-}
-
-void ADrgProjectile::SetStartTransform(FTransform ArgStartTransform)
-{
-	StartTransform = ArgStartTransform;
 }
 
 void ADrgProjectile::CalcDistance()

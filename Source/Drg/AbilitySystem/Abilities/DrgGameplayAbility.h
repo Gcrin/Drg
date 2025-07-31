@@ -27,7 +27,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability")
 	bool bIsOnAutoCast = false;
 
-	//기본 쿨타임(공격속도 나누기로 적용됨)
+	//기본 쿨타임(최종 쿨타임 = (기본쿨타임/공격속도)로 적용됨)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability", meta = (UIMin = "0.01", ClampMin = "0.01"))
 	float BaseCooldown = 1.0f;
 

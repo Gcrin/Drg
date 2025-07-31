@@ -4,7 +4,6 @@
 #include "DrgAbilityTask_FireProjectile.h"
 
 #include "AbilitySystemComponent.h"
-#include "Drg/AbilitySystem/Abilities/DrgGameplayAbility.h"
 #include "Drg/Weapons/DrgProjectile.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
@@ -14,18 +13,11 @@ UDrgAbilityTask_FireProjectile* UDrgAbilityTask_FireProjectile::FireProjectile(U
                                                                                const FDrgFireProjectileParams& Params)
 {
 	UDrgAbilityTask_FireProjectile* Task = NewAbilityTask<UDrgAbilityTask_FireProjectile>(OwningAbility);
-	Task->ProjectileClass = Params.ProjectileClass;
-	Task->DamageEffectClass = Params.DamageEffectClass;
-	Task->SocketName = Params.SocketName;
-	Task->NumberOfProjectiles = FMath::Max(1, Params.NumberOfProjectiles); // 최소 1발 보장
-	Task->InitialDelay = Params.InitialDelay;
-	Task->DelayBetweenShots = Params.DelayBetweenShots;
-	Task->EffectMultiplier = Params.EffectMultiplier;
+
+	Task->Params = Params;
+	Task->Params.NumberOfProjectiles = FMath::Max(1, Params.NumberOfProjectiles); // 최소 1발 보장
 	Task->ProjectilesFired = 0;
 
-	Task->StartTransform = Params.StartTransform;
-	Task->MaxRange = Params.MaxRange;
-	Task->MoveDistance = 0.f;
 	return Task;
 }
 
@@ -37,10 +29,10 @@ void UDrgAbilityTask_FireProjectile::Activate()
 		return;
 	}
 
-	if (InitialDelay > 0.0f)
+	if (Params.InitialDelay > 0.0f)
 	{
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UDrgAbilityTask_FireProjectile::FireNextProjectile,
-		                                       InitialDelay, false);
+		                                       Params.InitialDelay, false);
 	}
 	else
 	{
@@ -50,7 +42,7 @@ void UDrgAbilityTask_FireProjectile::Activate()
 
 void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 {
-	if (!ProjectileClass)
+	if (!Params.ProjectileClass)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[DrgAbilityTask_FireProjectile] : 발사체 블루프린트(ProjectileClass)가 지정되지 않았습니다."));
 		OnFinished.Broadcast();
@@ -69,9 +61,12 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 
 	ACharacter* Character = Cast<ACharacter>(AvatarActor);
 
-	CheckStartTransform(Character);
-
-	const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
+	if (!Character || !CalculateSpawnTransform(Character, SpawnWorldTransform))
+	{
+		OnFinished.Broadcast();
+		EndTask();
+		return;
+	}
 
 	/*
 	 * 지연된 스폰(Deferred Spawn)을 사용하는 이유:
@@ -86,8 +81,8 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	ADrgProjectile* SpawnedProjectile = Cast<ADrgProjectile>(
 		UGameplayStatics::BeginDeferredActorSpawnFromClass(
 			GetWorld(),
-			ProjectileClass,
-			SpawnTransform,
+			Params.ProjectileClass,
+			SpawnWorldTransform,
 			ESpawnActorCollisionHandlingMethod::AlwaysSpawn,
 			AvatarActor
 		)
@@ -96,9 +91,10 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	if (SpawnedProjectile)
 	{
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
-		SetProjectileMaxRange(SpawnedProjectile, SpawnTransform);
 
-		if (DamageEffectClass)
+		SpawnedProjectile->SetMaxRange(Params.MaxRange);
+
+		if (Params.DamageEffectClass)
 		{
 			UAbilitySystemComponent* SourceASC = Ability->GetAbilitySystemComponentFromActorInfo();
 			if (SourceASC)
@@ -107,19 +103,19 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 				ContextHandle.AddSourceObject(AvatarActor);
 				ContextHandle.AddInstigator(AvatarActor, SpawnedProjectile);
 				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(
-					DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
+					Params.DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
 
 				if (SpecHandle.IsValid())
 				{
 					SpecHandle.Data->SetSetByCallerMagnitude(
-						FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), EffectMultiplier);
+						FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), Params.EffectMultiplier);
 					SpawnedProjectile->DamageEffectSpecHandle = SpecHandle;
 				}
 			}
 		}
 
 		// 스폰 완료: 준비된 액터를 월드에 최종적으로 배치.
-		UGameplayStatics::FinishSpawningActor(SpawnedProjectile, SpawnTransform);
+		UGameplayStatics::FinishSpawningActor(SpawnedProjectile, SpawnWorldTransform);
 	}
 
 	// 발사체 스폰 체크
@@ -134,13 +130,14 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	}
 
 	// 더 쏠 발사체가 남았는지 확인
-	if (ProjectilesFired < NumberOfProjectiles)
+	if (ProjectilesFired < Params.NumberOfProjectiles)
 	{
 		// 딜레이가 있다면 타이머 설정, 없다면 그냥 무시
-		if (DelayBetweenShots > 0.0f)
+		if (Params.DelayBetweenShots > 0.0f)
 		{
 			GetWorld()->GetTimerManager().SetTimer(
-				TimerHandle, this, &UDrgAbilityTask_FireProjectile::FireNextProjectile, DelayBetweenShots, false);
+				TimerHandle, this, &UDrgAbilityTask_FireProjectile::FireNextProjectile, Params.DelayBetweenShots,
+				false);
 		}
 		else
 		{
@@ -156,52 +153,58 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	}
 }
 
-void UDrgAbilityTask_FireProjectile::CheckStartTransform(ACharacter* pCharacter)
+bool UDrgAbilityTask_FireProjectile::CalculateSpawnTransform(ACharacter* pCharacter, FTransform& OutSpawnTransform)
 {
-	if (!StartTransform.Equals(FTransform::Identity))
-	{
-		FTransform FinalTransform = StartTransform * pCharacter->GetActorTransform();
-		SpawnLocation = FinalTransform.GetLocation();
+	check(pCharacter);
+	USkeletalMeshComponent* pMesh = pCharacter->GetMesh();
+	check(pMesh);
 
-		FRotator HorizontalRotation = FinalTransform.GetRotation().Rotator();
-		HorizontalRotation.Pitch = 0.0f;
-		SpawnRotation = HorizontalRotation;
+	// TODO: 실패 조건- 캐릭터가 발사 불가능한 상태 예)캐릭터 스턴
+
+	FTransform SocketWorldTransform;
+	const FRotator CharacterRotation = pCharacter->GetActorRotation();
+	
+	if (pMesh->DoesSocketExist(Params.SocketName))
+	{
+		//SocketWorldTransform = pMesh->GetSocketTransform(Params.SocketName);
+		const FVector SocketLocation = pMesh->GetSocketLocation(Params.SocketName);
+
+		
+
+		SocketWorldTransform = FTransform(CharacterRotation, SocketLocation);
 	}
 	else
 	{
-		CheckSocketName(pCharacter);
-		SpawnRotation = pCharacter->GetActorRotation();
+		if (Params.SocketName != NAME_None)
+		{
+			UE_LOG(LogTemp, Warning,
+			       TEXT( "[DrgAbilityTask_FireProjectile] : 캐릭터 '%s'에서 소켓 '%s'를 찾을 수 없습니다. 캐릭터의 기본 위치에서 발사합니다." ),
+			       *pCharacter->GetName(), *Params.SocketName.ToString());
+		}
+
+		// 소켓이 없을 경우 캐릭터의 위치와 회전을 기준으로
+		// 이때 스케일이 커지는 문제를 방지하기 위해 위치와 회전만으로 새로 생성
+		SocketWorldTransform = FTransform(CharacterRotation, pCharacter->GetActorLocation());
 	}
+
+	OutSpawnTransform = Params.ProjectileLocalTransform * SocketWorldTransform;
+	return true;
 }
 
-void UDrgAbilityTask_FireProjectile::SetProjectileMaxRange(ADrgProjectile* pDrgProjectile,
-                                                           const FTransform ArgTransform)
-{
-	pDrgProjectile->SetMaxRange(MaxRange);
-	pDrgProjectile->SetStartTransform(ArgTransform);
-}
-
-void UDrgAbilityTask_FireProjectile::CheckSocketName(ACharacter* pCharacter)
+FVector UDrgAbilityTask_FireProjectile::GetSocketLocation(ACharacter* pCharacter) const
 {
 	// SocketName이 유효한지('None'이 아닌지) 먼저 확인
-	if (SocketName != NAME_None && pCharacter && pCharacter->GetMesh())
+	if (Params.SocketName != NAME_None && pCharacter && pCharacter->GetMesh())
 	{
 		// 실제로 그 이름의 소켓이 존재하는지 추가로 확인
-		if (pCharacter->GetMesh()->DoesSocketExist(SocketName))
+		if (pCharacter->GetMesh()->DoesSocketExist(Params.SocketName))
 		{
-			SpawnLocation = pCharacter->GetMesh()->GetSocketLocation(SocketName);
+			return pCharacter->GetMesh()->GetSocketLocation(Params.SocketName);
 		}
-		else
-		{
-			// 소켓은 지정했지만 오타 등으로 찾지 못한 경우, 경고 로그를 남기고 기본 위치 사용
-			UE_LOG(LogTemp, Warning, TEXT("[DrgAbilityTask_FireProjectile] : 소켓 '%s'를 찾을 수 없습니다. 기본 위치에서 발사합니다."),
-			       *SocketName.ToString());
-			SpawnLocation = pCharacter->GetActorLocation();
-		}
+
+		UE_LOG(LogTemp, Warning, TEXT("[DrgAbilityTask_FireProjectile] : 소켓 '%s'를 찾을 수 없습니다. 기본 위치에서 발사합니다."),
+		       *Params.SocketName.ToString());
 	}
-	else
-	{
-		// 소켓 이름이 지정되지 않은 경우, 기본 위치 사용
-		SpawnLocation = pCharacter->GetActorLocation();
-	}
+	// 소켓이 유효하지 않은 경우 기본 위치 사용
+	return pCharacter->GetActorLocation();
 }
