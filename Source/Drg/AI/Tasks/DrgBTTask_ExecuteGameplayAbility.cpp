@@ -87,14 +87,31 @@ uint16 UDrgBTTask_ExecuteGameplayAbility::GetInstanceMemorySize() const
 
 void UDrgBTTask_ExecuteGameplayAbility::OnAbilityEnded(const FAbilityEndedData& EndedData)
 {
-	if (!CachedNodeMemory) return;
-
-	FBTExecuteGameplayAbilityMemory* MyMemory = (FBTExecuteGameplayAbilityMemory*)CachedNodeMemory;
-
-	if (UBehaviorTreeComponent* OwnerComp = MyMemory->OwnerComp)
+	// if (!CachedNodeMemory) return;
+	//
+	// FBTExecuteGameplayAbilityMemory* MyMemory = (FBTExecuteGameplayAbilityMemory*)CachedNodeMemory;
+	//
+	// if (UBehaviorTreeComponent* OwnerComp = MyMemory->OwnerComp)
+	// {
+	// 	FinishLatentTask(*OwnerComp, EBTNodeResult::Succeeded);
+	// }
+	for (TObjectIterator<UBehaviorTreeComponent> It; It; ++It)
 	{
-		FinishLatentTask(*OwnerComp, EBTNodeResult::Succeeded);
+		UBehaviorTreeComponent* BehaviorTreeComponent = *It;
+		if (BehaviorTreeComponent)
+		{
+			uint8* NodeMemory = BehaviorTreeComponent->GetNodeMemory(this, BehaviorTreeComponent->FindInstanceContainingNode(this));
+			FBTExecuteGameplayAbilityMemory* MyMemory = reinterpret_cast<FBTExecuteGameplayAbilityMemory*>(NodeMemory);
+	
+			// 우리가 실행한 어빌리티가 맞는지, 태스크가 아직 활성 상태인지 확인
+			if (MyMemory->bIsAbilityActive && EndedData.AbilityThatEnded && EndedData.AbilityThatEnded->GetAssetTags().HasTag(AbilityTag))
+			{
+				MyMemory->bIsAbilityActive = false;
+				FinishLatentTask(*BehaviorTreeComponent, EBTNodeResult::Succeeded);
+			}
+		}
 	}
+
 }
 
 void UDrgBTTask_ExecuteGameplayAbility::Cleanup(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
