@@ -176,18 +176,54 @@ AActor* ADrgProjectile::FindTargetActor()
 {
 	TArray<AActor*> FoundActors;
 
-	UGameplayStatics::GetAllActorsWithTag(
+	// UGameplayStatics::GetAllActorsWithTag(
+	// 	GetWorld(),
+	// 	FName("Team.Enemy"),
+	// 	FoundActors
+	// );
+	UGameplayStatics::GetAllActorsOfClass(
 		GetWorld(),
-		FName("Team.Enemy"),
+		ADrgBaseCharacter::StaticClass(),
 		FoundActors
 	);
+	if (FoundActors.Num() == 0)
+		return nullptr;
 
+	AActor* NearestEnemy = nullptr;
+	float NearestDistance = ProjectileParams.ChaseDistance;
+	FVector StartLocation = StartTransform.GetLocation();
 
-	if (FoundActors.Num() > 0)
+	UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
+
+	for (AActor* TargetActor : FoundActors)
 	{
-		AActor* FirstEnemy = FoundActors[0];
-		return FirstEnemy;
+		if (!IsValid(TargetActor))
+			continue;
+
+		if (TargetActor == this)
+			continue;
+
+
+		UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+		if (UDrgGameplayStatics::AreTeamsFriendly(OwnerAsc, TargetAsc))
+		{
+			continue;
+		}
+
+		//죽은엑터 제외
+		ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(TargetActor);
+		if (TargetCharacter && TargetCharacter->IsDead())
+		{
+			continue;
+		}
+
+		float Distance = FVector::Dist(StartLocation, TargetActor->GetActorLocation());
+		if (Distance < NearestDistance)
+		{
+			NearestDistance = Distance;
+			NearestEnemy = TargetActor;
+		}
 	}
 
-	return nullptr;
+	return NearestEnemy;
 }
