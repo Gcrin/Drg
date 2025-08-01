@@ -37,34 +37,6 @@ ADrgProjectile::ADrgProjectile()
 	ProjectileMovement->ProjectileGravityScale = 0.f; // 중력 영향 안받음
 }
 
-ADrgProjectile::ADrgProjectile(const FDrgProjectileParams& Params)
-{
-	PrimaryActorTick.bCanEverTick = true;
-
-	// 충돌체인 SphereComponent 설정
-	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
-	RootComponent = SphereComponent;
-	SphereComponent->SetCollisionObjectType(ECC_WorldDynamic);
-	SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	SphereComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
-	SphereComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 폰하고만 오버랩 이벤트 발생
-	SphereComponent->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap); // 벽과도 충돌
-
-	//MeshComponent 설정
-	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	MeshComponent->SetupAttachment(SphereComponent);
-	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 외형은 충돌 계산 안함
-
-	// 발사체 움직임 컴포넌트 설정
-	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-	ProjectileMovement->InitialSpeed = 1500.f;
-	ProjectileMovement->MaxSpeed = 1500.f;
-	ProjectileMovement->ProjectileGravityScale = 0.f; // 중력 영향 안받음
-
-	//기본생성자랑 첫부분은동일함
-
-	ProjectileParams = Params;
-}
 
 void ADrgProjectile::BeginPlay()
 {
@@ -72,6 +44,7 @@ void ADrgProjectile::BeginPlay()
 
 	StartTransform = GetActorTransform();
 	StartProjectileArc();
+	StartProjectileChase();
 	// 오버랩 이벤트가 발생하면 OnSphereOverlap 함수를 호출하도록 바인딩
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgProjectile::OnSphereOverlap);
 }
@@ -130,24 +103,22 @@ void ADrgProjectile::StartProjectileArc()
 {
 	if (!ProjectileParams.bEnableArc)
 		return;
-	ProjectileMovement->ProjectileGravityScale = 0.5f; // 중력 영향 안받음
+	ProjectileMovement->ProjectileGravityScale = 1.0f;
 
-	FVector Start = StartTransform.GetLocation();
-	// FVector Target = Start + ProjectileParams.TargetLocation;
-
-	FVector Direction = (ProjectileParams.TargetLocation - Start).GetSafeNormal();
-	float Distance = 100.f; // 예를 들어 100만큼 떨어지게 하고싶을 때
-	FVector Target = Start + Direction * Distance;
-	
 	FVector LaunchVelocity;
+	FVector Start = StartTransform.GetLocation();
+	FVector Target = StartTransform.TransformPosition(ProjectileParams.TargetOffset);
+	//FVector Target = Start + ProjectileParams.TargetOffset;
 
 	bool bSuccess = UGameplayStatics::SuggestProjectileVelocity_CustomArc(
 		this,
 		LaunchVelocity,
 		Start,
 		Target,
+		GetWorld()->GetGravityZ(),
 		ProjectileParams.ArcParam
 	);
+
 	if (!bSuccess)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Failed to calculate arc velocity from %s to %s"), *Start.ToString(),
@@ -157,7 +128,21 @@ void ADrgProjectile::StartProjectileArc()
 	if (bSuccess && ProjectileMovement)
 	{
 		ProjectileMovement->Velocity = LaunchVelocity;
-		ProjectileMovement->Velocity.Z += ProjectileParams.VelocityZ;
+	}
+}
+
+void ADrgProjectile::StartProjectileChase()
+{
+	if (!ProjectileParams.bEnableChase)
+		return;
+
+	// AActor* TargetActor = FindTargetActor();
+
+	if (AActor* TargetActor = FindTargetActor())
+	{
+		ProjectileMovement->bIsHomingProjectile = true;
+		ProjectileMovement->HomingAccelerationMagnitude = ProjectileParams.ChaseSpeed; // 예: 5000.f 정도 추천
+		ProjectileMovement->HomingTargetComponent = TargetActor->GetRootComponent();
 	}
 }
 
@@ -190,16 +175,18 @@ void ADrgProjectile::DestroyProjectile()
 AActor* ADrgProjectile::FindTargetActor()
 {
 	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), FoundActors);
 
-	static const FName FindTag(TEXT("Player"));
+	UGameplayStatics::GetAllActorsWithTag(
+		GetWorld(),
+		FName("Team.Enemy"),
+		FoundActors
+	);
 
-	for (AActor* Actor : FoundActors)
+
+	if (FoundActors.Num() > 0)
 	{
-		if (!Actor->ActorHasTag(FindTag))
-		{
-			return Actor;
-		}
+		AActor* FirstEnemy = FoundActors[0];
+		return FirstEnemy;
 	}
 
 	return nullptr;

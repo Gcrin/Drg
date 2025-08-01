@@ -20,29 +20,20 @@ struct FDrgProjectileParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bEnableArc = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (bEnableArc = "true", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bEnableArc", EditConditionHides))
 	float ArcParam = 0.5f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (bEnableArc = "true", EditConditionHides))
-	FVector TargetLocation;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (bEnableArc = "true", EditConditionHides))
-	float VelocityZ = 0.0f;
-	
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bEnableArc", EditConditionHides))
+	FVector TargetOffset;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bEnableChase = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float ChaseSpeed = 0.5f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bEnableChase", EditConditionHides))
+	float ChaseSpeed = 5000.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float ChaseDistance = 0.5f;
-
-	// 투사체의 최대거리
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.1", UIMin = "0.1"))
-	float MaxRange = 1.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bEnableChase", EditConditionHides))
+	float ChaseDistance = 1000.f;
 };
 
 UCLASS()
@@ -52,9 +43,6 @@ class DRG_API ADrgProjectile : public AActor
 
 public:
 	ADrgProjectile();
-
-
-	ADrgProjectile(const FDrgProjectileParams& Params);
 	FGameplayEffectSpecHandle DamageEffectSpecHandle;
 
 protected:
@@ -88,4 +76,5 @@ protected:
 public:
 	void SetMaxRange(float ArgMaxRange);
 	void StartProjectileArc();
+	void StartProjectileChase();
 };
