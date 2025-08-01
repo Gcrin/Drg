@@ -14,15 +14,15 @@ struct FDrgAbilityLevelData
 	GENERATED_BODY()
 
 	// 어빌리티 데미지
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats", meta = (DisplayName = "데미지"))
 	float Damage = 0.0f;
 	// 어빌리티 쿨타임
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats", meta = (DisplayName = "쿨타임"))
 	float CooldownDuration = 1.0f;
 	// 어빌리티 투사체 개수
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats", meta = (DisplayName = "투사체 수"))
 	int32 ProjectileCount = 1;
 	// 어빌리티 범위
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats", meta = (DisplayName = "효과 범위"))
 	float AreaOfEffect = 100.0f;
 };
