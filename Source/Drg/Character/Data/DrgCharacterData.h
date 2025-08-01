@@ -46,7 +46,15 @@ public:
 	// 캐릭터가 시작 시점에 보유할 기본 어빌리티 목록
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
-
+	
+	// 캐릭터가 사용할 어빌리티별 애님 몽타주 목록 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TMap<FGameplayTag, TObjectPtr<UAnimMontage>> AbilityMontages;
+	
+	// 태그에 해당하는 몽타주를 찾아 반환하는 헬퍼 함수 
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	UAnimMontage* GetMontageForAbilityTag(const FGameplayTag& AbilityTag) const;
+	
 	// 캐릭터의 외형을 결정하는 스켈레탈 메시
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Mesh")
 	TObjectPtr<USkeletalMesh> SkeletalMesh;
