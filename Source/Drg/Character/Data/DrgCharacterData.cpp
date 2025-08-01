@@ -59,6 +59,17 @@ bool UDrgCharacterData::IsValidData() const
 	return true;
 }
 
+UAnimMontage* UDrgCharacterData::GetMontageForAbilityTag(const FGameplayTag& AbilityTag) const
+{
+	if (const TObjectPtr<UAnimMontage>* FoundMontage = AbilityMontages.Find(AbilityTag))
+	{
+		return *FoundMontage;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("'%s' 데이터 에셋에서 '%s' 태그에 해당하는 몽타주를 찾을 수 없습니다."), *GetName(), *AbilityTag.ToString());
+	return nullptr;
+}
+
 #if WITH_EDITOR
 void UDrgCharacterData::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
