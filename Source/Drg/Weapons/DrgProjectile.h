@@ -71,8 +71,6 @@ protected:
 	void CheckDistance();
 	virtual void DestroyProjectile();
 
-	AActor* FindTargetActor();
-
 public:
 	void SetMaxRange(float ArgMaxRange);
 	void StartProjectileArc();

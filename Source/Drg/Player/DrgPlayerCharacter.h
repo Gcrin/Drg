@@ -23,10 +23,16 @@ public:
 
 	virtual void HandleOnLevelUp(AActor* Actor);
 
-protected:
+	AActor* GetTargetAcotr() const;
+	void SetTargetAcotr(AActor* pTargetActor);
 
+	UFUNCTION(BlueprintCallable, Category="Target",
+		meta = (DisplayName = "Find Target Actor", ToolTip = "타겟을 찾아 멤버변수로 저장"))
+	void FindTargetActor();
+
+protected:
 	virtual void PossessedBy(AController* NewController) override;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
 	TObjectPtr<USpringArmComponent> SpringArmComponent;
 
@@ -35,4 +41,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|Data")
 	UDataTable* MaxExperienceDataTable;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Drg|TargetActor")
+	float TraceDistance = 1000.f;
+
+private:
+	//투사체가 가져가야할 TargetActor
+	AActor* TargetActor = nullptr;
 };

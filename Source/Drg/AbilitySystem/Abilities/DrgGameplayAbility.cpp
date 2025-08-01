@@ -6,12 +6,19 @@
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
+#include "Drg/Player/DrgPlayerCharacter.h"
+#include "Kismet/GameplayStatics.h"
 
 void UDrgGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                           const FGameplayAbilityActorInfo* ActorInfo,
                                           const FGameplayAbilityActivationInfo ActivationInfo,
                                           const FGameplayEventData* TriggerEventData)
 {
+	//Ability 실행전 플레이어는 FindTargetActor()
+	ADrgPlayerCharacter* DrgPlayerCharacter = Cast<ADrgPlayerCharacter>(
+		UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	DrgPlayerCharacter->FindTargetActor();
+	
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	StartCooldown();

@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
 #include "Drg/Character/DrgBaseCharacter.h"
+#include "Drg/Player/DrgPlayerCharacter.h"
 #include "Drg/System/DrgGameplayStatics.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -136,12 +137,15 @@ void ADrgProjectile::StartProjectileChase()
 	if (!ProjectileParams.bEnableChase)
 		return;
 
-	// AActor* TargetActor = FindTargetActor();
+	//플레이어로 부터 타깃 받아옴
+	ADrgPlayerCharacter* DrgPlayerCharacter = Cast<ADrgPlayerCharacter>(
+		UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 
-	if (AActor* TargetActor = FindTargetActor())
+	AActor* TargetActor = DrgPlayerCharacter->GetTargetAcotr();
+	if (DrgPlayerCharacter && TargetActor)
 	{
 		ProjectileMovement->bIsHomingProjectile = true;
-		ProjectileMovement->HomingAccelerationMagnitude = ProjectileParams.ChaseSpeed; // 예: 5000.f 정도 추천
+		ProjectileMovement->HomingAccelerationMagnitude = ProjectileParams.ChaseSpeed; //추적속도,블루프린트 에서 수정가능
 		ProjectileMovement->HomingTargetComponent = TargetActor->GetRootComponent();
 	}
 }
@@ -170,60 +174,4 @@ void ADrgProjectile::CheckDistance()
 void ADrgProjectile::DestroyProjectile()
 {
 	Destroy();
-}
-
-AActor* ADrgProjectile::FindTargetActor()
-{
-	TArray<AActor*> FoundActors;
-
-	// UGameplayStatics::GetAllActorsWithTag(
-	// 	GetWorld(),
-	// 	FName("Team.Enemy"),
-	// 	FoundActors
-	// );
-	UGameplayStatics::GetAllActorsOfClass(
-		GetWorld(),
-		ADrgBaseCharacter::StaticClass(),
-		FoundActors
-	);
-	if (FoundActors.Num() == 0)
-		return nullptr;
-
-	AActor* NearestEnemy = nullptr;
-	float NearestDistance = ProjectileParams.ChaseDistance;
-	FVector StartLocation = StartTransform.GetLocation();
-
-	UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
-
-	for (AActor* TargetActor : FoundActors)
-	{
-		if (!IsValid(TargetActor))
-			continue;
-
-		if (TargetActor == this)
-			continue;
-
-
-		UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
-		if (UDrgGameplayStatics::AreTeamsFriendly(OwnerAsc, TargetAsc))
-		{
-			continue;
-		}
-
-		//죽은엑터 제외
-		ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(TargetActor);
-		if (TargetCharacter && TargetCharacter->IsDead())
-		{
-			continue;
-		}
-
-		float Distance = FVector::Dist(StartLocation, TargetActor->GetActorLocation());
-		if (Distance < NearestDistance)
-		{
-			NearestDistance = Distance;
-			NearestEnemy = TargetActor;
-		}
-	}
-
-	return NearestEnemy;
 }
