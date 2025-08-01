@@ -34,6 +34,15 @@ UDataTable* ADrgPlayerCharacter::GetDataTable() const
 void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
 {
 	// ToDo: 레벨 업시 표시되는 UI 구현해주세요.
+
+	//- Test
+	TArray<FDrgUpgradeChoice> AbilityChoices = GetLevelUpChoices(3);
+
+	if (AbilityChoices.Num() > 0)
+	{
+		const FDrgUpgradeChoice& AutoSelectedChoice = AbilityChoices[0];
+		ApplyUpgradeChoice(AutoSelectedChoice);
+	}
 }
 
 void ADrgPlayerCharacter::PossessedBy(AController* NewController)
