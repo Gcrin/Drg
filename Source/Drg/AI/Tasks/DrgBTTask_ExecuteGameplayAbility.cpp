@@ -53,11 +53,9 @@ EBTNodeResult::Type UDrgBTTask_ExecuteGameplayAbility::ExecuteTask(UBehaviorTree
 	FGameplayTagContainer TagContainer(AbilityTag);
 	if (ASC->TryActivateAbilitiesByTag(TagContainer, true))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Ability Activated"));
 		MyMemory->bIsAbilityActive = true;
 		return EBTNodeResult::InProgress;
 	}
-	UE_LOG(LogTemp, Error, TEXT("Ability is Not Activated"));
 
 	Cleanup(OwnerComp, NodeMemory);
 	return EBTNodeResult::Failed;
