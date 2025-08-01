@@ -18,38 +18,49 @@ UDrgBTTask_ExecuteGameplayAbility::UDrgBTTask_ExecuteGameplayAbility()
 
 EBTNodeResult::Type UDrgBTTask_ExecuteGameplayAbility::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	CachedNodeMemory = NodeMemory;
-
 	FBTExecuteGameplayAbilityMemory* MyMemory = reinterpret_cast<FBTExecuteGameplayAbilityMemory*>(NodeMemory);
 	MyMemory->bIsAbilityActive = false;
 
 	auto* AIController = OwnerComp.GetAIOwner();
-	check(AIController);
+	if (!ensure(AIController)) { return EBTNodeResult::Failed; }
+
 	auto* Pawn = AIController->GetPawn();
-	check(Pawn);
+	if (!ensure(Pawn)) { return EBTNodeResult::Failed; }
 
 	auto* ASI = Cast<IAbilitySystemInterface>(Pawn);
-	if (!ensure(ASI)) return EBTNodeResult::Failed;
+	if (!ensure(ASI)) { return EBTNodeResult::Failed; }
 
 	auto* ASC = ASI->GetAbilitySystemComponent();
-	if (!ensure(ASC)) return EBTNodeResult::Failed;
+	if (!ensure(ASC)) { return EBTNodeResult::Failed; }
 
 	if (!ensure(AbilityTag.IsValid()))
 	{
-		UE_LOG(LogBehaviorTree, Warning, TEXT("BTTask '%s'의 AbilityTag가 설정되지 않았습니다."), *GetName());
+		UE_LOG(LogBehaviorTree, Warning, TEXT("BTTask '%s'의 AbilityTag가 비어있습니다."), *GetName());
 		return EBTNodeResult::Failed;
 	}
 
 	MyMemory->ASC = ASC;
-
-	// OwnerComp 저장
+	// ExecuteTask에서
 	MyMemory->OwnerComp = &OwnerComp;
-	// Delegate 바인딩
-	FGameplayAbilityEndedDelegate::FDelegate Delegate =
-		FGameplayAbilityEndedDelegate::FDelegate::CreateUObject(
-			this, &UDrgBTTask_ExecuteGameplayAbility::OnAbilityEnded);
-	MyMemory->OnAbilityEndedHandle = ASC->OnAbilityEnded.Add(Delegate);
+	// [핵심 수정] AddLambda를 사용하여 델리게이트를 직접 등록
+	MyMemory->OnAbilityEndedHandle = ASC->OnAbilityEnded.AddLambda(
+		[this, &OwnerComp, NodeMemory](const FAbilityEndedData& EndedData)
+		{
+			FBTExecuteGameplayAbilityMemory* MyMemory = reinterpret_cast<FBTExecuteGameplayAbilityMemory*>(NodeMemory);
 
+			if (MyMemory && MyMemory->bIsAbilityActive && EndedData.AbilityThatEnded && EndedData.AbilityThatEnded->
+				GetAssetTags().HasTag(this->AbilityTag))
+			{
+				MyMemory->bIsAbilityActive = false;
+				// 태스크가 유효한 상태일 때만 종료 함수를 호출하도록 방어 코드 추가
+				if (MyMemory->OwnerComp.IsValid())
+				{
+					FinishLatentTask(*MyMemory->OwnerComp, EBTNodeResult::Succeeded);
+				}
+			}
+		});
+
+	// 어빌리티 활성화 시도
 	FGameplayTagContainer TagContainer(AbilityTag);
 	if (ASC->TryActivateAbilitiesByTag(TagContainer, true))
 	{
@@ -57,6 +68,7 @@ EBTNodeResult::Type UDrgBTTask_ExecuteGameplayAbility::ExecuteTask(UBehaviorTree
 		return EBTNodeResult::InProgress;
 	}
 
+	// 활성화 실패 시 즉시 정리 및 실패 처리
 	Cleanup(OwnerComp, NodeMemory);
 	return EBTNodeResult::Failed;
 }
@@ -83,35 +95,6 @@ void UDrgBTTask_ExecuteGameplayAbility::OnTaskFinished(UBehaviorTreeComponent& O
 uint16 UDrgBTTask_ExecuteGameplayAbility::GetInstanceMemorySize() const
 {
 	return sizeof(FBTExecuteGameplayAbilityMemory);
-}
-
-void UDrgBTTask_ExecuteGameplayAbility::OnAbilityEnded(const FAbilityEndedData& EndedData)
-{
-	// if (!CachedNodeMemory) return;
-	//
-	// FBTExecuteGameplayAbilityMemory* MyMemory = (FBTExecuteGameplayAbilityMemory*)CachedNodeMemory;
-	//
-	// if (UBehaviorTreeComponent* OwnerComp = MyMemory->OwnerComp)
-	// {
-	// 	FinishLatentTask(*OwnerComp, EBTNodeResult::Succeeded);
-	// }
-	for (TObjectIterator<UBehaviorTreeComponent> It; It; ++It)
-	{
-		UBehaviorTreeComponent* BehaviorTreeComponent = *It;
-		if (BehaviorTreeComponent)
-		{
-			uint8* NodeMemory = BehaviorTreeComponent->GetNodeMemory(this, BehaviorTreeComponent->FindInstanceContainingNode(this));
-			FBTExecuteGameplayAbilityMemory* MyMemory = reinterpret_cast<FBTExecuteGameplayAbilityMemory*>(NodeMemory);
-	
-			// 우리가 실행한 어빌리티가 맞는지, 태스크가 아직 활성 상태인지 확인
-			if (MyMemory->bIsAbilityActive && EndedData.AbilityThatEnded && EndedData.AbilityThatEnded->GetAssetTags().HasTag(AbilityTag))
-			{
-				MyMemory->bIsAbilityActive = false;
-				FinishLatentTask(*BehaviorTreeComponent, EBTNodeResult::Succeeded);
-			}
-		}
-	}
-
 }
 
 void UDrgBTTask_ExecuteGameplayAbility::Cleanup(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
