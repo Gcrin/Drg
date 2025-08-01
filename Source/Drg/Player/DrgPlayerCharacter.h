@@ -8,6 +8,25 @@
 
 class UCameraComponent;
 class USpringArmComponent;
+class UDrgAbilityDataAsset;
+
+USTRUCT(BlueprintType)
+struct FDrgUpgradeChoice
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
+	TObjectPtr<UDrgAbilityDataAsset> AbilityData = nullptr;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
+	bool bIsUpgrade = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
+	int32 PreviousLevel = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
+	int32 NextLevel = 0;
+};
 /**
  * 
  */
@@ -35,4 +54,17 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|Data")
 	UDataTable* MaxExperienceDataTable;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability")
+	TArray<TObjectPtr<UDrgAbilityDataAsset>> AllAvailableAbilities;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Ability")
+	TMap<TObjectPtr<UDrgAbilityDataAsset>, FGameplayAbilitySpecHandle> OwnedAbilityHandles;
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
+	TArray<FDrgUpgradeChoice> GetLevelUpChoices(int32 NumChoices = 3);
+	
+	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
+	void ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice); 
 };

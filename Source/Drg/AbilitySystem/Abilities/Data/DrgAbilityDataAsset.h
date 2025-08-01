@@ -5,8 +5,8 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "DrgAbilityStatsByLevel.h"
-#include "GameplayAbilitySpec.h"
-#include "UDrgAbilityDataAsset.generated.h"
+#include "Abilities/GameplayAbility.h"
+#include "DrgAbilityDataAsset.generated.h"
 
 /**
  *  @brief 어빌리티의 주요 데이터를 저장
@@ -14,7 +14,7 @@
  *  DataAsset = 동기
  */
 UCLASS(BlueprintType)
-class DRG_API UUDrgAbilityDataAsset : public UPrimaryDataAsset
+class DRG_API UDrgAbilityDataAsset : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 

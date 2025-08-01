@@ -4,6 +4,7 @@
 #include "DrgPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#include "Drg/AbilitySystem/Abilities/Data/DrgAbilityDataAsset.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
 
@@ -42,5 +43,103 @@ void ADrgPlayerCharacter::PossessedBy(AController* NewController)
 	if (AttributeSet)
 	{
 		AttributeSet->OnLevelUp.AddUObject(this, &ADrgPlayerCharacter::HandleOnLevelUp);
+	}
+}
+
+TArray<FDrgUpgradeChoice> ADrgPlayerCharacter::GetLevelUpChoices(int32 NumChoices) // 선택지 개수
+{
+	TArray<FDrgUpgradeChoice> FinalChoices;
+	if (!AbilitySystemComponent || AllAvailableAbilities.Num() == 0)
+	{
+		return FinalChoices;
+	}
+	
+	TArray<FDrgUpgradeChoice> CandidateChoices;
+	TArray<float> CandidateWeights;
+	float TotalWeight = 0.0f;
+
+	for (UDrgAbilityDataAsset* AbilityData : AllAvailableAbilities)
+	{
+		if (!AbilityData) continue;
+
+		FDrgUpgradeChoice Choice;
+		Choice.AbilityData = AbilityData;
+
+		if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(AbilityData))
+		{
+			const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle);
+			if (Spec && Spec->Level < AbilityData->GetMaxLevel())
+			{
+				Choice.bIsUpgrade = true;
+				Choice.PreviousLevel = Spec->Level;
+				Choice.NextLevel = Spec->Level + 1;
+			}
+		}
+		else
+		{
+			Choice.bIsUpgrade = false;
+			Choice.PreviousLevel = 0;
+			Choice.NextLevel = 1;
+		}
+		CandidateChoices.Add(Choice);
+		CandidateWeights.Add(AbilityData->SelectionWeight);
+		TotalWeight += AbilityData->SelectionWeight;
+	}
+	
+	NumChoices = FMath::Min(NumChoices, CandidateChoices.Num());
+	for (int32 i = 0; i < NumChoices; ++i)
+	{
+		if (TotalWeight <= 0.0f) break;
+        
+		float RandomValue = FMath::FRandRange(0.0f, TotalWeight);
+		float CurrentWeightSum = 0.0f;
+        
+		for (int32 j = 0; j < CandidateChoices.Num(); ++j)
+		{
+			CurrentWeightSum += CandidateWeights[j];
+			if (RandomValue <= CurrentWeightSum)
+			{
+				FinalChoices.Add(CandidateChoices[j]);
+				TotalWeight -= CandidateWeights[j];
+				CandidateWeights[j] = 0.0f;
+				break;
+			}
+		}
+	}
+
+	return FinalChoices;
+}
+
+void ADrgPlayerCharacter::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice)
+{
+	if (!SelectedChoice.AbilityData || !SelectedChoice.AbilityData->AbilityClass || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	if (SelectedChoice.bIsUpgrade)
+	{
+		if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(SelectedChoice.AbilityData))
+		{
+			if (FGameplayAbilitySpec* SpecToUpgrade = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle))
+			{
+				SpecToUpgrade->Level = SelectedChoice.NextLevel;
+				AbilitySystemComponent->MarkAbilitySpecDirty(*SpecToUpgrade);
+				UE_LOG(LogTemp, Warning, TEXT("'%s' Ability Upgraded to Lv.%d"),
+				       *SelectedChoice.AbilityData->AbilityName.ToString(), SpecToUpgrade->Level);
+			}
+		}
+	}
+	else
+	{
+		FGameplayAbilitySpec NewSpec(SelectedChoice.AbilityData->AbilityClass, SelectedChoice.NextLevel, INDEX_NONE,
+		                             SelectedChoice.AbilityData);
+		const FGameplayAbilitySpecHandle NewHandle = AbilitySystemComponent->GiveAbility(NewSpec);
+		if (NewHandle.IsValid())
+		{
+			OwnedAbilityHandles.Add(SelectedChoice.AbilityData, NewHandle);
+			UE_LOG(LogTemp, Warning, TEXT("'%s' Ability Granted at Lv.%d"),
+			       *SelectedChoice.AbilityData->AbilityName.ToString(), SelectedChoice.NextLevel);
+		}
 	}
 }
