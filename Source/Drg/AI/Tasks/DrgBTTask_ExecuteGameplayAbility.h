@@ -13,7 +13,7 @@ struct FBTExecuteGameplayAbilityMemory
 	TWeakObjectPtr<UAbilitySystemComponent> ASC;
 	FDelegateHandle OnAbilityEndedHandle;
 	bool bIsAbilityActive = false;
-	UBehaviorTreeComponent* OwnerComp = nullptr;
+	TWeakObjectPtr<UBehaviorTreeComponent> OwnerComp;
 };
 
 UCLASS()
@@ -36,8 +36,5 @@ protected:
 	virtual uint16 GetInstanceMemorySize() const override;
 
 private:
-	void OnAbilityEnded(const FAbilityEndedData& EndedData);
 	void Cleanup(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory);
-
-	uint8* CachedNodeMemory = nullptr;
 };
