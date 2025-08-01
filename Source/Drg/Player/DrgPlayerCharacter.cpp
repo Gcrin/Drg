@@ -64,12 +64,14 @@ TArray<FDrgUpgradeChoice> ADrgPlayerCharacter::GetLevelUpChoices(int32 NumChoice
 
 		FDrgUpgradeChoice Choice;
 		Choice.AbilityData = AbilityData;
+		bool bShouldBeCandidate = false;
 
 		if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(AbilityData))
 		{
 			const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle);
 			if (Spec && Spec->Level < AbilityData->GetMaxLevel())
 			{
+				bShouldBeCandidate = true;
 				Choice.bIsUpgrade = true;
 				Choice.PreviousLevel = Spec->Level;
 				Choice.NextLevel = Spec->Level + 1;
@@ -77,13 +79,18 @@ TArray<FDrgUpgradeChoice> ADrgPlayerCharacter::GetLevelUpChoices(int32 NumChoice
 		}
 		else
 		{
+			bShouldBeCandidate = true;
 			Choice.bIsUpgrade = false;
 			Choice.PreviousLevel = 0;
 			Choice.NextLevel = 1;
 		}
-		CandidateChoices.Add(Choice);
-		CandidateWeights.Add(AbilityData->SelectionWeight);
-		TotalWeight += AbilityData->SelectionWeight;
+		
+		if (bShouldBeCandidate)
+		{
+			CandidateChoices.Add(Choice);
+			CandidateWeights.Add(AbilityData->SelectionWeight);
+			TotalWeight += AbilityData->SelectionWeight;
+		}
 	}
 	
 	NumChoices = FMath::Min(NumChoices, CandidateChoices.Num());
@@ -91,7 +98,7 @@ TArray<FDrgUpgradeChoice> ADrgPlayerCharacter::GetLevelUpChoices(int32 NumChoice
 	{
 		if (TotalWeight <= 0.0f) break;
         
-		float RandomValue = FMath::FRandRange(0.0f, TotalWeight);
+		float RandomValue = FMath::FRandRange(KINDA_SMALL_NUMBER, TotalWeight);
 		float CurrentWeightSum = 0.0f;
         
 		for (int32 j = 0; j < CandidateChoices.Num(); ++j)
@@ -125,7 +132,7 @@ void ADrgPlayerCharacter::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedCh
 			{
 				SpecToUpgrade->Level = SelectedChoice.NextLevel;
 				AbilitySystemComponent->MarkAbilitySpecDirty(*SpecToUpgrade);
-				UE_LOG(LogTemp, Warning, TEXT("'%s' Ability Upgraded to Lv.%d"),
+				UE_LOG(LogTemp, Warning, TEXT("'%s' 강화! Lv.%d"),
 				       *SelectedChoice.AbilityData->AbilityName.ToString(), SpecToUpgrade->Level);
 			}
 		}
@@ -138,7 +145,7 @@ void ADrgPlayerCharacter::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedCh
 		if (NewHandle.IsValid())
 		{
 			OwnedAbilityHandles.Add(SelectedChoice.AbilityData, NewHandle);
-			UE_LOG(LogTemp, Warning, TEXT("'%s' Ability Granted at Lv.%d"),
+			UE_LOG(LogTemp, Warning, TEXT("'%s' 획득! Lv.%d"),
 			       *SelectedChoice.AbilityData->AbilityName.ToString(), SelectedChoice.NextLevel);
 		}
 	}

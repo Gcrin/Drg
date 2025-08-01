@@ -20,22 +20,22 @@ class DRG_API UDrgAbilityDataAsset : public UPrimaryDataAsset
 
 public:
 	// 어빌리티 이름
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "이름"))
 	FText AbilityName;
 	// 어빌리티 설명
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (MultiLine = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (MultiLine = true), meta = (DisplayName = "설명"))
 	FText AbilityDescription;
 	// 어빌리티 아이콘
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "아이콘"))
 	TObjectPtr<UTexture2D> AbilityIcon;
 	// 어빌리티 등장 가중치
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Upgrade", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Upgrade", meta = (ClampMin = "0.0"), meta = (DisplayName = "가중치"))
 	float SelectionWeight = 1.0f;
 	// 어빌리티 레벨 별 데이터
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Upgrade")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Upgrade", meta = (DisplayName = "레벨 데이터 / 인덱스[0] = 1Lv"))
 	TArray<FDrgAbilityLevelData> AbilityLevelData;
 	// 어빌리티 블루프린트 클래스
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|GAS")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|GAS", meta = (DisplayName = "어빌리티 클래스"))
 	TSubclassOf<UGameplayAbility> AbilityClass;
 
 public:
