@@ -10,6 +10,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCardClicked, int32, SkillIndex);
 class UButton;
 class UTextBlock;
 class UImage;
+struct FStreamableHandle;
 
 UCLASS()
 class DRG_API UDrgSkillCardWidget : public UUserWidget
@@ -27,6 +28,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void BeginDestroy() override;
 
 	// 블루프린트에서 바인딩할 UI 컴포넌트들
 	UPROPERTY(meta = (BindWidget))
@@ -44,10 +46,21 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> SkillTypeText;
 
+	// 디폴트 스킬 아이콘 (에디터에서 설정)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UTexture2D> DefaultSkillIcon;
+
 private:
 	UFUNCTION()
 	void OnButtonClicked();
 
+	// 비동기 아이콘 로딩
+	void LoadSkillIconAsync();
+	void OnIconLoaded();
+
 	FDrgSkillData SkillData;
 	int32 SkillIndex;
+
+	// 비동기 로딩 핸들
+	TSharedPtr<FStreamableHandle> IconLoadHandle;
 };

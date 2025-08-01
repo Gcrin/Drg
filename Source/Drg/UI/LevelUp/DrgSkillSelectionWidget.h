@@ -37,9 +37,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> SkillCardWidgetClass;
 
+	// 시간 느리게 하기 배율 (0.1 = 10배 느리게)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI", meta = (ClampMin = "0.01", ClampMax = "1.0"))
+	float TimeSlowRatio = 0.1f;
+
 private:
 	UFUNCTION()
 	void OnSkillCardClicked(int32 SkillIndex);
 
 	TArray<FDrgSkillData> CurrentSkillOptions;
+
+	// 원래 시간 배율 저장
+	float OriginalTimeDilation = 1.0f;
 };
