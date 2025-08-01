@@ -48,6 +48,7 @@ void ADrgSpawnAI::InitializePool()
 
 void ADrgSpawnAI::StartSpawnTimer()
 {
+	CurrentSpawnCount = 0;
 	CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	if (!CurrentWaveRow) return;
 
@@ -176,15 +177,21 @@ ADrgBaseCharacter* ADrgSpawnAI::SpawnAIFromPool()
 	if (FindSafeRandomPointInNav(SpawnLocation))
 	{
 		FTransform SpawnTransform = FTransform(FRotator::ZeroRotator, SpawnLocation, FVector(1.f));
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 		ADrgBaseCharacter* SpawnedAI = GetWorld()->SpawnActorDeferred<ADrgBaseCharacter>(
 			AICharacterClass,
-			SpawnTransform
+			SpawnTransform,
+			this,
+			nullptr,
+			SpawnParams.SpawnCollisionHandlingOverride
 		);
 		SpawnedAI->SetCharacterData(GetRandomAICharacterData());
-		UGameplayStatics::FinishSpawningActor(SpawnedAI, SpawnTransform);
 		SpawnedAI->SetActorLocation(
 			SpawnedAI->GetActorLocation() + FVector(
 				0, 0, SpawnedAI->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
+		UGameplayStatics::FinishSpawningActor(SpawnedAI, SpawnTransform);
+
 		return SpawnedAI;
 	}
 	else
