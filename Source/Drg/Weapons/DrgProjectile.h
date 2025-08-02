@@ -33,7 +33,13 @@ struct FDrgProjectileParams
 	float ChaseSpeed = 5000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bEnableChase", EditConditionHides))
-	float ChaseDistance = 1000.f;
+	float DetectionRadius = 1000.f;
+};
+
+enum class EProjectileState : uint8
+{
+	FlyingStraight, // 직선 비행 상태
+	Homing // 유도 상태
 };
 
 UCLASS()
@@ -43,6 +49,9 @@ class DRG_API ADrgProjectile : public AActor
 
 public:
 	ADrgProjectile();
+
+	void SetMaxRange(float ArgMaxRange);
+
 	FGameplayEffectSpecHandle DamageEffectSpecHandle;
 
 protected:
@@ -53,7 +62,12 @@ protected:
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	                     int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	// 충돌을 감지할 구체 컴포넌트
+	void StartProjectileArc();
+	void DetectTarget();
+
+	UPROPERTY(EditAnywhere, Category = "Drg|Parameters")
+	FDrgProjectileParams ProjectileParams;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<USphereComponent> SphereComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
@@ -65,14 +79,12 @@ protected:
 	float MoveDistance = 0.f;
 	FTransform StartTransform = FTransform();
 
-	UPROPERTY(EditAnywhere, Category = "Drg|Param")
-	FDrgProjectileParams ProjectileParams;
 	void CalcDistance();
 	void CheckDistance();
 	virtual void DestroyProjectile();
 
-public:
-	void SetMaxRange(float ArgMaxRange);
-	void StartProjectileArc();
-	void StartProjectileChase();
+private:
+	EProjectileState ProjectileState;
+	FTimerHandle DetectTargetTimerHandle;
+	TWeakObjectPtr<AActor> HomingTarget;
 };
