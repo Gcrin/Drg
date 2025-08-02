@@ -92,7 +92,7 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	{
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
 
-		SpawnedProjectile->SetMaxRange(Params.MaxRange);
+		SpawnedProjectile->InitialLifeSpan = Params.ProjectileLifeSpan;
 
 		if (Params.DamageEffectClass)
 		{
@@ -163,13 +163,12 @@ bool UDrgAbilityTask_FireProjectile::CalculateSpawnTransform(ACharacter* pCharac
 
 	FTransform SocketWorldTransform;
 	const FRotator CharacterRotation = pCharacter->GetActorRotation();
-	
+
 	if (pMesh->DoesSocketExist(Params.SocketName))
 	{
 		//SocketWorldTransform = pMesh->GetSocketTransform(Params.SocketName);
 		const FVector SocketLocation = pMesh->GetSocketLocation(Params.SocketName);
 
-		
 
 		SocketWorldTransform = FTransform(CharacterRotation, SocketLocation);
 	}

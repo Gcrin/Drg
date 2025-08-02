@@ -48,9 +48,9 @@ struct FDrgFireProjectileParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.01", UIMin = "0.01"))
 	float DelayBetweenShots = 0.1f;
 
-	// 투사체의 최대거리
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.1", UIMin = "0.1"))
-	float MaxRange = 1.0f;
+	// 투사체가 파괴되기까지의 시간(초). 사거리 역할
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.01", UIMin = "0.01"))
+	float ProjectileLifeSpan = 3.0f;
 };
 
 UCLASS()
