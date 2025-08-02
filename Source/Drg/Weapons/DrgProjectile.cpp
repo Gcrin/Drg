@@ -35,6 +35,9 @@ ADrgProjectile::ADrgProjectile()
 	ProjectileMovement->InitialSpeed = 1500.f;
 	ProjectileMovement->MaxSpeed = 1500.f;
 	ProjectileMovement->ProjectileGravityScale = 0.f; // 중력 영향 안받음
+
+	// 투사체가 속도 방향을 따라 회전
+	ProjectileMovement->bRotationFollowsVelocity = true;
 }
 
 void ADrgProjectile::BeginPlay()
