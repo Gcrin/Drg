@@ -62,7 +62,7 @@ void ADrgProjectile::BeginPlay()
 	}
 
 	// 추적 기능이 활성화된 경우, 주기적으로 타겟 탐색 시작
-	if (ProjectileParams.bEnableChase)
+	if (ProjectileParams.bEnableHoming)
 	{
 		GetWorld()->GetTimerManager().SetTimer(
 			DetectTargetTimerHandle, this, &ADrgProjectile::DetectTarget, 0.1f, true);
@@ -135,7 +135,7 @@ void ADrgProjectile::StartProjectileArc()
 		Start,
 		Target,
 		GetWorld()->GetGravityZ(),
-		ProjectileParams.ArcParam
+		ProjectileParams.ArcHeightRatio
 	);
 
 	if (!bSuccess)
@@ -233,7 +233,7 @@ void ADrgProjectile::DetectTarget()
 		// ProjectileMovementComponent을 유도 모드로 설정
 		ProjectileMovement->bIsHomingProjectile = true;
 		ProjectileMovement->HomingTargetComponent = HomingTarget->GetRootComponent();
-		ProjectileMovement->HomingAccelerationMagnitude = ProjectileParams.ChaseSpeed;
+		ProjectileMovement->HomingAccelerationMagnitude = ProjectileParams.HomingAcceleration;
 
 		//타이머 종료
 		GetWorld()->GetTimerManager().ClearTimer(DetectTargetTimerHandle);
