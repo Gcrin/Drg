@@ -44,6 +44,17 @@ void ADrgProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (GetOwner())
+	{
+		UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
+		if (OwnerAsc)
+		{
+			const FGameplayTag TeamRootTag = FGameplayTag::RequestGameplayTag(TEXT("Team"));
+			// 주인의 태그 중 Team 카테고리에 속하는 태그를 찾아서 저장.
+			OwnerTeamTag = OwnerAsc->GetOwnedGameplayTags().Filter(FGameplayTagContainer(TeamRootTag)).First();
+		}
+	}
+
 	StartTransform = GetActorTransform();
 
 	// 오버랩 이벤트가 발생하면 OnSphereOverlap 함수를 호출하도록 바인딩
@@ -80,10 +91,9 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
 	if (TargetCharacter && TargetCharacter->IsDead()) return;
 
-	UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
 	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 
-	if (UDrgGameplayStatics::AreTeamsFriendly(OwnerAsc, TargetAsc))
+	if (UDrgGameplayStatics::AreTeamsFriendly(OwnerTeamTag, TargetAsc))
 	{
 		return;
 	}
@@ -178,9 +188,6 @@ void ADrgProjectile::DetectTarget()
 	// 최대 탐지 거리
 	float NearDistance = ProjectileParams.DetectionRadius;
 
-	// 발사한 주인의 어빌리티 시스템 컴포넌트를 가져와 팀을 식별하는 데 사용
-	UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
-
 	// 탐색된 모든 액터들을 순회해서 가장 가까운 적을 찾기
 	for (AActor* TargetCandidate : OutActors)
 	{
@@ -188,7 +195,7 @@ void ADrgProjectile::DetectTarget()
 
 		// 주인과 후보가 아군이라면 continue
 		UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetCandidate);
-		if (OwnerAsc && TargetAsc && UDrgGameplayStatics::AreTeamsFriendly(OwnerAsc, TargetAsc))
+		if (UDrgGameplayStatics::AreTeamsFriendly(OwnerTeamTag, TargetAsc))
 		{
 			continue;
 		}
