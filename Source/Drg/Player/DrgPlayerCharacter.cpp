@@ -37,7 +37,7 @@ void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
 	// ToDo: 레벨 업시 표시되는 UI 구현해주세요.
 }
 
-void ADrgPlayerCharacter::SetTargetAcotr(AActor* pTargetActor)
+void ADrgPlayerCharacter::SetTargetActor(AActor* pTargetActor)
 {
 	TargetActor = pTargetActor;
 }

@@ -24,7 +24,7 @@ public:
 	virtual void HandleOnLevelUp(AActor* Actor);
 
 	AActor* GetTargetAcotr() const;
-	void SetTargetAcotr(AActor* pTargetActor);
+	void SetTargetActor(AActor* pTargetActor);
 
 	UFUNCTION(BlueprintCallable, Category="Target",
 		meta = (DisplayName = "Find Target Actor", ToolTip = "타겟을 찾아 멤버변수로 저장"))
