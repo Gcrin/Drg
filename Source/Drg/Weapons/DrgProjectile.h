@@ -95,4 +95,6 @@ private:
 	EProjectileState ProjectileState;
 	FTimerHandle DetectTargetTimerHandle;
 	TWeakObjectPtr<AActor> HomingTarget;
+
+	FGameplayTag OwnerTeamTag;
 };
