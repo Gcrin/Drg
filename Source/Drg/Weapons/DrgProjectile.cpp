@@ -85,7 +85,7 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
                                      const FHitResult& SweepResult)
 {
 	if (!IsValid(OtherActor)) return;
-
+	if (DamagedActors.Contains(OtherActor)) return;
 	if (OtherActor == this || OtherActor == GetOwner()) return;
 
 	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
@@ -107,11 +107,25 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 			if (SourceAsc)
 			{
 				SourceAsc->ApplyGameplayEffectSpecToTarget(*SpecToApply, TargetAsc);
+
+				// 중복 피해 방지 목록에 추가합니다.
+				DamagedActors.Add(OtherActor);
+				if (!ProjectileParams.bInfinitePierce)
+				{
+					ProjectileParams.MaxTargetHits--;
+					if (ProjectileParams.MaxTargetHits <= 0)
+					{
+						DestroyProjectile();
+						return;
+					}
+				}
 			}
 		}
 	}
-
-	DestroyProjectile();
+	else
+	{
+		DestroyProjectile();
+	}
 }
 
 void ADrgProjectile::StartProjectileArc()

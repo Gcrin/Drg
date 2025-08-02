@@ -48,6 +48,15 @@ struct FDrgProjectileParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Homing",
 		meta = (EditCondition = "bEnableHoming", EditConditionHides))
 	float DetectionRadius = 1000.f;
+
+	/** true면 관통 횟수 제한 없이 모든 적을 관통합니다. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Pierce")
+	bool bInfinitePierce = false;
+
+	/** 이 투사체가 파괴되기 전까지 피해를 입힐 수 있는 최대 대상의 수입니다. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Pierce",
+		meta=(EditCondition = "!bInfinitePierce", ClampMin = "1", UIMin = "1"))
+	int32 MaxTargetHits = 1;
 };
 
 UENUM(BlueprintType)
@@ -95,6 +104,7 @@ private:
 	EProjectileState ProjectileState;
 	FTimerHandle DetectTargetTimerHandle;
 	TWeakObjectPtr<AActor> HomingTarget;
-
 	FGameplayTag OwnerTeamTag;
+	// 이미 피해를 입힌 액터들을 저장하는 배열
+	TArray<TObjectPtr<AActor>> DamagedActors;
 };
