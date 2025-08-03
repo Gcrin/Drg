@@ -7,6 +7,11 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 
+UDrgGameplayAbility::UDrgGameplayAbility()
+{
+	CooldownMagnitudeTag = FGameplayTag::RequestGameplayTag(FName("Data.Cooldown.Duration"));
+}
+
 void UDrgGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                           const FGameplayAbilityActorInfo* ActorInfo,
                                           const FGameplayAbilityActivationInfo ActivationInfo,
