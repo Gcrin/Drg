@@ -5,6 +5,8 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Drg/Character/DrgBaseCharacter.h"
 #include "Drg/System/DrgGameplayStatics.h"
@@ -24,6 +26,7 @@ ADrgProjectile::ADrgProjectile()
 	SphereComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
 	SphereComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 폰하고만 오버랩 이벤트 발생
 	SphereComponent->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap); // 벽과도 충돌
+	SphereComponent->SetSphereRadius(10.f);
 
 	//MeshComponent 설정
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
@@ -35,9 +38,19 @@ ADrgProjectile::ADrgProjectile()
 	ProjectileMovement->InitialSpeed = 1500.f;
 	ProjectileMovement->MaxSpeed = 1500.f;
 	ProjectileMovement->ProjectileGravityScale = 0.f; // 중력 영향 안받음
-
 	// 투사체가 속도 방향을 따라 회전
 	ProjectileMovement->bRotationFollowsVelocity = true;
+
+	// 포인트라이트 컴포넌트 설정
+	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLightComponent"));
+	PointLightComponent->SetupAttachment(RootComponent);
+	PointLightComponent->SetIntensity(5000.f);
+	PointLightComponent->AttenuationRadius = 300.0f;
+}
+
+void ADrgProjectile::SetDamageEffectSpec(const FGameplayEffectSpecHandle& InDamageEffectSpecHandle)
+{
+	DamageEffectSpecHandle = InDamageEffectSpecHandle;
 }
 
 void ADrgProjectile::BeginPlay()
@@ -78,15 +91,31 @@ void ADrgProjectile::BeginPlay()
 		GetWorld()->GetTimerManager().SetTimer(
 			DetectTargetTimerHandle, this, &ADrgProjectile::DetectTarget, 0.1f, true);
 	}
+
+	if (ProjectileParams.MuzzleVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			this,
+			ProjectileParams.MuzzleVFX,
+			StartTransform.GetLocation(),
+			StartTransform.GetRotation().Rotator(),
+			ProjectileParams.MuzzleScale);
+	}
+
+	if (ProjectileParams.MuzzleSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ProjectileParams.MuzzleSound, StartTransform.GetLocation());
+	}
 }
 
 void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                      const FHitResult& SweepResult)
 {
-	if (!IsValid(OtherActor)) return;
-	if (DamagedActors.Contains(OtherActor)) return;
-	if (OtherActor == this || OtherActor == GetOwner()) return;
+	if (!IsValid(OtherActor) || DamagedActors.Contains(OtherActor) || OtherActor == this || OtherActor == GetOwner())
+	{
+		return;
+	}
 
 	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
 	if (TargetCharacter && TargetCharacter->IsDead()) return;
@@ -97,6 +126,9 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	{
 		return;
 	}
+
+	// 충돌 이펙트 재생
+	PlayImpactEffects(SweepResult, bFromSweep);
 
 	if (TargetAsc && DamageEffectSpecHandle.IsValid())
 	{
@@ -110,6 +142,8 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 				// 중복 피해 방지 목록에 추가합니다.
 				DamagedActors.Add(OtherActor);
+
+				//관통 제한이 있다면 관통 횟수를 확인하고 0이 되면 파괴
 				if (!ProjectileParams.bInfinitePierce)
 				{
 					ProjectileParams.MaxTargetHits--;
@@ -248,5 +282,44 @@ void ADrgProjectile::DetectTarget()
 
 void ADrgProjectile::DestroyProjectile()
 {
-	Destroy();
+	GetWorld()->GetTimerManager().ClearTimer(DetectTargetTimerHandle);
+
+	ProjectileMovement->StopMovementImmediately();
+	SphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (MeshComponent) MeshComponent->SetVisibility(false);
+	if (PointLightComponent) PointLightComponent->SetVisibility(false);
+
+	SetLifeSpan(0.2f);
+}
+
+void ADrgProjectile::PlayImpactEffects(const FHitResult& HitResult, bool bFromSweep)
+{
+	const FVector SpawnLocation = bFromSweep ? FVector(HitResult.ImpactPoint) : GetActorLocation();
+
+	FRotator SpawnRotation;
+
+	switch (ProjectileParams.RotationMethod)
+	{
+	case EImpactRotationMethod::AlignToProjectile:
+		SpawnRotation = GetActorRotation();
+		break;
+	case EImpactRotationMethod::ZeroRotation:
+		SpawnRotation = FRotator::ZeroRotator;
+		break;
+	case EImpactRotationMethod::AlignToImpactNormal:
+	default:
+		SpawnRotation = HitResult.ImpactNormal.Rotation();
+		break;
+	}
+
+	if (ProjectileParams.ImpactVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ProjectileParams.ImpactVFX, SpawnLocation, SpawnRotation,
+		                                               ProjectileParams.ImpactScale);
+	}
+	if (ProjectileParams.ImpactSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ProjectileParams.ImpactSound, SpawnLocation);
+	}
 }
