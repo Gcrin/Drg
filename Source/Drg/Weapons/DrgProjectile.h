@@ -4,59 +4,94 @@
 
 #include "CoreMinimal.h"
 #include "GameplayEffectTypes.h"
+#include "NiagaraSystem.h"
 #include "GameFramework/Actor.h"
 #include "DrgProjectile.generated.h"
 
+class UPointLightComponent;
 class UProjectileMovementComponent;
 class USphereComponent;
 class UGameplayEffect;
+
+UENUM(BlueprintType)
+enum class EImpactRotationMethod : uint8
+{
+	// 충돌 지점의 표면 각도에 맞춰 회전합니다.
+	AlignToImpactNormal,
+	// 투사체가 날아가던 방향을 유지합니다.
+	AlignToProjectile,
+	// 항상 기본 회전값(0,0,0)을 사용합니다.
+	ZeroRotation
+};
 
 USTRUCT(BlueprintType)
 struct FDrgProjectileParams
 {
 	GENERATED_BODY()
 
-	/** 이 투사체를 포물선 형태로 발사할지 결정합니다. */
+	// true이면 포물선 궤적으로 발사합니다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc")
 	bool bEnableArc = false;
 
-	/** * 포물선의 높이를 조절하는 값입니다. (0.0 ~ 1.0 사이 값 권장)
-	 * 값이 높을수록 더 높이 솟아오르는 포물선을 그립니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc",
-		meta = (EditCondition = "bEnableArc", EditConditionHides))
+	// 포물선의 높이를 조절합니다. (0.0 ~ 1.0 사이 값 권장)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc", meta = (EditCondition = "bEnableArc", EditConditionHides))
 	float ArcHeightRatio = 0.5f;
 
-	/** 포물선 발사 시, 발사 위치를 기준으로 할 상대적인 목표 지점입니다. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc",
-		meta = (EditCondition = "bEnableArc", EditConditionHides))
+	// 포물선 계산에 사용될 상대적인 목표 위치입니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc", meta = (EditCondition = "bEnableArc", EditConditionHides))
 	FVector TargetOffset;
 
-	/** 이 투사체가 비행 중 적을 스스로 탐지하여 추적하는 유도 기능를 사용할지 결정합니다. */
+	// true이면 비행 중 주변의 적을 탐지하고 유도합니다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Homing")
 	bool bEnableHoming = false;
 
-	/**
-	 * 유도 기능이 활성화되었을 때, 타겟을 향해 방향을 트는 가속도의 크기입니다.
-	 * 값이 높을수록 더 빠르게 타겟을 향해 꺾습니다.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Homing",
-		meta = (EditCondition = "bEnableHoming", EditConditionHides))
+	// 유도 시 타겟을 향해 꺾는 가속도의 크기입니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Homing", meta = (EditCondition = "bEnableHoming", EditConditionHides))
 	float HomingAcceleration = 5000.f;
 
-	/** 유도 기능이 활성화되었을 때, 주변의 적을 탐지할 수 있는 최대 반경입니다. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Homing",
-		meta = (EditCondition = "bEnableHoming", EditConditionHides))
+	// 유도 기능이 켜졌을 때, 적을 탐지하는 최대 반경입니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Homing", meta = (EditCondition = "bEnableHoming", EditConditionHides))
 	float DetectionRadius = 1000.f;
 
-	/** true면 관통 횟수 제한 없이 모든 적을 관통합니다. */
+	// true이면 관통 횟수 제한 없이 무한으로 관통합니다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Pierce")
 	bool bInfinitePierce = false;
 
-	/** 이 투사체가 파괴되기 전까지 피해를 입힐 수 있는 최대 대상의 수입니다. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Pierce",
-		meta=(EditCondition = "!bInfinitePierce", ClampMin = "1", UIMin = "1"))
+	// 이 투사체가 파괴되기 전까지 피해를 입힐 수 있는 최대 대상의 수입니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Pierce", meta=(EditCondition = "!bInfinitePierce", ClampMin = "1", UIMin = "1"))
 	int32 MaxTargetHits = 1;
+
+	// 발사 시 재생할 사운드입니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Muzzle")
+	TObjectPtr<USoundBase> MuzzleSound;
+
+	// 발사 시 스폰할 나이아가라 이펙트입니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Muzzle")
+	TObjectPtr<UNiagaraSystem> MuzzleVFX;
+
+	// 발사 이펙트의 크기를 조절합니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Muzzle", meta = (EditCondition = "MuzzleVFX != nullptr"))
+	FVector MuzzleScale = FVector::OneVector;
+
+	// 충돌 시 재생할 사운드입니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact")
+	TObjectPtr<USoundBase> ImpactSound;
+
+	// 충돌 시 스폰할 나이아가라 이펙트입니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact")
+	TObjectPtr<UNiagaraSystem> ImpactVFX;
+
+	// 충돌 이펙트의 크기를 조절합니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact", meta = (EditCondition = "ImpactVFX != nullptr"))
+	FVector ImpactScale = FVector::OneVector;
+
+	// 충돌 이펙트의 초기 회전 방식을 결정합니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact", meta = (EditCondition = "ImpactVFX != nullptr"))
+	EImpactRotationMethod RotationMethod = EImpactRotationMethod::AlignToImpactNormal;
+
+	// 충돌 지점으로부터 이펙트가 얼마나 떨어져서 스폰될지 결정합니다. (cm 단위)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact", meta = (EditCondition = "ImpactVFX != nullptr"))
+	float ImpactOffset = 0.0f;
 };
 
 UENUM(BlueprintType)
@@ -74,7 +109,7 @@ class DRG_API ADrgProjectile : public AActor
 public:
 	ADrgProjectile();
 
-	FGameplayEffectSpecHandle DamageEffectSpecHandle;
+	void SetDamageEffectSpec(const FGameplayEffectSpecHandle& InDamageEffectSpecHandle);
 
 protected:
 	virtual void BeginPlay() override;
@@ -86,12 +121,16 @@ protected:
 	void StartProjectileArc();
 	void DetectTarget();
 
-	UPROPERTY(EditAnywhere, Category = "Drg|Parameters")
+	UPROPERTY(EditAnywhere, meta = (ShowOnlyInnerProperties))
 	FDrgProjectileParams ProjectileParams;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Components")
+	TObjectPtr<UNiagaraComponent> TrailComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Components")
+	TObjectPtr<UPointLightComponent> PointLightComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<USphereComponent> SphereComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
@@ -101,6 +140,11 @@ protected:
 	virtual void DestroyProjectile();
 
 private:
+	// 충돌 이펙트와 사운드를 재생하는 함수
+	void PlayImpactEffects(const FHitResult& HitResult, bool bFromSweep);
+
+	FGameplayEffectSpecHandle DamageEffectSpecHandle;
+
 	EProjectileState ProjectileState;
 	FTimerHandle DetectTargetTimerHandle;
 	TWeakObjectPtr<AActor> HomingTarget;

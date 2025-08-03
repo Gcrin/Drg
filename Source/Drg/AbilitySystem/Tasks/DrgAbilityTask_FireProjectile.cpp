@@ -109,7 +109,7 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 				{
 					SpecHandle.Data->SetSetByCallerMagnitude(
 						FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), Params.EffectMultiplier);
-					SpawnedProjectile->DamageEffectSpecHandle = SpecHandle;
+					SpawnedProjectile->SetDamageEffectSpec(SpecHandle);
 				}
 			}
 		}
