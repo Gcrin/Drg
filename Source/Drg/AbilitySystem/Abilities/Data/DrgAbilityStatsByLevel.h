@@ -6,7 +6,7 @@
 #include "DrgAbilityStatsByLevel.generated.h"
 
 /**
- *  @brief 어빌리티의 레벨 별 스텟 구조체
+ *  @brief 어빌리티의 레벨 별 스텟 구조체, (Index 0 = Level 1)
  */
 USTRUCT(BlueprintType)
 struct FDrgAbilityLevelData

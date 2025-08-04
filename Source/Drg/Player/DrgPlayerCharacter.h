@@ -4,29 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Drg/Character/DrgBaseCharacter.h"
+#include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
 #include "DrgPlayerCharacter.generated.h"
 
 class UCameraComponent;
 class USpringArmComponent;
 class UDrgAbilityDataAsset;
 
-USTRUCT(BlueprintType)
-struct FDrgUpgradeChoice
-{
-	GENERATED_BODY()
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
-	TObjectPtr<UDrgAbilityDataAsset> AbilityData = nullptr;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
-	bool bIsUpgrade = false;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
-	int32 PreviousLevel = 0;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
-	int32 NextLevel = 0;
-};
 /**
  * 
  */
