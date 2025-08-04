@@ -4,12 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Drg/Character/DrgBaseCharacter.h"
-#include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
 #include "DrgPlayerCharacter.generated.h"
 
 class UCameraComponent;
 class USpringArmComponent;
-class UDrgAbilityDataAsset;
+class UDrgUpgradeComponent;
 
 /**
  * 
@@ -24,31 +23,20 @@ public:
 
 	UDataTable* GetDataTable() const;
 
-	virtual void HandleOnLevelUp(AActor* Actor);
-
-protected:
-
-	virtual void PossessedBy(AController* NewController) override;
-	
+protected:	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
 	TObjectPtr<USpringArmComponent> SpringArmComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
 	TObjectPtr<UCameraComponent> CameraComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilityComp")
+	TObjectPtr<UDrgUpgradeComponent> AbilityUpgradeComponent;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|Data")
 	UDataTable* MaxExperienceDataTable;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability")
-	TArray<TObjectPtr<UDrgAbilityDataAsset>> AllAvailableAbilities;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Ability")
-	TMap<TObjectPtr<UDrgAbilityDataAsset>, FGameplayAbilitySpecHandle> OwnedAbilityHandles;
+	virtual void HandleOnLevelUp(AActor* Actor);
 
-public:
-	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
-	TArray<FDrgUpgradeChoice> GetLevelUpChoices(int32 NumChoices = 3);
-	
-	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
-	void ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice); 
+	virtual void PossessedBy(AController* NewController) override;
 };
