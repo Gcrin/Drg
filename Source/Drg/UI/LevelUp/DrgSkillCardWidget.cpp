@@ -127,9 +127,11 @@ void UDrgSkillCardWidget::OnIconLoaded()
 		}
 		else
 		{
-			// 로딩 실패 시 디폴트 아이콘 유지
-			UE_LOG(LogTemp, Warning, TEXT("UDrgSkillCardWidget: 스킬 아이콘 로딩 실패 - %s"), 
-				   *SkillData.SkillIcon.ToString());
+			// 로딩 실패 시 디자이너를 위한 명확한 해결 방법 제시
+			UE_LOG(LogTemp, Warning, TEXT("UDrgSkillCardWidget: 스킬 아이콘 로딩 실패!\n")
+				   TEXT("문제 원인: 데이터 테이블에 설정된 아이콘 경로가 잘못되었습니다.\n")
+				   TEXT("해결 방법: DT_SkillData에서 해당 스킬의 아이콘 경로를 확인하세요.\n")
+				   TEXT("실패한 경로: %s"), *SkillData.SkillIcon.ToString());
 		}
 	}
 

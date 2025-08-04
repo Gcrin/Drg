@@ -54,7 +54,7 @@ void UDrgSkillSelectionWidget::ShowSkillSelection(const TArray<FDrgSkillData>& S
 	}
 
 	// UI 표시
-	AddToViewport(100); // 높은 Z-Order로 최상위에 표시
+	AddToViewport(UIZOrder); // 기획자가 설정 가능한 Z-Order
     
 	// 시간 느리게 하기 (pause 대신)
 	if (UWorld* World = GetWorld())

@@ -11,6 +11,7 @@ class UButton;
 class UTextBlock;
 class UImage;
 class UHorizontalBox;
+class UDrgSkillCardWidget;
 
 UCLASS()
 class DRG_API UDrgSkillSelectionWidget : public UUserWidget
@@ -35,7 +36,11 @@ protected:
 
 	// 스킬 카드 위젯 클래스 (블루프린트에서 설정)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UUserWidget> SkillCardWidgetClass;
+	TSubclassOf<UDrgSkillCardWidget> SkillCardWidgetClass;
+
+	// UI Z-Order 설정 (기획자가 조정 가능)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI", meta = (ClampMin = "0", ClampMax = "1000"))
+	int32 UIZOrder = 100;
 
 	// 시간 느리게 하기 배율 (0.1 = 10배 느리게)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI", meta = (ClampMin = "0.01", ClampMax = "1.0"))
