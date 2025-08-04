@@ -3,6 +3,10 @@
 
 #include "DrgBaseCharacter.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "Drg/AI/DrgAIController.h"
+#include "Drg/Player/DrgPlayerController.h"
+#include "BrainComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Data/DrgCharacterData.h"
 #include "Drg/AbilitySystem/DrgAbilitySystemComponent.h"
@@ -40,10 +44,87 @@ TObjectPtr<UDrgAttributeSet> ADrgBaseCharacter::GetAttributeSet() const
 	return AttributeSet;
 }
 
-void ADrgBaseCharacter::BeginPlay()
+void ADrgBaseCharacter::DeactivateCharacter()
 {
-	Super::BeginPlay();
+	// 캐릭터의 모든 충돌을 비활성화
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// 캐릭터의 움직임을 멈춤
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->DisableMovement();
 
+	// 컨트롤러 입력 비활성화
+	AController* MyController = GetController();
+	if (ADrgPlayerController* DrgPlayerController = Cast<ADrgPlayerController>(MyController))
+	{
+		DrgPlayerController->DisableInput(DrgPlayerController);
+	}
+	else if (ADrgAIController* DrgAIController = Cast<ADrgAIController>(MyController))
+	{
+		DrgAIController->BrainComponent->StopLogic(TEXT("Death"));
+		DrgAIController->UnPossess();
+	}
+
+	// 게임에서 숨김 
+	SetActorHiddenInGame(true);
+
+	// 어빌리티 시스템의 모든 어빌리티와 효과를 비활성화/취소
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->CancelAllAbilities();
+		// 어빌리티 중복 부여 방지
+		AbilitySystemComponent->ClearAllAbilities();
+	}
+}
+
+void ADrgBaseCharacter::ActivateCharacter()
+{
+	// bIsDead 초기화
+	bIsDead = false;
+	// 캐릭터의 모든 충돌을 활성화
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	// 캐릭터의 움직임 활성화
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+	// 컨트롤러 입력 활성화
+	AController* MyController = GetController();
+
+	if (ADrgPlayerController* PlayerController = Cast<ADrgPlayerController>(MyController))
+	{
+		PlayerController->EnableInput(PlayerController);
+	}
+	else if (MyController == nullptr && bIsAIControlled) // AIController가 UnPossess된 상태
+	{
+		// 기존 AIController가 없으면 새로 생성해서 Possess
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		ADrgAIController* NewAIController = GetWorld()->SpawnActor<ADrgAIController>(
+			AIControllerClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+
+		if (NewAIController)
+		{
+			NewAIController->Possess(this);
+			if (NewAIController->BrainComponent)
+			{
+				NewAIController->BrainComponent->RestartLogic();
+			}
+		}
+	}
+	else if (ADrgAIController* AIController = Cast<ADrgAIController>(MyController))
+	{
+		if (AIController->BrainComponent)
+		{
+			AIController->BrainComponent->RestartLogic();
+		}
+	}
+	// 캐릭터 데이터 에셋 적용
+	ApplyCharacterData();
+	// 숨김 해제
+	SetActorHiddenInGame(false);
+}
+
+void ADrgBaseCharacter::ApplyCharacterData()
+{
 	if (CharacterData && CharacterData->IsValidData())
 	{
 		if (USkeletalMeshComponent* MeshComponent = GetMesh())
@@ -83,6 +164,13 @@ void ADrgBaseCharacter::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("[DrgBaseCharacter] : %s에 할당된 CharacterData가 유효하지 않습니다!"), *GetName());
 	}
+}
+
+void ADrgBaseCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	ActivateCharacter();
 }
 
 void ADrgBaseCharacter::PossessedBy(AController* NewController)
@@ -201,25 +289,20 @@ void ADrgBaseCharacter::HandleOnDeath(AActor* DeadActor)
 
 	bIsDead = true;
 
-	// 캐릭터의 모든 충돌을 비활성화
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	// 캐릭터의 움직임을 멈춤
-	GetCharacterMovement()->StopMovementImmediately();
-	// 어빌리티 시스템의 모든 어빌리티와 효과를 비활성화/취소
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->CancelAllAbilities();
+		// GA_Drg_Death 어빌리티 태그 정의
+		FGameplayTag DeathEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Death"));
+		// GameplayEventData 생성 및 몽타주 선택 태그 포함
+		FGameplayEventData EventData;
+		EventData.Instigator = this;
+		EventData.Target = this;
+		EventData.TargetTags.AddTag(CharacterData->DeathTypeTag);
+		// GA_Drg_Death 활성화
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, DeathEventTag, EventData);
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[DrgBaseCharacter] : %s 캐릭터가 사망했습니다."), *GetName());
-
-	// TODO: 죽음 애니메이션 몽타주 재생 필요
-	// PlayAnimMontage(...)
-
-	// TODO: AI 캐릭터는 추후 오브젝트 풀링 방식으로 교체 예정
-	// 현재는 애니메이션 처리 미구현 상태이므로 임시 삭제 방식 사용
-	// 향후: 죽음 애니메이션 재생 완료 후 삭제되도록 변경 필요
-	SetLifeSpan(0.1f);
 }
 
 void ADrgBaseCharacter::HandleOnMoveSpeedChanged(const FOnAttributeChangeData& Data)

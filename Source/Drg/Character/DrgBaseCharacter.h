@@ -31,8 +31,16 @@ public:
 		this->CharacterData = NewCharacterData;
 	}
 
+	UFUNCTION(blueprintCallable, Category = "Drg|CharacterState")
+	void DeactivateCharacter();
+	UFUNCTION(blueprintCallable, Category = "Drg|CharacterState")
+	void ActivateCharacter();
+
 protected:
 	virtual void BeginPlay() override;
+
+	// 캐릭터 데이터 적용
+	void ApplyCharacterData();
 
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
@@ -54,4 +62,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|CharacterState")
 	bool bIsDead;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|CharacterState")
+	bool bIsAIControlled = false;
 };
