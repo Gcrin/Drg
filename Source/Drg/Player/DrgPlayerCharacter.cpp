@@ -55,12 +55,13 @@ void ADrgPlayerCharacter::PossessedBy(AController* NewController)
 	}
 }
 
-TArray<FDrgUpgradeChoice> ADrgPlayerCharacter::GetLevelUpChoices(int32 NumChoices) // 선택지 개수
+TArray<FDrgUpgradeChoice> ADrgPlayerCharacter::GetLevelUpChoices(int32 NumChoices)
 {
 	TArray<FDrgUpgradeChoice> FinalChoices;
-	if (!AbilitySystemComponent || AllAvailableAbilities.Num() == 0)
+	checkf(AbilitySystemComponent, TEXT("플레이어 캐릭터에 ACS가 없습니다."));
+	if (ensureMsgf(AllAvailableAbilities.Num() > 0, TEXT("GetLevelUpChoices가 빈 배열을 반환했습니다.")))
 	{
-		return FinalChoices;
+		return FinalChoices; // 추후, 디폴트 값으로 대체
 	}
 	
 	TArray<FDrgUpgradeChoice> CandidateChoices;
@@ -128,8 +129,15 @@ TArray<FDrgUpgradeChoice> ADrgPlayerCharacter::GetLevelUpChoices(int32 NumChoice
 
 void ADrgPlayerCharacter::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice)
 {
-	if (!SelectedChoice.AbilityData || !SelectedChoice.AbilityData->AbilityClass || !AbilitySystemComponent)
+	checkf(AbilitySystemComponent, TEXT("플레이어 캐릭터에 ACS가 없습니다."));
+	if (!SelectedChoice.AbilityData)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("플레이어에 적용할 Ability Data가 없습니다."));
+		return;
+	}
+	if (!SelectedChoice.AbilityData->AbilityClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("플레이어에 적용할 Ability Class가 없습니다."));
 		return;
 	}
 

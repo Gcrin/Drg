@@ -23,7 +23,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "이름"))
 	FText AbilityName;
 	// 어빌리티 설명
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (MultiLine = true), meta = (DisplayName = "설명"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (MultiLine = true, DisplayName = "설명"))
 	FText AbilityDescription;
 	// 어빌리티 아이콘
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "아이콘"))
@@ -39,7 +39,7 @@ public:
 	TSubclassOf<UGameplayAbility> AbilityClass;
 
 public:
-	// 최대 레벨(배열의 원소 개수)을 반환하는 함수
+	// 최대 레벨(배열의 원소 개수)을 반환하는 함수, Level = 1 + index
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Drg|Ability")
 	int32 GetMaxLevel() const {return AbilityLevelData.Num();}
 	// 지정된 레벨의 데이터를 안전하게 가져오는 헬퍼 함수
