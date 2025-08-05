@@ -6,6 +6,7 @@
 #include "GameplayEffectExtension.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
 #include "Drg/Player/Data/DrgExperienceData.h"
+#include "Drg/System/DrgGameplayTags.h"
 
 UDrgAttributeSet::UDrgAttributeSet()
 {
@@ -36,13 +37,11 @@ void UDrgAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMod
 			if (ensure(ASC))
 			{
 				// 이미 'State.Dead' 태그가 부여되어 있지 않은 경우에만 이벤트 발생
-				FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
-
-				if (!ASC->HasMatchingGameplayTag(DeadTag))
+				if (!ASC->HasMatchingGameplayTag(DrgGameplayTags::State_Dead))
 				{
 					// GA_Drg_Death 실행
 					FGameplayEventData Payload;
-					Payload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Death"));
+					Payload.EventTag = DrgGameplayTags::Event_Death;
 					ASC->HandleGameplayEvent(Payload.EventTag, &Payload);
 				}
 			}

@@ -10,6 +10,7 @@
 #include "Data/DrgCharacterData.h"
 #include "Drg/AbilitySystem/DrgAbilitySystemComponent.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
+#include "Drg/System/DrgGameplayTags.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerState.h"
 
@@ -32,7 +33,7 @@ bool ADrgBaseCharacter::IsDead() const
 {
 	if (AbilitySystemComponent)
 	{
-		return AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead")));
+		return AbilitySystemComponent->HasMatchingGameplayTag(DrgGameplayTags::State_Dead);
 	}
 	return false;
 }
