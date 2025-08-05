@@ -46,7 +46,7 @@ public:
 	float GetMaxExperienceForLevel(const UDataTable* DataTable, float CurrentLevel);
 
 	FOnDeath OnDeath;
-	FOnDeath OnLevelUp;
+	FOnLevelUp OnLevelUp;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Health")
 	FGameplayAttributeData MaxHealth;
