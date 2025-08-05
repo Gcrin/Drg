@@ -3,7 +3,6 @@
 
 #include "DrgAIController.h"
 #include "BehaviorTree/BehaviorTree.h"
-#include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "Drg/Character/DrgBaseCharacter.h"
 
 void ADrgAIController::OnPossess(APawn* InPawn)
@@ -12,9 +11,11 @@ void ADrgAIController::OnPossess(APawn* InPawn)
 
 	if (ADrgBaseCharacter* ControlledCharacter = Cast<ADrgBaseCharacter>(InPawn))
 	{
-		if (ControlledCharacter->GetAttributeSet())
+		if (UAbilitySystemComponent* ASC = ControlledCharacter->GetAbilitySystemComponent())
 		{
-			ControlledCharacter->GetAttributeSet()->OnDeath.AddUObject(this, &ADrgAIController::HandleOnDeath);
+			FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
+			DeadStateTagDelegateHandle = ASC->RegisterGameplayTagEvent(DeadTag, EGameplayTagEventType::NewOrRemoved)
+			                                .AddUObject(this, &ADrgAIController::OnPawnStateDead);
 		}
 	}
 
@@ -24,10 +25,27 @@ void ADrgAIController::OnPossess(APawn* InPawn)
 	}
 }
 
-void ADrgAIController::HandleOnDeath(AActor* DeadActor)
+void ADrgAIController::OnUnPossess()
 {
-	if (BrainComponent)
+	if (ADrgBaseCharacter* ControlledCharacter = Cast<ADrgBaseCharacter>(GetPawn()))
 	{
-		BrainComponent->StopLogic(TEXT("사망"));
+		if (UAbilitySystemComponent* ASC = ControlledCharacter->GetAbilitySystemComponent())
+		{
+			ASC->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(FName("State.Dead")),
+			                              EGameplayTagEventType::NewOrRemoved)
+			   .Remove(DeadStateTagDelegateHandle);
+		}
+	}
+	Super::OnUnPossess();
+}
+
+void ADrgAIController::OnPawnStateDead(const FGameplayTag CallbackTag, int32 NewCount)
+{
+	if (NewCount > 0) // 태그가 추가되었을 때
+	{
+		if (BrainComponent)
+		{
+			BrainComponent->StopLogic(TEXT("사망 상태 진입"));
+		}
 	}
 }
