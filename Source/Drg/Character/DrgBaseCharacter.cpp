@@ -30,7 +30,11 @@ ADrgBaseCharacter::ADrgBaseCharacter()
 
 bool ADrgBaseCharacter::IsDead() const
 {
-	return bIsDead;
+	if (AbilitySystemComponent)
+	{
+		return AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead")));
+	}
+	return false;
 }
 
 UAbilitySystemComponent* ADrgBaseCharacter::GetAbilitySystemComponent() const
@@ -69,8 +73,6 @@ void ADrgBaseCharacter::DeactivateCharacter()
 
 void ADrgBaseCharacter::ActivateCharacter()
 {
-	// bIsDead 초기화
-	bIsDead = false;
 	// 캐릭터 데이터 에셋 적용
 	ApplyCharacterData();
 	// 캐릭터의 모든 충돌을 활성화

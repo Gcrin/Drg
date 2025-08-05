@@ -60,8 +60,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
 	TObjectPtr<UDrgAttributeSet> AttributeSet;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Drg|CharacterState")
-	bool bIsDead;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|CharacterState")
 	bool bIsAIControlled = false;
 	// AI 컨트롤러를 저장할 변수
