@@ -40,8 +40,13 @@ void UDrgAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMod
 				if (!ASC->HasMatchingGameplayTag(DrgGameplayTags::State_Dead))
 				{
 					// GA_Drg_Death 실행
+					const FGameplayEffectContextHandle& Context = Data.EffectSpec.GetContext();
 					FGameplayEventData Payload;
 					Payload.EventTag = DrgGameplayTags::Event_Death;
+					Payload.Instigator = Context.GetOriginalInstigator(); // 가해자 정보
+					Payload.Target = GetOwningActor(); // 피해자 정보 (나 자신)
+					Payload.EventMagnitude = Data.EvaluatedData.Magnitude; // 받은 대미지량
+					Payload.ContextHandle = Context; // 모든 컨텍스트 정보를 통째로 전달
 					ASC->HandleGameplayEvent(Payload.EventTag, &Payload);
 				}
 			}
