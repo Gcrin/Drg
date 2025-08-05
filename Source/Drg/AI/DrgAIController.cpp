@@ -4,6 +4,7 @@
 #include "DrgAIController.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "Drg/Character/DrgBaseCharacter.h"
+#include "Drg/System/DrgGameplayTags.h"
 
 void ADrgAIController::OnPossess(APawn* InPawn)
 {
@@ -13,9 +14,9 @@ void ADrgAIController::OnPossess(APawn* InPawn)
 	{
 		if (UAbilitySystemComponent* ASC = ControlledCharacter->GetAbilitySystemComponent())
 		{
-			FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
-			DeadStateTagDelegateHandle = ASC->RegisterGameplayTagEvent(DeadTag, EGameplayTagEventType::NewOrRemoved)
-			                                .AddUObject(this, &ADrgAIController::OnPawnStateDead);
+			DeadStateTagDelegateHandle = ASC->RegisterGameplayTagEvent(DrgGameplayTags::State_Dead,
+			                                                           EGameplayTagEventType::NewOrRemoved).AddUObject(
+				this, &ADrgAIController::OnPawnStateDead);
 		}
 	}
 
@@ -31,9 +32,8 @@ void ADrgAIController::OnUnPossess()
 	{
 		if (UAbilitySystemComponent* ASC = ControlledCharacter->GetAbilitySystemComponent())
 		{
-			ASC->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(FName("State.Dead")),
-			                              EGameplayTagEventType::NewOrRemoved)
-			   .Remove(DeadStateTagDelegateHandle);
+			ASC->RegisterGameplayTagEvent(DrgGameplayTags::State_Dead, EGameplayTagEventType::NewOrRemoved).Remove(
+				DeadStateTagDelegateHandle);
 		}
 	}
 	Super::OnUnPossess();

@@ -5,7 +5,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
-#include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
+#include "Drg/System/DrgGameplayTags.h"
 
 UDrgGameplayAbility::UDrgGameplayAbility()
 {
@@ -108,9 +108,7 @@ void UDrgGameplayAbility::OnCooldownEnded()
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 		if (ensure(ASC))
 		{
-			FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
-
-			if (!ASC->HasMatchingGameplayTag(DeadTag))
+			if (!ASC->HasMatchingGameplayTag(DrgGameplayTags::State_Dead))
 			{
 				ASC->TryActivateAbility(CurrentSpecHandle);
 			}
