@@ -47,6 +47,7 @@ protected:
 	// GAS 초기화
 	virtual void InitializeAttributes();
 	virtual void GrantAbilities();
+	void ResetAbilitySystemComponent();
 
 	virtual void HandleOnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 
