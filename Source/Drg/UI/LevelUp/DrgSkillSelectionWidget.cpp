@@ -20,7 +20,7 @@ void UDrgSkillSelectionWidget::NativeConstruct()
 	}
 }
 
-void UDrgSkillSelectionWidget::ShowSkillSelection(const TArray<FDrgSkillData>& SkillOptions)
+void UDrgSkillSelectionWidget::ShowUpgradeChoices(const TArray<FDrgUpgradeChoice>& UpgradeChoices)
 {
 	if (!SkillCardContainer)
 	{
@@ -34,16 +34,22 @@ void UDrgSkillSelectionWidget::ShowSkillSelection(const TArray<FDrgSkillData>& S
 		return;
 	}
 
+	if (UpgradeChoices.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UDrgSkillSelectionWidget: 표시할 업그레이드 선택지가 없습니다!"));
+		return;
+	}
+
 	// 기존 카드들 제거
 	SkillCardContainer->ClearChildren();
-	CurrentSkillOptions = SkillOptions;
+	CurrentUpgradeChoices = UpgradeChoices;
 
 	// 새 스킬 카드들 생성
-	for (int32 i = 0; i < SkillOptions.Num(); ++i)
+	for (int32 i = 0; i < UpgradeChoices.Num(); ++i)
 	{
 		if (UDrgSkillCardWidget* SkillCard = CreateWidget<UDrgSkillCardWidget>(this, SkillCardWidgetClass))
 		{
-			SkillCard->SetSkillData(SkillOptions[i], i);
+			SkillCard->SetUpgradeChoice(UpgradeChoices[i], i);
 			SkillCard->OnCardClicked.AddDynamic(this, &UDrgSkillSelectionWidget::OnSkillCardClicked);
 			SkillCardContainer->AddChild(SkillCard);
 		}

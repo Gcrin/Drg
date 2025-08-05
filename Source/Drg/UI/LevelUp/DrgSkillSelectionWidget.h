@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Data/DrgSkillData.h"
+#include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
 #include "DrgSkillSelectionWidget.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillSelected, int32, SkillIndex);
@@ -19,9 +19,9 @@ class DRG_API UDrgSkillSelectionWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	// 스킬 선택 UI 표시
+	// 업그레이드 선택지 UI 표시
 	UFUNCTION(BlueprintCallable, Category = "Skill Selection")
-	void ShowSkillSelection(const TArray<FDrgSkillData>& SkillOptions);
+	void ShowUpgradeChoices(const TArray<FDrgUpgradeChoice>& UpgradeChoices);
 
 	// 스킬 선택 완료 시 호출될 델리게이트
 	UPROPERTY(BlueprintAssignable, Category = "Skill Selection")
@@ -50,7 +50,7 @@ private:
 	UFUNCTION()
 	void OnSkillCardClicked(int32 SkillIndex);
 
-	TArray<FDrgSkillData> CurrentSkillOptions;
+	TArray<FDrgUpgradeChoice> CurrentUpgradeChoices;
 
 	// 원래 시간 배율 저장
 	float OriginalTimeDilation = 1.0f;
