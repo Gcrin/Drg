@@ -111,6 +111,8 @@ void ADrgBaseCharacter::ActivateCharacter()
 	}
 	// 숨김 해제
 	SetActorHiddenInGame(false);
+	// ASC 재설정
+	ResetAbilitySystemComponent();
 }
 
 void ADrgBaseCharacter::ApplyCharacterData()
@@ -180,22 +182,6 @@ void ADrgBaseCharacter::PossessedBy(AController* NewController)
 			// Owner는 자기 자신, Avatar는 컨트롤러가 조종하는 폰(자기 자신)으로 초기화
 			AbilitySystemComponent->InitAbilityActorInfo(this, this);
 		}
-
-		InitializeAttributes();
-
-		AbilitySystemComponent->AddLooseGameplayTags(CharacterData->InitialTags);
-
-		if (AttributeSet)
-		{
-			// MoveSpeed 어트리뷰트의 값 변경 델리게이트에 OnMoveSpeedAttributeChanged 함수를 구독
-			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-				AttributeSet->GetMoveSpeedAttribute()
-			).AddUObject(this, &ADrgBaseCharacter::HandleOnMoveSpeedChanged);
-
-			GetCharacterMovement()->MaxWalkSpeed = AttributeSet->GetMoveSpeed();
-		}
-
-		GrantAbilities();
 	}
 }
 
@@ -265,6 +251,53 @@ void ADrgBaseCharacter::GrantAbilities()
 		{
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, -1, this));
 		}
+	}
+}
+
+void ADrgBaseCharacter::ResetAbilitySystemComponent()
+{
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DrgBaseCharacter] : %s의 AbilitySystemComponent 없음"), *GetName());
+		return;
+	}
+
+	// 1. 모든 Active Gameplay Effect 제거
+	FGameplayEffectQuery Query;
+	AbilitySystemComponent->RemoveActiveEffects(Query);
+
+	// 2. 모든 LooseGameplayTag 제거
+	FGameplayTagContainer OwnedTags;
+	AbilitySystemComponent->GetOwnedGameplayTags(OwnedTags);
+
+	for (const FGameplayTag& Tag : OwnedTags)
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(Tag);
+	}
+
+	// 3. Attribute 초기화
+	InitializeAttributes();
+
+	// 4. 기본 어빌리티 부여
+	if (AbilitySystemComponent->GetActivatableAbilities().Num() == 0)
+	{
+		GrantAbilities();
+	}
+
+	// 5. 초기 태그 다시 부여
+	AbilitySystemComponent->AddLooseGameplayTags(CharacterData->InitialTags);
+
+	// 6. 어트리뷰트 변경 델리게이트 구독 제거 후 재구독
+	if (AttributeSet)
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetMoveSpeedAttribute()
+		).RemoveAll(this); // 이전 구독 제거 후
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetMoveSpeedAttribute()
+		).AddUObject(this, &ADrgBaseCharacter::HandleOnMoveSpeedChanged);
+
+		GetCharacterMovement()->MaxWalkSpeed = AttributeSet->GetMoveSpeed();
 	}
 }
 
