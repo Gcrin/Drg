@@ -32,7 +32,7 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 	if (!ensure(AbilitySystemComponent)) return FinalChoices;
 	if (!ensureMsgf(AllAvailableAbilities.Num() > 0, TEXT("GetLevelUpChoices가 빈 배열을 반환했습니다.")))
 	{
-		return FinalChoices; // 추후, 디폴트 값으로 대체
+		return FinalChoices;
 	}
 	
 	TArray<FDrgUpgradeChoice> CandidateChoices;
@@ -74,22 +74,29 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 		}
 	}
 	
-	NumChoices = FMath::Min(NumChoices, CandidateChoices.Num());
+	if (CandidateChoices.Num() == 0) return FinalChoices;
+	NumChoices = FMath::Min(CandidateChoices.Num(), NumChoices);
+
 	for (int32 i = 0; i < NumChoices; ++i)
 	{
-		if (TotalWeight <= 0.0f) break;
-        
-		float RandomValue = FMath::FRandRange(KINDA_SMALL_NUMBER, TotalWeight);
-		float CurrentWeightSum = 0.0f;
-        
-		for (int32 j = 0; j < CandidateChoices.Num(); ++j)
+		if (TotalWeight <= 0.0f)
 		{
-			CurrentWeightSum += CandidateWeights[j];
-			if (RandomValue <= CurrentWeightSum)
+			UE_LOG(LogTemp, Warning, TEXT("가중치 오류 발생. 어빌리티 가중치를 확인해주세요."));
+			break;
+		}
+
+		float RandomValue = FMath::RandRange(0.0f, TotalWeight);
+		float WeightSum = 0.0f;
+
+		for (int32 j = CandidateChoices.Num() - 1; j >= 0; --j)
+		{
+			WeightSum += CandidateWeights[j];
+			if (WeightSum > RandomValue)
 			{
 				FinalChoices.Add(CandidateChoices[j]);
 				TotalWeight -= CandidateWeights[j];
-				CandidateWeights[j] = 0.0f;
+				CandidateChoices.RemoveAtSwap(j);
+				CandidateWeights.RemoveAtSwap(j);
 				break;
 			}
 		}
@@ -138,4 +145,22 @@ void UDrgUpgradeComponent::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedC
 			       *SelectedChoice.AbilityData->AbilityName.ToString(), SelectedChoice.NextLevel);
 		}
 	}
+}
+
+void UDrgUpgradeComponent::RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData)
+{
+	if (!ensure(AbilitySystemComponent)) return;
+	if (!AbilityData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("어빌리티 데이터가 올바르지 않습니다."));
+		return;
+	}
+
+	if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(AbilityData))
+	{
+		AbilitySystemComponent->ClearAbility(*FoundHandle);
+		OwnedAbilityHandles.Remove(AbilityData);
+		return;
+	}
+	UE_LOG(LogTemp, Warning,TEXT("삭제될 어빌리티가 존재하지 않습니다."));
 }

@@ -35,5 +35,8 @@ public:
 	TArray<FDrgUpgradeChoice> GetLevelUpChoices(int32 NumChoices = 3);
 	
 	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
-	void ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice); 
+	void ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice);
+
+	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
+	void RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData);
 };

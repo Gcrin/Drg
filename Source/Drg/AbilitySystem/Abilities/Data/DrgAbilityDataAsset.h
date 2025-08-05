@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
-#include "DrgAbilityStatsByLevel.h"
+#include "DrgAbilityLevelData.h"
 #include "Abilities/GameplayAbility.h"
 #include "DrgAbilityDataAsset.generated.h"
 
