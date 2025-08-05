@@ -8,7 +8,7 @@
 
 /**
  * @brief 레벨 업 선택지(UI, 로직)에 들어갈 데이터들의 구조체
- * 
+ * Default 값: AbilityData = nullptr, bIsUpgrade = false, 그 외 0
  */
 USTRUCT(BlueprintType)
 struct FDrgUpgradeChoice

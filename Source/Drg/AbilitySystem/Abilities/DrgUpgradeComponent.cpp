@@ -25,86 +25,93 @@ void UDrgUpgradeComponent::BeginPlay()
 	}
 }
 
+/**
+* @brief 필요한 개수의 랜덤한 어빌리티들의 데이터를 반환해주는 함수입니다. 
+* @param NumChoices 반환 받을 어빌리티 선택지의 개수입니다.
+* @return 반환될 어빌리티가 모자랄 경우, Default 값으로 채웁니다. DataAsset = nullptr
+*/
 TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoices)
 {
 	TArray<FDrgUpgradeChoice> FinalChoices;
+	bool bIsExecuted = true;
 	
-	if (!ensure(AbilitySystemComponent)) return FinalChoices;
-	if (!ensureMsgf(AllAvailableAbilities.Num() > 0, TEXT("GetLevelUpChoices가 빈 배열을 반환했습니다.")))
+	if (!ensure(AbilitySystemComponent)) { bIsExecuted = false; }
+	if (!ensureMsgf(AllAvailableAbilities.Num() > 0,
+		TEXT("UpgradeComponent에 설정된 어빌리티가 없습니다."))) { bIsExecuted = false; }
+
+	if (bIsExecuted)
 	{
-		return FinalChoices;
-	}
-	
-	TArray<FDrgUpgradeChoice> CandidateChoices;
-	TArray<float> CandidateWeights;
-	float TotalWeight = 0.0f;
+		TArray<FDrgUpgradeChoice> CandidateChoices;
+		TArray<float> CandidateWeights;
+		float TotalWeight = 0.0f;
 
-	for (UDrgAbilityDataAsset* AbilityData : AllAvailableAbilities)
-	{
-		if (!AbilityData) continue;
-
-		FDrgUpgradeChoice Choice;
-		Choice.AbilityData = AbilityData;
-		bool bShouldBeCandidate = false;
-
-		if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(AbilityData))
+		for (UDrgAbilityDataAsset* AbilityData : AllAvailableAbilities)
 		{
-			const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle);
-			if (Spec && Spec->Level < AbilityData->GetMaxLevel())
+			if (!AbilityData) continue;
+
+			FDrgUpgradeChoice Choice;
+			Choice.AbilityData = AbilityData;
+			bool bShouldBeCandidate = false;
+
+			if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(AbilityData))
+			{
+				const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle);
+				if (Spec && Spec->Level < AbilityData->GetMaxLevel())
+				{
+					bShouldBeCandidate = true;
+					Choice.bIsUpgrade = true;
+					Choice.PreviousLevel = Spec->Level;
+					Choice.NextLevel = Spec->Level + 1;
+				}
+			}
+			else
 			{
 				bShouldBeCandidate = true;
-				Choice.bIsUpgrade = true;
-				Choice.PreviousLevel = Spec->Level;
-				Choice.NextLevel = Spec->Level + 1;
+				Choice.bIsUpgrade = false;
+				Choice.PreviousLevel = 0;
+				Choice.NextLevel = 1;
 			}
-		}
-		else
-		{
-			bShouldBeCandidate = true;
-			Choice.bIsUpgrade = false;
-			Choice.PreviousLevel = 0;
-			Choice.NextLevel = 1;
+		
+			if (bShouldBeCandidate)
+			{
+				CandidateChoices.Add(Choice);
+				CandidateWeights.Add(AbilityData->SelectionWeight);
+				TotalWeight += AbilityData->SelectionWeight;
+			}
 		}
 		
-		if (bShouldBeCandidate)
+		for (int32 i = 0; i < NumChoices; ++i)
 		{
-			CandidateChoices.Add(Choice);
-			CandidateWeights.Add(AbilityData->SelectionWeight);
-			TotalWeight += AbilityData->SelectionWeight;
-		}
-	}
-	
-	if (CandidateChoices.Num() == 0) return FinalChoices;
-	NumChoices = FMath::Min(CandidateChoices.Num(), NumChoices);
-
-	for (int32 i = 0; i < NumChoices; ++i)
-	{
-		if (TotalWeight <= 0.0f)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("가중치 오류 발생. 어빌리티 가중치를 확인해주세요."));
-			break;
-		}
-
-		float RandomValue = FMath::RandRange(0.0f, TotalWeight);
-		float WeightSum = 0.0f;
-
-		for (int32 j = CandidateChoices.Num() - 1; j >= 0; --j)
-		{
-			WeightSum += CandidateWeights[j];
-			if (WeightSum > RandomValue)
+			if (CandidateChoices.Num() <= 0) break;
+			
+			if (TotalWeight <= 0.0f)
 			{
-				FinalChoices.Add(CandidateChoices[j]);
-				TotalWeight -= CandidateWeights[j];
-				CandidateChoices.RemoveAtSwap(j);
-				CandidateWeights.RemoveAtSwap(j);
+				UE_LOG(LogTemp, Warning, TEXT("가중치 오류 발생. 어빌리티 가중치를 확인해주세요."));
 				break;
+			}
+
+			float RandomValue = FMath::RandRange(0.0f, TotalWeight);
+			float WeightSum = 0.0f;
+
+			for (int32 j = CandidateChoices.Num() - 1; j >= 0; --j)
+			{
+				WeightSum += CandidateWeights[j];
+				if (WeightSum > RandomValue)
+				{
+					FinalChoices.Add(CandidateChoices[j]);
+					TotalWeight -= CandidateWeights[j];
+					CandidateChoices.RemoveAtSwap(j);
+					CandidateWeights.RemoveAtSwap(j);
+					break;
+				}
 			}
 		}
 	}
-
+	while (FinalChoices.Num() < NumChoices) { FinalChoices.Add(FDrgUpgradeChoice()); } 
 	return FinalChoices;
 }
 
+// @brief 선택된 어빌리티를 플레이어에 적용해 주는 함수입니다.
 void UDrgUpgradeComponent::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice)
 {
 	if (!ensure(AbilitySystemComponent)) return;
@@ -147,6 +154,7 @@ void UDrgUpgradeComponent::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedC
 	}
 }
 
+// @brief 플레이어가 소유한 어빌리티를 삭제하는 함수입니다. 
 void UDrgUpgradeComponent::RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData)
 {
 	if (!ensure(AbilitySystemComponent)) return;
