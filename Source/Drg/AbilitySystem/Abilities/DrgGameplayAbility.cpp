@@ -23,7 +23,8 @@ void UDrgGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 }
 
 bool UDrgGameplayAbility::CheckCooldown(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo, FGameplayTagContainer* OptionalRelevantTags) const
+                                        const FGameplayAbilityActorInfo* ActorInfo,
+                                        FGameplayTagContainer* OptionalRelevantTags) const
 {
 	UAbilitySystemComponent* const ASC = ActorInfo->AbilitySystemComponent.Get();
 	check(ASC);
@@ -104,8 +105,17 @@ void UDrgGameplayAbility::OnCooldownEnded()
 {
 	if (bIsOnAutoCast)
 	{
-		GetAbilitySystemComponentFromActorInfo()->TryActivateAbility(CurrentSpecHandle);
-		bIsOnAutoCast = false;
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		if (ensure(ASC))
+		{
+			FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
+
+			if (!ASC->HasMatchingGameplayTag(DeadTag))
+			{
+				ASC->TryActivateAbility(CurrentSpecHandle);
+				bIsOnAutoCast = false;
+			}
+		}
 	}
 
 	EndAbilityAutoCheck();
