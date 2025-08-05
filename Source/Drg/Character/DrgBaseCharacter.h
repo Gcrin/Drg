@@ -48,7 +48,6 @@ protected:
 	virtual void InitializeAttributes();
 	virtual void GrantAbilities();
 
-	virtual void HandleOnDeath(AActor* DeadActor);
 	virtual void HandleOnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Data", meta = (ExposeOnSpawn = "true"))
@@ -64,4 +63,7 @@ protected:
 	bool bIsDead;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|CharacterState")
 	bool bIsAIControlled = false;
+	// AI 컨트롤러를 저장할 변수
+	UPROPERTY(Transient)
+	TObjectPtr<class ADrgAIController> CachedAIController;
 };
