@@ -6,7 +6,6 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Drg/AI/DrgAIController.h"
 #include "Drg/Player/DrgPlayerController.h"
-#include "BrainComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Data/DrgCharacterData.h"
 #include "Drg/AbilitySystem/DrgAbilitySystemComponent.h"
@@ -60,26 +59,20 @@ void ADrgBaseCharacter::DeactivateCharacter()
 	}
 	else if (ADrgAIController* DrgAIController = Cast<ADrgAIController>(MyController))
 	{
-		DrgAIController->BrainComponent->StopLogic(TEXT("Death"));
+		// AI 컨트롤러를 캐시에 저장
+		CachedAIController = DrgAIController;
 		DrgAIController->UnPossess();
 	}
-
 	// 게임에서 숨김 
 	SetActorHiddenInGame(true);
-
-	// 어빌리티 시스템의 모든 어빌리티와 효과를 비활성화/취소
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->CancelAllAbilities();
-		// 어빌리티 중복 부여 방지
-		AbilitySystemComponent->ClearAllAbilities();
-	}
 }
 
 void ADrgBaseCharacter::ActivateCharacter()
 {
 	// bIsDead 초기화
 	bIsDead = false;
+	// 캐릭터 데이터 에셋 적용
+	ApplyCharacterData();
 	// 캐릭터의 모든 충돌을 활성화
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	// 캐릭터의 움직임 활성화
@@ -94,31 +87,28 @@ void ADrgBaseCharacter::ActivateCharacter()
 	}
 	else if (MyController == nullptr && bIsAIControlled) // AIController가 UnPossess된 상태
 	{
-		// 기존 AIController가 없으면 새로 생성해서 Possess
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-		ADrgAIController* NewAIController = GetWorld()->SpawnActor<ADrgAIController>(
-			AIControllerClass, GetActorLocation(), GetActorRotation(), SpawnParams);
-
-		if (NewAIController)
+		// 기존에 사용했던 AI 컨트롤러가 있는지 확인하고 재사용
+		if (CachedAIController)
 		{
-			NewAIController->Possess(this);
-			if (NewAIController->BrainComponent)
+			CachedAIController->Possess(this);
+			// 재사용 후 캐시 변수는 비워둠
+			CachedAIController = nullptr;
+		}
+		else
+		{
+			// 기존 AIController가 없으면 새로 생성해서 Possess
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			ADrgAIController* NewAIController = GetWorld()->SpawnActor<ADrgAIController>(
+				AIControllerClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+
+			if (NewAIController)
 			{
-				NewAIController->BrainComponent->RestartLogic();
+				NewAIController->Possess(this);
 			}
 		}
 	}
-	else if (ADrgAIController* AIController = Cast<ADrgAIController>(MyController))
-	{
-		if (AIController->BrainComponent)
-		{
-			AIController->BrainComponent->RestartLogic();
-		}
-	}
-	// 캐릭터 데이터 에셋 적용
-	ApplyCharacterData();
 	// 숨김 해제
 	SetActorHiddenInGame(false);
 }
@@ -197,8 +187,6 @@ void ADrgBaseCharacter::PossessedBy(AController* NewController)
 
 		if (AttributeSet)
 		{
-			AttributeSet->OnDeath.AddUObject(this, &ADrgBaseCharacter::HandleOnDeath);
-
 			// MoveSpeed 어트리뷰트의 값 변경 델리게이트에 OnMoveSpeedAttributeChanged 함수를 구독
 			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
 				AttributeSet->GetMoveSpeedAttribute()
@@ -278,31 +266,6 @@ void ADrgBaseCharacter::GrantAbilities()
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, -1, this));
 		}
 	}
-}
-
-void ADrgBaseCharacter::HandleOnDeath(AActor* DeadActor)
-{
-	if (bIsDead)
-	{
-		return;
-	}
-
-	bIsDead = true;
-
-	if (AbilitySystemComponent)
-	{
-		// GA_Drg_Death 어빌리티 태그 정의
-		FGameplayTag DeathEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Death"));
-		// GameplayEventData 생성 및 몽타주 선택 태그 포함
-		FGameplayEventData EventData;
-		EventData.Instigator = this;
-		EventData.Target = this;
-		EventData.TargetTags.AddTag(CharacterData->DeathTypeTag);
-		// GA_Drg_Death 활성화
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, DeathEventTag, EventData);
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("[DrgBaseCharacter] : %s 캐릭터가 사망했습니다."), *GetName());
 }
 
 void ADrgBaseCharacter::HandleOnMoveSpeedChanged(const FOnAttributeChangeData& Data)
