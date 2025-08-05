@@ -113,8 +113,8 @@ void UDrgGameplayAbility::OnCooldownEnded()
 			if (!ASC->HasMatchingGameplayTag(DeadTag))
 			{
 				ASC->TryActivateAbility(CurrentSpecHandle);
-				bIsOnAutoCast = false;
 			}
+			bIsOnAutoCast = false;
 		}
 	}
 
