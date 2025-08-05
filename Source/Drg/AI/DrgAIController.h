@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "DrgAIController.generated.h"
 
+struct FGameplayTag;
 /**
  * 
  */
@@ -17,8 +18,12 @@ class DRG_API ADrgAIController : public AAIController
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
-	virtual void HandleOnDeath(AActor* DeadActor);
-	
+	virtual void OnUnPossess() override;
+
+	virtual void OnPawnStateDead(const FGameplayTag CallbackTag, int32 NewCount);
+
+	FDelegateHandle DeadStateTagDelegateHandle;
+
 	// 사용할 행동 트리 애셋
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|AI")
 	TObjectPtr<UBehaviorTree> BehaviorTree;
