@@ -25,11 +25,6 @@ void UDrgUpgradeComponent::BeginPlay()
 	}
 }
 
-/**
-* @brief 필요한 개수의 랜덤한 어빌리티들의 데이터를 반환해주는 함수입니다. 
-* @param NumChoices 반환 받을 어빌리티 선택지의 개수입니다.
-* @return 반환될 어빌리티가 모자랄 경우, Default 값으로 채웁니다. DataAsset = nullptr
-*/
 TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoices)
 {
 	TArray<FDrgUpgradeChoice> FinalChoices;
@@ -111,7 +106,6 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 	return FinalChoices;
 }
 
-// @brief 선택된 어빌리티를 플레이어에 적용해 주는 함수입니다.
 void UDrgUpgradeComponent::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice)
 {
 	if (!ensure(AbilitySystemComponent)) return;
@@ -135,8 +129,6 @@ void UDrgUpgradeComponent::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedC
 			{
 				SpecToUpgrade->Level = SelectedChoice.NextLevel;
 				AbilitySystemComponent->MarkAbilitySpecDirty(*SpecToUpgrade);
-				UE_LOG(LogTemp, Warning, TEXT("'%s' 강화! Lv.%d"),
-				       *SelectedChoice.AbilityData->AbilityName.ToString(), SpecToUpgrade->Level);
 			}
 		}
 	}
@@ -148,13 +140,10 @@ void UDrgUpgradeComponent::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedC
 		if (NewHandle.IsValid())
 		{
 			OwnedAbilityHandles.Add(SelectedChoice.AbilityData, NewHandle);
-			UE_LOG(LogTemp, Warning, TEXT("'%s' 획득! Lv.%d"),
-			       *SelectedChoice.AbilityData->AbilityName.ToString(), SelectedChoice.NextLevel);
 		}
 	}
 }
 
-// @brief 플레이어가 소유한 어빌리티를 삭제하는 함수입니다. 
 void UDrgUpgradeComponent::RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData)
 {
 	if (!ensure(AbilitySystemComponent)) return;
