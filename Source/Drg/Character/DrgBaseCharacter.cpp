@@ -227,6 +227,30 @@ void ADrgBaseCharacter::GrantAbilities()
 	}
 }
 
+void ADrgBaseCharacter::OnDeathCleanup()
+{
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DrgBaseCharacter] : %s의 AbilitySystemComponent 없음"), *GetName());
+		return;
+	}
+	// 1. 캐릭터 숨김
+	SetActorHiddenInGame(true);
+
+	// 2. 모든 Active Gameplay Effect 제거
+	FGameplayEffectQuery Query;
+	AbilitySystemComponent->RemoveActiveEffects(Query);
+
+	// 3. 모든 LooseGameplayTag 제거
+	FGameplayTagContainer OwnedTags;
+	AbilitySystemComponent->GetOwnedGameplayTags(OwnedTags);
+
+	for (const FGameplayTag& Tag : OwnedTags)
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(Tag);
+	}
+}
+
 void ADrgBaseCharacter::HandleOnMoveSpeedChanged(const FOnAttributeChangeData& Data)
 {
 	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
