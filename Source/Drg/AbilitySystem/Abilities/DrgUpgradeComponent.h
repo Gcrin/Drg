@@ -6,9 +6,12 @@
 #include "Components/ActorComponent.h"
 #include "AbilitySystemInterface.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgAbilityDataAsset.h"
+#include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
 #include "DrgUpgradeComponent.generated.h"
 
 class UAbilitySystemComponent;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelUpChoicesReady, const TArray<FDrgUpgradeChoice>&, Choices);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class DRG_API UDrgUpgradeComponent : public UActorComponent
@@ -17,6 +20,12 @@ class DRG_API UDrgUpgradeComponent : public UActorComponent
 
 public:	
 	UDrgUpgradeComponent();
+
+	UPROPERTY(BlueprintAssignable, Category = "Drg|Ability|Events")
+	FOnLevelUpChoicesReady OnLevelUpChoiceReady;
+
+	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
+	void PresentLevelUpChoices(int32 NumChoices = 3);
 
 protected:
 	virtual void BeginPlay() override;

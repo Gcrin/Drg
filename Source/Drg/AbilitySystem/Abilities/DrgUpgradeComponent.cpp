@@ -11,6 +11,12 @@ UDrgUpgradeComponent::UDrgUpgradeComponent()
 {
 }
 
+void UDrgUpgradeComponent::PresentLevelUpChoices(int32 NumChoices)
+{
+	TArray<FDrgUpgradeChoice> Choices = GetLevelUpChoices(NumChoices);
+	OnLevelUpChoiceReady.Broadcast(Choices);
+}
+
 void UDrgUpgradeComponent::BeginPlay()
 {
 	Super::BeginPlay();
