@@ -25,7 +25,7 @@ public:
 
 protected:
 	UPROPERTY(editAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
-	TSubclassOf<class ADrgBaseCharacter> AICharacterClass;
+	TSubclassOf<class ADrgAICharacter> AICharacterClass;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
 	int32 TotalSpawnCount;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
@@ -33,9 +33,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
 	float MaxDistance;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
-	TArray<class ADrgBaseCharacter*> ActiveAIPool;
+	TArray<class ADrgAICharacter*> ActiveAIPool;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
-	TArray<class ADrgBaseCharacter*> InActiveAIPool;
+	TArray<class ADrgAICharacter*> InActiveAIPool;
 	int32 MaxTryCount = 30;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
 	int32 CurrentWaveNumber;
@@ -49,6 +49,8 @@ protected:
 	// 이 이상 AI 캐릭터 스폰하지 않음
 	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
 	void InitializePool();
+	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
+	void ReturnAIToPool(class ADrgAICharacter* DeadAI);
 	// 현재 웨이브 스폰 타이머 시작. SpawnAILoop 반복 실행
 	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
 	void StartSpawnTimer();
@@ -63,7 +65,7 @@ protected:
 	// 현재 웨이브에 해당하는 AI 데이터에셋 랜덤하게 반환
 	TObjectPtr<class UDrgCharacterData> GetRandomAICharacterData();
 	// 데이터에셋 적용하여 안전한 위치에 스폰
-	class ADrgBaseCharacter* SpawnAIFromPool();
+	class ADrgAICharacter* SpawnAIFromPool();
 	// 스폰 후 ActiveAIPool에 추가. 타이머에서 실행될 함수
 	void SpawnAILoop();
 };

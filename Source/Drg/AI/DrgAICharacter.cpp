@@ -67,4 +67,6 @@ void ADrgAICharacter::OnDeathCleanup()
 	Super::OnDeathCleanup();
 	AbilitySystemComponent->CancelAbilities();
 	AbilitySystemComponent->ClearAllAbilities();
+
+	OnAIDied.Broadcast(this);
 }
