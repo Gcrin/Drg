@@ -17,6 +17,7 @@ public:
 
 	virtual void DeactivateCharacter() override;
 	virtual void ActivateCharacter() override;
+	virtual void OnDeathCleanup() override;
 
 protected:
 	// Called when the game starts or when spawned

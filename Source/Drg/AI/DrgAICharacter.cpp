@@ -61,3 +61,10 @@ void ADrgAICharacter::ActivateCharacter()
 		}
 	}
 }
+
+void ADrgAICharacter::OnDeathCleanup()
+{
+	Super::OnDeathCleanup();
+	AbilitySystemComponent->CancelAbilities();
+	AbilitySystemComponent->ClearAllAbilities();
+}

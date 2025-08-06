@@ -31,10 +31,17 @@ public:
 		this->CharacterData = NewCharacterData;
 	}
 
+	TObjectPtr<UDrgCharacterData> GetCharacterData() const
+	{
+		return CharacterData;
+	}
+
 	UFUNCTION(blueprintCallable, Category = "Drg|CharacterState")
 	virtual void DeactivateCharacter();
 	UFUNCTION(blueprintCallable, Category = "Drg|CharacterState")
 	virtual void ActivateCharacter();
+	UFUNCTION()
+	virtual void OnDeathCleanup();
 
 protected:
 	virtual void BeginPlay() override;
