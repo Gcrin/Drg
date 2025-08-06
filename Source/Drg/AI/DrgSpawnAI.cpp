@@ -191,6 +191,7 @@ ADrgBaseCharacter* ADrgSpawnAI::SpawnAIFromPool()
 			SpawnedAI->GetActorLocation() + FVector(
 				0, 0, SpawnedAI->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
 		UGameplayStatics::FinishSpawningActor(SpawnedAI, SpawnTransform);
+		SpawnedAI->ActivateCharacter();
 
 		return SpawnedAI;
 	}
