@@ -14,14 +14,20 @@ UDrgUpgradeComponent::UDrgUpgradeComponent()
 void UDrgUpgradeComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	if (IAbilitySystemInterface* AbilitySystemOwner = Cast<IAbilitySystemInterface>(GetOwner()))
+
+	IAbilitySystemInterface* AbilitySystemOwner = Cast<IAbilitySystemInterface>(GetOwner());
+	// 이 컴포넌트의 오너(Owner)는 반드시 IAbilitySystemInterface를 구현해야 합니다.
+	if (ensure(AbilitySystemOwner))
 	{
 		AbilitySystemComponent = AbilitySystemOwner->GetAbilitySystemComponent();
-		if (!AbilitySystemComponent)
-		{
-			UE_LOG(LogTemp, Error, TEXT("DrgUpgradeComp/ASC를 찾을 수 없습니다."));
-		}
+		ensure(AbilitySystemComponent != nullptr);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error,
+		       TEXT(
+			       "'%s'에 부착된 DrgUpgradeComponent의 오너가 IAbilitySystemInterface를 구현하지 않았습니다! 오너의 C++ 클래스나 블루프린트에서 인터페이스를 추가해주세요."
+		       ), *GetOwner()->GetName());
 	}
 }
 
@@ -29,10 +35,10 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 {
 	TArray<FDrgUpgradeChoice> FinalChoices;
 	bool bIsExecuted = true;
-	
+
 	if (!ensure(AbilitySystemComponent)) { bIsExecuted = false; }
 	if (!ensureMsgf(AllAvailableAbilities.Num() > 0,
-		TEXT("UpgradeComponent에 설정된 어빌리티가 없습니다."))) { bIsExecuted = false; }
+	                TEXT("UpgradeComponent에 설정된 어빌리티가 없습니다."))) { bIsExecuted = false; }
 
 	if (bIsExecuted)
 	{
@@ -66,7 +72,7 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 				Choice.PreviousLevel = 0;
 				Choice.NextLevel = 1;
 			}
-		
+
 			if (bShouldBeCandidate)
 			{
 				CandidateChoices.Add(Choice);
@@ -74,11 +80,11 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 				TotalWeight += AbilityData->SelectionWeight;
 			}
 		}
-		
+
 		for (int32 i = 0; i < NumChoices; ++i)
 		{
 			if (CandidateChoices.Num() <= 0) break;
-			
+
 			if (TotalWeight <= 0.0f)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("가중치 오류 발생. 어빌리티 가중치를 확인해주세요."));
@@ -102,7 +108,7 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 			}
 		}
 	}
-	while (FinalChoices.Num() < NumChoices) { FinalChoices.Add(FDrgUpgradeChoice()); } 
+	while (FinalChoices.Num() < NumChoices) { FinalChoices.Add(FDrgUpgradeChoice()); }
 	return FinalChoices;
 }
 
@@ -159,5 +165,5 @@ void UDrgUpgradeComponent::RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData
 		OwnedAbilityHandles.Remove(AbilityData);
 		return;
 	}
-	UE_LOG(LogTemp, Warning,TEXT("삭제될 어빌리티가 존재하지 않습니다."));
+	UE_LOG(LogTemp, Warning, TEXT("삭제될 어빌리티가 존재하지 않습니다."));
 }
