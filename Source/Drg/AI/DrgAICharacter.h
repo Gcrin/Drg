@@ -21,7 +21,6 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	virtual void PossessedBy(AController* NewController) override;
 
 	// AI 컨트롤러를 저장할 변수
 	UPROPERTY(Transient)

@@ -20,13 +20,6 @@ void ADrgAICharacter::BeginPlay()
 	DeactivateCharacter();
 }
 
-void ADrgAICharacter::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-
-	ApplyCharacterData();
-}
-
 void ADrgAICharacter::DeactivateCharacter()
 {
 	Super::DeactivateCharacter();

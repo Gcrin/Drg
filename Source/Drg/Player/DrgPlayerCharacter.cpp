@@ -61,7 +61,7 @@ void ADrgPlayerCharacter::ActivateCharacter()
 void ADrgPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	ApplyCharacterData();
+	ActivateCharacter();
 }
 
 void ADrgPlayerCharacter::PossessedBy(AController* NewController)
