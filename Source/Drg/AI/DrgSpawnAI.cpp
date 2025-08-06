@@ -1,10 +1,12 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "DrgSpawnAI.h"
+
+#include "DrgAIController.h"
 #include "NavigationSystem.h"
 #include "DrgWaveTableRow.h"
 #include "Components/CapsuleComponent.h"
-#include "Drg/Character/DrgBaseCharacter.h"
+#include "Drg/AI/DrgAICharacter.h"
 #include "Drg/Character/Data/DrgCharacterData.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -36,13 +38,28 @@ void ADrgSpawnAI::InitializePool()
 		FVector SpawnLocation;
 		if (FindSafeRandomPointInNav(SpawnLocation))
 		{
-			ADrgBaseCharacter* SpawnedAI = GetWorld()->SpawnActor<ADrgBaseCharacter>(
+			ADrgAICharacter* SpawnedAI = GetWorld()->SpawnActor<ADrgAICharacter>(
 				AICharacterClass,
 				SpawnLocation,
 				FRotator::ZeroRotator
 			);
 			InActiveAIPool.Add(SpawnedAI);
+			SpawnedAI->OnAIDied.AddDynamic(this, &ADrgSpawnAI::ReturnAIToPool);
 		}
+	}
+}
+
+void ADrgSpawnAI::ReturnAIToPool(class ADrgAICharacter* DeadAI)
+{
+	if (ActiveAIPool.Contains(DeadAI))
+	{
+		ActiveAIPool.Remove(DeadAI);
+		InActiveAIPool.Add(DeadAI);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("풀에 AI 캐릭터를 반환하려 했지만, Active 풀에서 찾을 수 없습니다. 풀링 로직에 오류가 있을 수 있습니다. 대상 캐릭터: %s"),
+		       *DeadAI->GetName());
 	}
 }
 
@@ -171,26 +188,21 @@ TObjectPtr<UDrgCharacterData> ADrgSpawnAI::GetRandomAICharacterData()
 	return nullptr;
 }
 
-ADrgBaseCharacter* ADrgSpawnAI::SpawnAIFromPool()
+ADrgAICharacter* ADrgSpawnAI::SpawnAIFromPool()
 {
 	FVector SpawnLocation;
 	if (FindSafeRandomPointInNav(SpawnLocation))
 	{
-		FTransform SpawnTransform = FTransform(FRotator::ZeroRotator, SpawnLocation, FVector(1.f));
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-		ADrgBaseCharacter* SpawnedAI = GetWorld()->SpawnActorDeferred<ADrgBaseCharacter>(
-			AICharacterClass,
-			SpawnTransform,
-			this,
-			nullptr,
-			SpawnParams.SpawnCollisionHandlingOverride
-		);
+		if (InActiveAIPool.Num() == 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Inactive 풀이 비어있습니다. 새로운 몬스터를 생성할 수 없습니다."));
+			return nullptr;
+		}
+		ADrgAICharacter* SpawnedAI = InActiveAIPool.Pop();
+		ActiveAIPool.Add(SpawnedAI);
 		SpawnedAI->SetCharacterData(GetRandomAICharacterData());
 		SpawnedAI->SetActorLocation(
-			SpawnedAI->GetActorLocation() + FVector(
-				0, 0, SpawnedAI->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
-		UGameplayStatics::FinishSpawningActor(SpawnedAI, SpawnTransform);
+			SpawnLocation + FVector(0, 0, SpawnedAI->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
 		SpawnedAI->ActivateCharacter();
 
 		return SpawnedAI;
@@ -217,10 +229,9 @@ void ADrgSpawnAI::SpawnAILoop()
 		{
 			break;
 		}
-		ADrgBaseCharacter* SpawnedAI = SpawnAIFromPool();
+		ADrgAICharacter* SpawnedAI = SpawnAIFromPool();
 		if (SpawnedAI)
 		{
-			ActiveAIPool.Add(SpawnedAI);
 			CurrentSpawnCount++;
 		}
 	}

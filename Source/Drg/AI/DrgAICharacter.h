@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Drg/Character/DrgBaseCharacter.h"
 #include "DrgAICharacter.generated.h"
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIDied, class ADrgAICharacter*, DeadAI);
 
 UCLASS()
 class DRG_API ADrgAICharacter : public ADrgBaseCharacter
@@ -14,6 +15,9 @@ class DRG_API ADrgAICharacter : public ADrgBaseCharacter
 public:
 	// Sets default values for this character's properties
 	ADrgAICharacter();
+
+	UPROPERTY(BlueprintAssignable, Category = "Pooling")
+	FOnAIDied OnAIDied;
 
 	virtual void DeactivateCharacter() override;
 	virtual void ActivateCharacter() override;
