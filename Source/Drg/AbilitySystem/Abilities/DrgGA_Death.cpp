@@ -20,20 +20,20 @@ void UDrgGA_Death::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 {
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 
-	ADrgBaseCharacter* OwnerCharacter = CastChecked<ADrgBaseCharacter>(ActorInfo->OwnerActor);
-	if (OwnerCharacter)
+	ADrgBaseCharacter* AvatarCharacter = CastChecked<ADrgBaseCharacter>(ActorInfo->AvatarActor);
+	if (AvatarCharacter)
 	{
-		OwnerCharacter->OnDeathCleanup();
+		AvatarCharacter->OnDeathCleanup();
 	}
 }
 
 FOwnerData UDrgGA_Death::GetOwnerData() const
 {
 	FOwnerData OwnerData;
-	const AActor* OwnerActor = GetOwningActorFromActorInfo();
-	if (OwnerActor)
+	const AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (AvatarActor)
 	{
-		OwnerData.OwningCharacter = CastChecked<ADrgBaseCharacter>(OwnerActor);
+		OwnerData.OwningCharacter = CastChecked<ADrgBaseCharacter>(AvatarActor);
 		OwnerData.AbilitySystemComponent = OwnerData.OwningCharacter->GetAbilitySystemComponent();
 		auto CharacterData = OwnerData.OwningCharacter->GetCharacterData();
 		if (CharacterData)
