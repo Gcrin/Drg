@@ -23,10 +23,13 @@ public:
 
 	virtual void HandleOnLevelUp(AActor* Actor);
 
-protected:
+	virtual void DeactivateCharacter() override;
+	virtual void ActivateCharacter() override;
 
+protected:
+	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
 	TObjectPtr<USpringArmComponent> SpringArmComponent;
 

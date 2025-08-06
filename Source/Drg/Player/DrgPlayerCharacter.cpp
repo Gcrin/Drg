@@ -3,6 +3,7 @@
 
 #include "DrgPlayerCharacter.h"
 
+#include "DrgPlayerController.h"
 #include "Camera/CameraComponent.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -23,6 +24,8 @@ ADrgPlayerCharacter::ADrgPlayerCharacter()
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComponent->SetupAttachment(SpringArmComponent);
 	CameraComponent->bUsePawnControlRotation = false;
+
+	bIsAIControlled = false;
 }
 
 UDataTable* ADrgPlayerCharacter::GetDataTable() const
@@ -33,6 +36,32 @@ UDataTable* ADrgPlayerCharacter::GetDataTable() const
 void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
 {
 	// ToDo: 레벨 업시 표시되는 UI 구현해주세요.
+}
+
+void ADrgPlayerCharacter::DeactivateCharacter()
+{
+	Super::DeactivateCharacter();
+	// 컨트롤러 입력 비활성화
+	if (ADrgPlayerController* DrgPlayerController = Cast<ADrgPlayerController>(GetController()))
+	{
+		DrgPlayerController->DisableInput(DrgPlayerController);
+	}
+}
+
+void ADrgPlayerCharacter::ActivateCharacter()
+{
+	Super::ActivateCharacter();
+	// 컨트롤러 입력 활성화
+	if (ADrgPlayerController* PlayerController = Cast<ADrgPlayerController>(GetController()))
+	{
+		PlayerController->EnableInput(PlayerController);
+	}
+}
+
+void ADrgPlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	ApplyCharacterData();
 }
 
 void ADrgPlayerCharacter::PossessedBy(AController* NewController)

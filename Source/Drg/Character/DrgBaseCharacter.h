@@ -32,9 +32,9 @@ public:
 	}
 
 	UFUNCTION(blueprintCallable, Category = "Drg|CharacterState")
-	void DeactivateCharacter();
+	virtual void DeactivateCharacter();
 	UFUNCTION(blueprintCallable, Category = "Drg|CharacterState")
-	void ActivateCharacter();
+	virtual void ActivateCharacter();
 
 protected:
 	virtual void BeginPlay() override;
@@ -47,7 +47,6 @@ protected:
 	// GAS 초기화
 	virtual void InitializeAttributes();
 	virtual void GrantAbilities();
-	void ResetAbilitySystemComponent();
 
 	virtual void HandleOnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 
@@ -62,7 +61,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|CharacterState")
 	bool bIsAIControlled = false;
-	// AI 컨트롤러를 저장할 변수
-	UPROPERTY(Transient)
-	TObjectPtr<class ADrgAIController> CachedAIController;
 };
