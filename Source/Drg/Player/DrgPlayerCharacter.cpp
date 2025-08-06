@@ -4,6 +4,8 @@
 #include "DrgPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
+#include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
 
@@ -23,6 +25,8 @@ ADrgPlayerCharacter::ADrgPlayerCharacter()
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComponent->SetupAttachment(SpringArmComponent);
 	CameraComponent->bUsePawnControlRotation = false;
+
+	AbilityUpgradeComponent = CreateDefaultSubobject<UDrgUpgradeComponent>(TEXT("AbilityUpgradeComponent"));
 }
 
 UDataTable* ADrgPlayerCharacter::GetDataTable() const
@@ -32,7 +36,10 @@ UDataTable* ADrgPlayerCharacter::GetDataTable() const
 
 void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
 {
-	// ToDo: 레벨 업시 표시되는 UI 구현해주세요.
+	if (AbilityUpgradeComponent)
+	{
+		AbilityUpgradeComponent->PresentLevelUpChoices();
+	}
 }
 
 void ADrgPlayerCharacter::PossessedBy(AController* NewController)

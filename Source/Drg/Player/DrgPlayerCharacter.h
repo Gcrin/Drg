@@ -8,6 +8,8 @@
 
 class UCameraComponent;
 class USpringArmComponent;
+class UDrgUpgradeComponent;
+
 /**
  * 
  */
@@ -21,18 +23,20 @@ public:
 
 	UDataTable* GetDataTable() const;
 
-	virtual void HandleOnLevelUp(AActor* Actor);
-
-protected:
-
-	virtual void PossessedBy(AController* NewController) override;
-	
+protected:	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
 	TObjectPtr<USpringArmComponent> SpringArmComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
 	TObjectPtr<UCameraComponent> CameraComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilityComp")
+	TObjectPtr<UDrgUpgradeComponent> AbilityUpgradeComponent;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|Data")
 	UDataTable* MaxExperienceDataTable;
+
+	virtual void HandleOnLevelUp(AActor* Actor);
+
+	virtual void PossessedBy(AController* NewController) override;
 };
