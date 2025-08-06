@@ -4,8 +4,6 @@
 #include "DrgBaseCharacter.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
-#include "Drg/AI/DrgAIController.h"
-#include "Drg/Player/DrgPlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Data/DrgCharacterData.h"
 #include "Drg/AbilitySystem/DrgAbilitySystemComponent.h"
@@ -55,21 +53,6 @@ void ADrgBaseCharacter::DeactivateCharacter()
 	// 캐릭터의 움직임을 멈춤
 	GetCharacterMovement()->StopMovementImmediately();
 	GetCharacterMovement()->DisableMovement();
-
-	// 컨트롤러 입력 비활성화
-	AController* MyController = GetController();
-	if (ADrgPlayerController* DrgPlayerController = Cast<ADrgPlayerController>(MyController))
-	{
-		DrgPlayerController->DisableInput(DrgPlayerController);
-	}
-	else if (ADrgAIController* DrgAIController = Cast<ADrgAIController>(MyController))
-	{
-		// AI 컨트롤러를 캐시에 저장
-		CachedAIController = DrgAIController;
-		DrgAIController->UnPossess();
-	}
-	// 게임에서 숨김 
-	SetActorHiddenInGame(true);
 }
 
 void ADrgBaseCharacter::ActivateCharacter()
@@ -80,42 +63,8 @@ void ADrgBaseCharacter::ActivateCharacter()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	// 캐릭터의 움직임 활성화
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-
-	// 컨트롤러 입력 활성화
-	AController* MyController = GetController();
-
-	if (ADrgPlayerController* PlayerController = Cast<ADrgPlayerController>(MyController))
-	{
-		PlayerController->EnableInput(PlayerController);
-	}
-	else if (MyController == nullptr && bIsAIControlled) // AIController가 UnPossess된 상태
-	{
-		// 기존에 사용했던 AI 컨트롤러가 있는지 확인하고 재사용
-		if (CachedAIController)
-		{
-			CachedAIController->Possess(this);
-			// 재사용 후 캐시 변수는 비워둠
-			CachedAIController = nullptr;
-		}
-		else
-		{
-			// 기존 AIController가 없으면 새로 생성해서 Possess
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			ADrgAIController* NewAIController = GetWorld()->SpawnActor<ADrgAIController>(
-				AIControllerClass, GetActorLocation(), GetActorRotation(), SpawnParams);
-
-			if (NewAIController)
-			{
-				NewAIController->Possess(this);
-			}
-		}
-	}
 	// 숨김 해제
 	SetActorHiddenInGame(false);
-	// ASC 재설정
-	ResetAbilitySystemComponent();
 }
 
 void ADrgBaseCharacter::ApplyCharacterData()
@@ -164,8 +113,6 @@ void ADrgBaseCharacter::ApplyCharacterData()
 void ADrgBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	ActivateCharacter();
 }
 
 void ADrgBaseCharacter::PossessedBy(AController* NewController)
@@ -184,6 +131,30 @@ void ADrgBaseCharacter::PossessedBy(AController* NewController)
 		{
 			// Owner는 자기 자신, Avatar는 컨트롤러가 조종하는 폰(자기 자신)으로 초기화
 			AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		}
+		// Attribute 초기화
+		InitializeAttributes();
+
+		// 기본 어빌리티 부여
+		if (AbilitySystemComponent->GetActivatableAbilities().Num() == 0)
+		{
+			GrantAbilities();
+		}
+
+		// 초기 태그 다시 부여
+		AbilitySystemComponent->AddLooseGameplayTags(CharacterData->InitialTags);
+
+		// 어트리뷰트 변경 델리게이트 구독 제거 후 재구독
+		if (AttributeSet)
+		{
+			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+				AttributeSet->GetMoveSpeedAttribute()
+			).RemoveAll(this); // 이전 구독 제거 후
+			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+				AttributeSet->GetMoveSpeedAttribute()
+			).AddUObject(this, &ADrgBaseCharacter::HandleOnMoveSpeedChanged);
+
+			GetCharacterMovement()->MaxWalkSpeed = AttributeSet->GetMoveSpeed();
 		}
 	}
 }
@@ -254,53 +225,6 @@ void ADrgBaseCharacter::GrantAbilities()
 		{
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, -1, this));
 		}
-	}
-}
-
-void ADrgBaseCharacter::ResetAbilitySystemComponent()
-{
-	if (!AbilitySystemComponent)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[DrgBaseCharacter] : %s의 AbilitySystemComponent 없음"), *GetName());
-		return;
-	}
-
-	// 1. 모든 Active Gameplay Effect 제거
-	FGameplayEffectQuery Query;
-	AbilitySystemComponent->RemoveActiveEffects(Query);
-
-	// 2. 모든 LooseGameplayTag 제거
-	FGameplayTagContainer OwnedTags;
-	AbilitySystemComponent->GetOwnedGameplayTags(OwnedTags);
-
-	for (const FGameplayTag& Tag : OwnedTags)
-	{
-		AbilitySystemComponent->RemoveLooseGameplayTag(Tag);
-	}
-
-	// 3. Attribute 초기화
-	InitializeAttributes();
-
-	// 4. 기본 어빌리티 부여
-	if (AbilitySystemComponent->GetActivatableAbilities().Num() == 0)
-	{
-		GrantAbilities();
-	}
-
-	// 5. 초기 태그 다시 부여
-	AbilitySystemComponent->AddLooseGameplayTags(CharacterData->InitialTags);
-
-	// 6. 어트리뷰트 변경 델리게이트 구독 제거 후 재구독
-	if (AttributeSet)
-	{
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetMoveSpeedAttribute()
-		).RemoveAll(this); // 이전 구독 제거 후
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetMoveSpeedAttribute()
-		).AddUObject(this, &ADrgBaseCharacter::HandleOnMoveSpeedChanged);
-
-		GetCharacterMovement()->MaxWalkSpeed = AttributeSet->GetMoveSpeed();
 	}
 }
 

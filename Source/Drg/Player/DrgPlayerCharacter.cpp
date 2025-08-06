@@ -3,9 +3,9 @@
 
 #include "DrgPlayerCharacter.h"
 
+#include "DrgPlayerController.h"
 #include "Camera/CameraComponent.h"
 #include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
-#include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
 
@@ -27,6 +27,8 @@ ADrgPlayerCharacter::ADrgPlayerCharacter()
 	CameraComponent->bUsePawnControlRotation = false;
 
 	AbilityUpgradeComponent = CreateDefaultSubobject<UDrgUpgradeComponent>(TEXT("AbilityUpgradeComponent"));
+
+	bIsAIControlled = false;
 }
 
 UDataTable* ADrgPlayerCharacter::GetDataTable() const
@@ -40,6 +42,32 @@ void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
 	{
 		AbilityUpgradeComponent->PresentLevelUpChoices();
 	}
+}
+
+void ADrgPlayerCharacter::DeactivateCharacter()
+{
+	Super::DeactivateCharacter();
+	// 컨트롤러 입력 비활성화
+	if (ADrgPlayerController* DrgPlayerController = Cast<ADrgPlayerController>(GetController()))
+	{
+		DrgPlayerController->DisableInput(DrgPlayerController);
+	}
+}
+
+void ADrgPlayerCharacter::ActivateCharacter()
+{
+	Super::ActivateCharacter();
+	// 컨트롤러 입력 활성화
+	if (ADrgPlayerController* PlayerController = Cast<ADrgPlayerController>(GetController()))
+	{
+		PlayerController->EnableInput(PlayerController);
+	}
+}
+
+void ADrgPlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	ApplyCharacterData();
 }
 
 void ADrgPlayerCharacter::PossessedBy(AController* NewController)

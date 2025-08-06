@@ -23,7 +23,15 @@ public:
 
 	UDataTable* GetDataTable() const;
 
-protected:	
+	virtual void HandleOnLevelUp(AActor* Actor);
+
+	virtual void DeactivateCharacter() override;
+	virtual void ActivateCharacter() override;
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void PossessedBy(AController* NewController) override;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Camera")
 	TObjectPtr<USpringArmComponent> SpringArmComponent;
 
@@ -35,8 +43,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|Data")
 	UDataTable* MaxExperienceDataTable;
-
-	virtual void HandleOnLevelUp(AActor* Actor);
-
-	virtual void PossessedBy(AController* NewController) override;
 };
