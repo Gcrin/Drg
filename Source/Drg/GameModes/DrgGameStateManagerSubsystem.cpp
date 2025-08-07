@@ -49,7 +49,7 @@ void UDrgGameStateManagerSubsystem::HandleMainMenuState()
 void UDrgGameStateManagerSubsystem::HandleInGameState()
 {
 	UE_LOG(LogTemp, Display, TEXT("게임 레벨로 이동"));
-	UGameplayStatics::OpenLevel(this, FName("L_InGame"));
+	UGameplayStatics::OpenLevel(this, FName("L_TestMap"));
 }
 
 void UDrgGameStateManagerSubsystem::HandlePostGameState()
