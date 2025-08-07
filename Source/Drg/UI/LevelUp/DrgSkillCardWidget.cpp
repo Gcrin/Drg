@@ -41,6 +41,9 @@ void UDrgSkillCardWidget::SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeCho
 	UpgradeChoice = InUpgradeChoice;
 	SkillIndex = InSkillIndex;
 
+	// 클릭 가능 상태 초기화
+	bIsClickable = true;
+
 	// 필수 컴포넌트 체크 - 더 눈에 띄게 수정
 	if (!SkillNameText)
 	{
@@ -209,5 +212,23 @@ void UDrgSkillCardWidget::OnIconLoaded()
 
 void UDrgSkillCardWidget::OnButtonClicked()
 {
+	// 멀티 클릭 방지 - 이미 클릭되었으면 무시
+	if (!bIsClickable)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UDrgSkillCardWidget: 멀티 클릭 감지! 이미 선택된 카드입니다."));
+		return;
+	}
+
+	// 클릭 비활성화
+	bIsClickable = false;
+
+	// 버튼 비활성화 (시각적 피드백)
+	if (SkillButton)
+	{
+		SkillButton->SetIsEnabled(false);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("UDrgSkillCardWidget: 스킬 카드 클릭 - 인덱스: %d"), SkillIndex);
+
 	OnCardClicked.Broadcast(SkillIndex);
 }

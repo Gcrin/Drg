@@ -54,4 +54,7 @@ private:
 
 	// 원래 시간 배율 저장
 	float OriginalTimeDilation = 1.0f;
+
+	// 멀티 클릭 방지
+	bool bIsProcessingSelection = false;
 };

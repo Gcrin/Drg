@@ -70,4 +70,7 @@ private:
 
 	// 아이콘 캐시 (정적 - 모든 위젯이 공유)
 	static TMap<TSoftObjectPtr<UTexture2D>, TWeakObjectPtr<UTexture2D>> IconCache;
+
+	// 멀티 클릭 방지
+	bool bIsClickable = true;
 };
