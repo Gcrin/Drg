@@ -20,7 +20,8 @@ public class Drg : ModuleRules
 			"GameplayTasks",
 			"UMG",
 			"ModularGameplay",
-			"NavigationSystem"
+			"NavigationSystem",
+			"GameplayMessageRuntime"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Niagara" });
