@@ -29,9 +29,11 @@ class DRG_API UDrgGameStateManagerSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "Drg|State")
 	void ChangeState(EGameFlowState NewState);
 
-	EGameFlowState GetCurrentState() const { return CurrentState;}
+	UFUNCTION(BlueprintPure, Category = "Drg|State")
+	EGameFlowState GetCurrentState() const { return CurrentState; }
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
