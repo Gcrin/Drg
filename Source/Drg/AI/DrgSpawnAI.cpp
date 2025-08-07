@@ -55,6 +55,7 @@ void ADrgSpawnAI::ReturnAIToPool(class ADrgAICharacter* DeadAI)
 	{
 		ActiveAIPool.Remove(DeadAI);
 		InActiveAIPool.Add(DeadAI);
+		CurrentSpawnCount--;
 	}
 	else
 	{
