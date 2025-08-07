@@ -32,9 +32,11 @@ void UDrgGameStateManagerSubsystem::ChangeState(EGameFlowState NewState)
 			HandleInGameState();
 			break;
 		case EGameFlowState::PostGame:
+			HandlePostGameState();
+			break;
+		case EGameFlowState::Quitting:
 			HandleQuittingState();
 			break;
-		// 추가적인 상태
 	}
 }
 
@@ -50,8 +52,14 @@ void UDrgGameStateManagerSubsystem::HandleInGameState()
 	UGameplayStatics::OpenLevel(this, FName("L_InGame"));
 }
 
+void UDrgGameStateManagerSubsystem::HandlePostGameState()
+{
+	UE_LOG(LogTemp, Display, TEXT("게임 결과창으로 이동"));
+}
+
 void UDrgGameStateManagerSubsystem::HandleQuittingState()
 {
+	UE_LOG(LogTemp, Display, TEXT("게임 종료"));
 	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
 	UKismetSystemLibrary::QuitGame(this, PlayerController, EQuitPreference::Quit, true);
 }

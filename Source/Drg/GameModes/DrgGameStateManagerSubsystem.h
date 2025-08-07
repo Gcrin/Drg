@@ -13,8 +13,6 @@ enum class EGameFlowState : uint8
 	None,
 	// 메인 메뉴
 	MainMenu,
-	// 로비
-	Lobby,
 	// 게임 플레이
 	InGame,
 	// 게임 결과창
@@ -40,6 +38,7 @@ public:
 private:
 	void HandleMainMenuState();
 	void HandleInGameState();
+	void HandlePostGameState();
 	void HandleQuittingState();
 
 	EGameFlowState CurrentState = EGameFlowState::None;
