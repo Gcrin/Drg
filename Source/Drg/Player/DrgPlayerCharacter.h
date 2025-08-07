@@ -43,4 +43,15 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|Data")
 	UDataTable* MaxExperienceDataTable;
+
+	// UI 관련 추가
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|UI")
+	TSubclassOf<UDrgSkillSelectionWidget> SkillSelectionWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UDrgSkillSelectionWidget> SkillSelectionWidget;
+
+private:
+	UFUNCTION()
+	void OnSkillSelected(int32 SkillIndex);
 };

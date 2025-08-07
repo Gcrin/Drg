@@ -23,6 +23,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Skill Selection")
 	void ShowUpgradeChoices(const TArray<FDrgUpgradeChoice>& UpgradeChoices);
 
+	// 현재 업그레이드 선택지 가져오기 (PlayerCharacter에서 사용)
+	UFUNCTION(BlueprintCallable, Category = "Skill Selection")
+	TArray<FDrgUpgradeChoice> GetCurrentUpgradeChoices() const { return CurrentUpgradeChoices; }
+	
 	// 스킬 선택 완료 시 호출될 델리게이트
 	UPROPERTY(BlueprintAssignable, Category = "Skill Selection")
 	FOnSkillSelected OnSkillSelected;

@@ -136,8 +136,6 @@ void UDrgSkillCardWidget::LoadSkillIconAsync()
 		{
 			// 캐시에서 즉시 사용
 			SkillIcon->SetBrushFromTexture(CachedIcon->Get());
-			UE_LOG(LogTemp, Log, TEXT("UDrgSkillCardWidget: 캐시에서 아이콘 로드 - %s"), 
-				   *UpgradeChoice.AbilityData->AbilityName.ToString());
 			return;
 		}
 		else
@@ -215,7 +213,6 @@ void UDrgSkillCardWidget::OnButtonClicked()
 	// 멀티 클릭 방지 - 이미 클릭되었으면 무시
 	if (!bIsClickable)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UDrgSkillCardWidget: 멀티 클릭 감지! 이미 선택된 카드입니다."));
 		return;
 	}
 
@@ -227,8 +224,6 @@ void UDrgSkillCardWidget::OnButtonClicked()
 	{
 		SkillButton->SetIsEnabled(false);
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("UDrgSkillCardWidget: 스킬 카드 클릭 - 인덱스: %d"), SkillIndex);
 
 	OnCardClicked.Broadcast(SkillIndex);
 }

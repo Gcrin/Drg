@@ -62,8 +62,11 @@ void UDrgSkillSelectionWidget::ShowUpgradeChoices(const TArray<FDrgUpgradeChoice
 		}
 	}
 
-	// UI 표시
-	AddToViewport(UIZOrder); // 기획자가 설정 가능한 Z-Order
+	// UI 표시 (BeginPlay에서 이미 생성되었으므로 AddToViewport만)
+	if (!IsInViewport())
+	{
+		AddToViewport(UIZOrder);
+	}
     
 	// 시간 느리게 하기 (pause 대신)
 	if (UWorld* World = GetWorld())
@@ -78,7 +81,6 @@ void UDrgSkillSelectionWidget::OnSkillCardClicked(int32 SkillIndex)
 	// 멀티 클릭 방지 - 이미 처리 중이면 무시
 	if (bIsProcessingSelection)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UDrgSkillSelectionWidget: 멀티 클릭 감지! 스킬 선택이 이미 처리 중입니다."));
 		return;
 	}
 
@@ -93,9 +95,6 @@ void UDrgSkillSelectionWidget::OnSkillCardClicked(int32 SkillIndex)
 
 	// 델리게이트 실행
 	OnSkillSelected.Broadcast(SkillIndex);
-
-	// 스킬 선택 완료 표시문
-	UE_LOG(LogTemp, Log, TEXT("UDrgSkillSelectionWidget: 스킬 선택 완료! 인덱스: %d"), SkillIndex);
 
 	// UI 제거
 	RemoveFromParent();
