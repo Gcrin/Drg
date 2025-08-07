@@ -35,6 +35,8 @@ void ADrgAICharacter::DeactivateCharacter()
 		// AI 컨트롤러를 캐시에 저장
 		CachedAIController = DrgAIController;
 		DrgAIController->UnPossess();
+		// 컨트롤러의 레퍼런스 확실하게 끊기
+		DrgAIController->SetPawn(nullptr);
 	}
 }
 
