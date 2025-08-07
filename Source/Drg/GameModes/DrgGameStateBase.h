@@ -6,14 +6,6 @@
 #include "GameFramework/GameStateBase.h"
 #include "DrgGameStateBase.generated.h"
 
-UENUM(BlueprintType)
-enum class EMatchState : uint8
-{
-	WaitingToStart UMETA(DisplayName = "WaitingToStart"),
-	Inprogress UMETA(DisplayName = "Inprogress"),
-	RoundOver UMETA(DisplayName = "RoundOver")
-};
-
 UCLASS()
 class DRG_API ADrgGameStateBase : public AGameStateBase
 {
@@ -21,19 +13,5 @@ class DRG_API ADrgGameStateBase : public AGameStateBase
 
 public:
 	ADrgGameStateBase();
-	
-	UFUNCTION(BlueprintPure, Category = "MatchState")
-	EMatchState GetCurrentMatchState() const;
-
-	void SetMatchState(EMatchState NewState);
-
-protected:
-	UPROPERTY(ReplicatedUsing = OnRep_MatchState)
-	EMatchState CurrentMatchState;
-	
-	UFUNCTION()
-	void OnRep_MatchState();
-	
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 };
