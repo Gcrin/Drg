@@ -23,6 +23,7 @@ enum class EGameFlowState : uint8
 	Quitting
 };
 
+UENUM(BlueprintType)
 enum class EGameResult : uint8
 {
 	None,

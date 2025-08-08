@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "DrgGameStateManagerSubsystem.h"
 #include "DrgGameModeBase.generated.h"
 
 
@@ -12,4 +13,7 @@ class DRG_API ADrgGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+public:
+	UFUNCTION(BlueprintPure, Category = "Drg|Rule")
+	EGameResult EvaluateGameEndCondition(AActor* DeadActor);
 };
