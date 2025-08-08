@@ -11,6 +11,7 @@
 // UI 관련 include 추가
 #include "Drg/UI/LevelUp/DrgSkillSelectionWidget.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
+#include "Kismet/GameplayStatics.h"
 
 ADrgPlayerCharacter::ADrgPlayerCharacter()
 {
@@ -106,6 +107,12 @@ void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
 	if (!SkillSelectionWidget || !AbilityUpgradeComponent)
 	{
 		return;
+	}
+
+	// 시간 배율 복원 (UI 제거 전에 먼저)
+	if (UWorld* World = GetWorld())
+	{
+		UGameplayStatics::SetGlobalTimeDilation(World, 1.0f);  // 정상 속도로 복원
 	}
 
 	// UI에서 현재 선택지 가져오기

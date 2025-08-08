@@ -86,12 +86,6 @@ void UDrgSkillSelectionWidget::OnSkillCardClicked(int32 SkillIndex)
 
 	// 처리 중 플래그 설정
 	bIsProcessingSelection = true;
-	
-	// 시간 배율 복원
-	if (UWorld* World = GetWorld())
-	{
-		UGameplayStatics::SetGlobalTimeDilation(World, OriginalTimeDilation);
-	}
 
 	// 델리게이트 실행
 	OnSkillSelected.Broadcast(SkillIndex);
