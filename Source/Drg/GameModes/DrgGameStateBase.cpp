@@ -3,6 +3,69 @@
 
 #include "DrgGameStateBase.h"
 
-ADrgGameStateBase::ADrgGameStateBase()
-{	
+#include "DrgGameModeBase.h"
+#include "Drg/System/DrgGameplayTags.h"
+#include "Net/UnrealNetwork.h"
+
+void ADrgGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ADrgGameStateBase, CurrentGameResult);
+}
+
+void ADrgGameStateBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (HasAuthority())
+	{
+		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+		DeathMessageListenerHandle = MessageSubsystem.RegisterListener(
+			DrgGameplayTags::Event_Death,
+			this,
+			&ADrgGameStateBase::OnDeathMessageReceived
+		);
+	}
+}
+
+void ADrgGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (DeathMessageListenerHandle.IsValid())
+	{
+		UGameplayMessageSubsystem::Get(GetWorld()).UnregisterListener(DeathMessageListenerHandle);
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+void ADrgGameStateBase::OnDeathMessageReceived(FGameplayTag Channel, const FDrgDeathMessage& Message)
+{
+	if (ADrgGameModeBase* GameMode = GetWorld()->GetAuthGameMode<ADrgGameModeBase>())
+	{
+		const EGameResult Result = GameMode->EvaluateGameEndCondition(Message.DeadActor);
+
+		if (Result != EGameResult::None)
+		{
+			CurrentGameResult = Result;
+			
+			if (HasAuthority())
+			{
+				OnRep_GameResult();
+			}
+		}
+	}
+}
+
+void ADrgGameStateBase::OnRep_GameResult()
+{
+	if (CurrentGameResult != EGameResult::None)
+	{
+		if (UGameInstance* GameInstance = GetGameInstance())
+		{
+			if (UDrgGameStateManagerSubsystem* GameStateManager = GameInstance->GetSubsystem<
+				UDrgGameStateManagerSubsystem>())
+			{
+				GameStateManager->ChangeStateWithResult(EGameFlowState::PostGame, CurrentGameResult);
+			}
+		}
+	}
 }
