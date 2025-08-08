@@ -23,6 +23,14 @@ enum class EGameFlowState : uint8
 	Quitting
 };
 
+enum class EGameResult : uint8
+{
+	None,
+	Victory,
+	Defeat,
+	Draw
+};
+
 UCLASS(Config = Game)
 class DRG_API UDrgGameStateManagerSubsystem : public UGameInstanceSubsystem
 {
@@ -34,6 +42,10 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Drg|State")
 	EGameFlowState GetCurrentState() const { return CurrentState; }
+	
+	void ChangeStateWithResult(EGameFlowState NewState, EGameResult GameResult = EGameResult::None);
+	
+	EGameResult GetCurrentGameResult() const { return CurrentGameResult; }
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
@@ -55,6 +67,7 @@ private:
 	void OnMapDataLoaded();
 
 	EGameFlowState CurrentState = EGameFlowState::None;
+	EGameResult CurrentGameResult = EGameResult::None; 
 
 	/**
 	 * MapDataAssetPath를 통해 비동기로 로드된 맵 데이터 에셋의 const 포인터입니다.
