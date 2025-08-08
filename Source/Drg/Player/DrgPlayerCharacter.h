@@ -6,6 +6,7 @@
 #include "Drg/Character/DrgBaseCharacter.h"
 #include "DrgPlayerCharacter.generated.h"
 
+class UDrgSkillSelectionWidget;
 class UCameraComponent;
 class USpringArmComponent;
 class UDrgUpgradeComponent;

@@ -114,7 +114,6 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 			}
 		}
 	}
-	while (FinalChoices.Num() < NumChoices) { FinalChoices.Add(FDrgUpgradeChoice()); }
 	return FinalChoices;
 }
 
