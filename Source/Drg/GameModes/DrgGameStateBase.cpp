@@ -39,18 +39,18 @@ void ADrgGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ADrgGameStateBase::OnDeathMessageReceived(FGameplayTag Channel, const FDrgDeathMessage& Message)
 {
-	if (ADrgGameModeBase* GameMode = GetWorld()->GetAuthGameMode<ADrgGameModeBase>())
-	{
-		const EGameResult Result = GameMode->EvaluateGameEndCondition(Message.DeadActor);
+	ADrgGameModeBase* GameMode = GetWorld()->GetAuthGameMode<ADrgGameModeBase>();
+	check(GameMode != nullptr);
 
-		if (Result != EGameResult::None)
+	const EGameResult Result = GameMode->EvaluateGameEndCondition(Message.DeadActor);
+
+	if (Result != EGameResult::None)
+	{
+		CurrentGameResult = Result;
+
+		if (HasAuthority())
 		{
-			CurrentGameResult = Result;
-			
-			if (HasAuthority())
-			{
-				OnRep_GameResult();
-			}
+			OnRep_GameResult();
 		}
 	}
 }
@@ -59,13 +59,12 @@ void ADrgGameStateBase::OnRep_GameResult()
 {
 	if (CurrentGameResult != EGameResult::None)
 	{
-		if (UGameInstance* GameInstance = GetGameInstance())
-		{
-			if (UDrgGameStateManagerSubsystem* GameStateManager = GameInstance->GetSubsystem<
-				UDrgGameStateManagerSubsystem>())
-			{
-				GameStateManager->ChangeStateWithResult(EGameFlowState::PostGame, CurrentGameResult);
-			}
-		}
+		UGameInstance* GameInstance = GetGameInstance();
+		check(GameInstance != nullptr);
+
+		UDrgGameStateManagerSubsystem* GameStateManager = GameInstance->GetSubsystem<UDrgGameStateManagerSubsystem>();
+		check(GameStateManager != nullptr);
+
+		GameStateManager->ChangeStateWithResult(EGameFlowState::PostGame, CurrentGameResult);
 	}
 }

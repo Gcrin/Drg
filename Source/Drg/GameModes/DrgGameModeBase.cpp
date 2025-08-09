@@ -7,7 +7,11 @@
 
 EGameResult ADrgGameModeBase::EvaluateGameEndCondition(AActor* DeadActor)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *DeadActor->GetClass()->GetName());
+	if (DeadActor == nullptr)
+	{
+		return EGameResult::None;
+	}
+
 	if (ADrgPlayerCharacter* PlayerCharacter = Cast<ADrgPlayerCharacter>(DeadActor))
 	{
 		if (PlayerCharacter->IsPlayerControlled())
