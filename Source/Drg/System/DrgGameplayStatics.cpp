@@ -31,9 +31,5 @@ bool UDrgGameplayStatics::AreTeamsFriendly(const FGameplayTag& TeamTag1, UAbilit
 		return false;
 	}
 
-	FGameplayTagContainer Tags2;
-	ASC2->GetOwnedGameplayTags(Tags2);
-	const FGameplayTagContainer TeamTags2 = Tags2.Filter(FGameplayTagContainer(DrgGameplayTags::Team));
-
-	return TeamTags2.HasTag(TeamTag1);
+	return ASC2->HasMatchingGameplayTag(TeamTag1);
 }
