@@ -16,6 +16,11 @@ class DRG_API UDrgMapDataAsset : public UPrimaryDataAsset
 	GENERATED_BODY()
 
 public:
+	virtual FPrimaryAssetId GetPrimaryAssetId() const override
+	{
+		return FPrimaryAssetId("DrgMapDataAsset", GetFName());
+	}
+
 	/** 메인 메뉴 화면으로 사용될 레벨입니다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Maps")
 	TSoftObjectPtr<UWorld> MainMenuMap;
