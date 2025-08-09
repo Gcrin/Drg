@@ -13,7 +13,7 @@ void ADrgEntryGameMode::BeginPlay()
 	{
 		if (UDrgGameStateManagerSubsystem* GameStateManager = GameInstance->GetSubsystem<UDrgGameStateManagerSubsystem>())
 		{
-			GameStateManager->StartLoadingSequence();
+			GameStateManager->StartGame();
 		}
 	}
 }

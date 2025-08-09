@@ -1,75 +1,61 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "DrgGameStateManagerSubsystem.h"
-
 #include "Drg/Maps/Data/DrgMapDataAsset.h"
-#include "Engine/AssetManager.h"
 #include "Kismet/GameplayStatics.h"
-
 
 void UDrgGameStateManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	// 초기화 시점에 데이터 에셋 로드 (동기)
+	LoadMapDataAsset();
 }
 
-void UDrgGameStateManagerSubsystem::StartLoadingSequence()
+void UDrgGameStateManagerSubsystem::LoadMapDataAsset()
 {
-	checkf(MapDataAssetPath.IsValid(),
-	       TEXT("UDrgGameStateManagerSubsystem 설정에 MapDataAssetPath가 지정되지 않았습니다. DefaultGame.ini 파일을 확인해주세요."));
-
-	UWorld* CurrentWorld = GetWorld();
-	if (!ensure(CurrentWorld)) return;
-
-	// 로딩 화면 맵으로 먼저 이동
-	UGameplayStatics::OpenLevel(CurrentWorld, TEXT("L_LoadingMap"));
-
-	// 백그라운드에서 실제 데이터 에셋 로딩 요청
-	FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
-	StreamableManager.RequestAsyncLoad(
-		MapDataAssetPath.ToSoftObjectPath(),
-		FStreamableDelegate::CreateUObject(this, &UDrgGameStateManagerSubsystem::OnMapDataLoaded)
-	);
-}
-
-void UDrgGameStateManagerSubsystem::OnMapDataLoaded()
-{
-	LoadedMapDataAsset = MapDataAssetPath.Get();
-	if (ensure(LoadedMapDataAsset))
+	if (MapDataAssetPath.IsNull())
 	{
-		ChangeState(EGameFlowState::MainMenu);
+		ensureAlwaysMsgf(false, TEXT("MapDataAssetPath가 설정되지 않았습니다 DefaultGame.ini 또는 서브시스템의 CDO를 확인해주세요."));
+		return;
 	}
+
+	LoadedMapDataAsset = MapDataAssetPath.LoadSynchronous();
+
+	if (!ensureAlwaysMsgf(LoadedMapDataAsset != nullptr, TEXT("맵 데이터 애셋 로드에 실패했습니다. 경로가 올바른지 확인해주세요: %s"),
+	                      *MapDataAssetPath.ToString()))
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("맵 데이터 애셋 로드 성공: %s"), *GetNameSafe(LoadedMapDataAsset));
+}
+
+void UDrgGameStateManagerSubsystem::StartGame()
+{
+	ChangeState(EGameFlowState::MainMenu);
 }
 
 void UDrgGameStateManagerSubsystem::ChangeState(EGameFlowState NewState)
 {
 	if (CurrentState == NewState)
 	{
-		UE_LOG(LogTemp, Display, TEXT("동일한 스테이트로는 변경할 수 없습니다."));
+		UE_LOG(LogTemp, Display, TEXT("이미 같은 상태입니다: %d"), (int32)NewState);
 		return;
 	}
 
-	checkf(LoadedMapDataAsset, TEXT("LoadedMapDataAsset가 유효하지 않습니다. OnMapDataLoaded()가 호출되지 않았거나 실패했습니다."));
+	if (!LoadedMapDataAsset)
+	{
+		UE_LOG(LogTemp, Error, TEXT("맵 데이터 에셋이 로드되지 않았습니다."));
+		return;
+	}
 
+	EGameFlowState PreviousState = CurrentState;
 	CurrentState = NewState;
 
-	switch (CurrentState)
-	{
-	case EGameFlowState::MainMenu:
-		HandleMainMenuState();
-		break;
-	case EGameFlowState::InGame:
-		HandleInGameState();
-		break;
-	case EGameFlowState::PostGame:
-		HandlePostGameState();
-		break;
-	case EGameFlowState::Quitting:
-		HandleQuittingState();
-		break;
-	default:
-		break;
-	}
+	UE_LOG(LogTemp, Log, TEXT("상태 변경: %d → %d"), (int32)PreviousState, (int32)CurrentState);
+
+	HandleStateChange();
 }
 
 void UDrgGameStateManagerSubsystem::ChangeStateWithResult(EGameFlowState NewState, EGameResult GameResult)
@@ -78,39 +64,82 @@ void UDrgGameStateManagerSubsystem::ChangeStateWithResult(EGameFlowState NewStat
 	ChangeState(NewState);
 }
 
-void UDrgGameStateManagerSubsystem::HandleMainMenuState()
+void UDrgGameStateManagerSubsystem::HandleStateChange()
 {
-	UE_LOG(LogTemp, Display, TEXT("메인 메뉴로 이동"));
-	UGameplayStatics::OpenLevelBySoftObjectPtr(this, LoadedMapDataAsset->MainMenuMap);
-}
-
-void UDrgGameStateManagerSubsystem::HandleInGameState()
-{
-	UE_LOG(LogTemp, Display, TEXT("게임 레벨로 이동"));
-	UGameplayStatics::OpenLevelBySoftObjectPtr(this, LoadedMapDataAsset->InGameMap);
-}
-
-void UDrgGameStateManagerSubsystem::HandlePostGameState()
-{
-	if (CurrentGameResult == EGameResult::None)
+	switch (CurrentState)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("버그 발생, 의도치 않은 게임 오버입니다."));
-	}
-	else if (CurrentGameResult == EGameResult::Victory)
-	{
-		UE_LOG(LogTemp, Display, TEXT("보스 처치! 게임에서 승리했습니다."));
-		// 승리 UI 위젯 추가
-	}
-	else if (CurrentGameResult == EGameResult::Defeat)
-	{
-		UE_LOG(LogTemp, Display, TEXT("캐릭터 사망! 게임에서 패배했습니다."));
-		// 패배 UI 위젯 추가
+	case EGameFlowState::MainMenu:
+		OpenMainMenu();
+		break;
+	case EGameFlowState::InGame:
+		OpenInGameLevel();
+		break;
+	case EGameFlowState::PostGame:
+		ShowPostGameResults();
+		break;
+	case EGameFlowState::Quitting:
+		QuitGame();
+		break;
+	default:
+		UE_LOG(LogTemp, Warning, TEXT("처리되지 않은 상태: %d"), (int32)CurrentState);
+		break;
 	}
 }
 
-void UDrgGameStateManagerSubsystem::HandleQuittingState()
+void UDrgGameStateManagerSubsystem::OpenMainMenu()
 {
-	UE_LOG(LogTemp, Display, TEXT("게임 종료"));
-	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
-	UKismetSystemLibrary::QuitGame(this, PlayerController, EQuitPreference::Quit, true);
+	if (!LoadedMapDataAsset->MainMenuMap.IsNull())
+	{
+		UE_LOG(LogTemp, Log, TEXT("메인 메뉴로 이동"));
+		UGameplayStatics::OpenLevelBySoftObjectPtr(this, LoadedMapDataAsset->MainMenuMap);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("메인 메뉴 맵이 설정되지 않았습니다."));
+	}
+}
+
+void UDrgGameStateManagerSubsystem::OpenInGameLevel()
+{
+	if (!LoadedMapDataAsset->InGameMap.IsNull())
+	{
+		UE_LOG(LogTemp, Log, TEXT("인게임 레벨로 이동"));
+		UGameplayStatics::OpenLevelBySoftObjectPtr(this, LoadedMapDataAsset->InGameMap);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("인게임 맵이 설정되지 않았습니다."));
+	}
+}
+
+void UDrgGameStateManagerSubsystem::ShowPostGameResults()
+{
+	switch (CurrentGameResult)
+	{
+	case EGameResult::Victory:
+		UE_LOG(LogTemp, Log, TEXT("승리!"));
+		// TODO: 승리 UI 표시
+		break;
+	case EGameResult::Defeat:
+		UE_LOG(LogTemp, Log, TEXT("패배..."));
+		// TODO: 패배 UI 표시
+		break;
+	case EGameResult::Draw:
+		UE_LOG(LogTemp, Log, TEXT("무승부"));
+		// TODO: 무승부 UI 표시
+		break;
+	default:
+		UE_LOG(LogTemp, Warning, TEXT("알 수 없는 게임 결과"));
+		break;
+	}
+}
+
+void UDrgGameStateManagerSubsystem::QuitGame()
+{
+	UE_LOG(LogTemp, Log, TEXT("게임 종료"));
+
+	if (APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController())
+	{
+		UKismetSystemLibrary::QuitGame(this, PC, EQuitPreference::Quit, true);
+	}
 }

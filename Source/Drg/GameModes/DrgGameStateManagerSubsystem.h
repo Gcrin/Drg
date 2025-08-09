@@ -11,71 +11,81 @@ class UDrgMapDataAsset;
 UENUM(BlueprintType)
 enum class EGameFlowState : uint8
 {
-	// 초기 상태
-	None,
-	// 메인 메뉴
-	MainMenu,
-	// 게임 플레이
-	InGame,
-	// 게임 결과창
-	PostGame,
-	// 게임 종료
-	Quitting
+    None,
+    MainMenu,
+    InGame,
+    PostGame,
+    Quitting
 };
 
 UENUM(BlueprintType)
 enum class EGameResult : uint8
 {
-	None,
-	Victory,
-	Defeat,
-	Draw
+    None,
+    Victory,
+    Defeat,
+    Draw
 };
 
+/**
+ * 게임의 전체적인 흐름과 상태를 관리하는 서브시스템
+ */
 UCLASS(Config = Game)
 class DRG_API UDrgGameStateManagerSubsystem : public UGameInstanceSubsystem
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable, Category = "Drg|State")
-	void ChangeState(EGameFlowState NewState);
+    // === 외부 인터페이스 ===
+    
+    /** 게임 시작 (엔트리 포인트) */
+    UFUNCTION(BlueprintCallable, Category = "Drg|State")
+    void StartGame();
+    
+    /** 상태 변경 */
+    UFUNCTION(BlueprintCallable, Category = "Drg|State")
+    void ChangeState(EGameFlowState NewState);
+    
+    /** 게임 결과와 함께 상태 변경 */
+    UFUNCTION(BlueprintCallable, Category = "Drg|State")
+    void ChangeStateWithResult(EGameFlowState NewState, EGameResult GameResult = EGameResult::None);
+    
+    /** 현재 상태 조회 */
+    UFUNCTION(BlueprintPure, Category = "Drg|State")
+    EGameFlowState GetCurrentState() const { return CurrentState; }
+    
+    /** 현재 게임 결과 조회 */
+    UFUNCTION(BlueprintPure, Category = "Drg|State")
+    EGameResult GetCurrentGameResult() const { return CurrentGameResult; }
 
-	UFUNCTION(BlueprintPure, Category = "Drg|State")
-	EGameFlowState GetCurrentState() const { return CurrentState; }
-	
-	void ChangeStateWithResult(EGameFlowState NewState, EGameResult GameResult = EGameResult::None);
-	
-	EGameResult GetCurrentGameResult() const { return CurrentGameResult; }
-
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
-	// 게임모드 등 외부에서 호출할 로딩 시퀀스 시작 함수
-	void StartLoadingSequence();
+    // === 시스템 함수 ===
+    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 protected:
-	// 게임 흐름에 필요한 맵 정보가 담긴 데이터 에셋의 경로입니다.
-	UPROPERTY(Config)
-	TSoftObjectPtr<UDrgMapDataAsset> MapDataAssetPath;
+    /** 맵 정보가 담긴 데이터 에셋 경로 (DefaultGame.ini에서 설정) */
+    UPROPERTY(Config)
+    TSoftObjectPtr<UDrgMapDataAsset> MapDataAssetPath;
 
 private:
-	void HandleMainMenuState();
-	void HandleInGameState();
-	void HandlePostGameState();
-	void HandleQuittingState();
+    // === 내부 상태 관리 ===
+    EGameFlowState CurrentState = EGameFlowState::None;
+    EGameResult CurrentGameResult = EGameResult::None;
+    
+    /** 로드된 맵 데이터 에셋 */
+    UPROPERTY()
+    TObjectPtr<const UDrgMapDataAsset> LoadedMapDataAsset;
 
-	// 데이터 로딩이 완료되면 호출되는 함수
-	void OnMapDataLoaded();
-
-	EGameFlowState CurrentState = EGameFlowState::None;
-	EGameResult CurrentGameResult = EGameResult::None; 
-
-	/**
-	 * MapDataAssetPath를 통해 비동기로 로드된 맵 데이터 에셋의 const 포인터입니다.
-	 *
-	 * OnMapDataLoaded() 콜백 함수에서 유효한 값을 가지게 되며,
-	 * 이후 각 게임 상태에 맞는 맵으로 이동할 때 사용됩니다.
-	 */
-	UPROPERTY()
-	TObjectPtr<const UDrgMapDataAsset> LoadedMapDataAsset;
+    // === 내부 함수 ===
+    
+    /** 맵 데이터 에셋 로드 */
+    void LoadMapDataAsset();
+    
+    /** 상태 변경 처리 */
+    void HandleStateChange();
+    
+    /** 각 상태별 처리 함수들 */
+    void OpenMainMenu();
+    void OpenInGameLevel();
+    void ShowPostGameResults();
+    void QuitGame();
 };
