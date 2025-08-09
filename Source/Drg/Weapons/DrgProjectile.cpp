@@ -10,6 +10,7 @@
 #include "Components/SphereComponent.h"
 #include "Drg/Character/DrgBaseCharacter.h"
 #include "Drg/System/DrgGameplayStatics.h"
+#include "Drg/System/DrgGameplayTags.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -122,9 +123,8 @@ void ADrgProjectile::BeginPlay()
 		UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
 		if (OwnerAsc)
 		{
-			const FGameplayTag TeamRootTag = FGameplayTag::RequestGameplayTag(TEXT("Team"));
 			// 주인의 태그 중 Team 카테고리에 속하는 태그를 찾아서 저장.
-			OwnerTeamTag = OwnerAsc->GetOwnedGameplayTags().Filter(FGameplayTagContainer(TeamRootTag)).First();
+			OwnerTeamTag = OwnerAsc->GetOwnedGameplayTags().Filter(FGameplayTagContainer(DrgGameplayTags::Team)).First();
 		}
 	}
 
