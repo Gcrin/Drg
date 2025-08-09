@@ -58,7 +58,7 @@ void ADrgProjectile::SetAoeDamageEffectSpec(const FGameplayEffectSpecHandle& InA
 	AoeDamageEffectSpecHandle = InAoeDamageEffectSpecHandle;
 }
 
-void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactLocation)
+void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactCenter)
 {
 	if (!AoeDamageEffectSpecHandle.IsValid())
 	{
@@ -86,7 +86,7 @@ void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactLocation)
 
 	UKismetSystemLibrary::SphereOverlapActors(
 		this,
-		ImpactLocation,
+		ImpactCenter,
 		ProjectileParams.AoeRadius,
 		ObjectTypes,
 		ADrgBaseCharacter::StaticClass(),
@@ -185,12 +185,7 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	// 지형지물 또는 ASC가 없는 액터와 충돌한 경우
 	if (!TargetAsc)
 	{
-		// 폭발탄이라면, 범위에 피해 이펙트 적용
-		if (ProjectileParams.bEnableAoeOnImpact)
-		{
-			ExecuteAoeDamage(SweepResult.ImpactPoint);
-		}
-		PlayImpactEffects(SweepResult, bFromSweep);
+		ProcessImpact(SweepResult, bFromSweep);
 		DestroyProjectile();
 		return;
 	}
@@ -209,15 +204,8 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 	// 중복 피해 목록에 추가
 	DamagedActors.Add(OtherActor);
-	// 충돌 이펙트 재생
-	PlayImpactEffects(SweepResult, bFromSweep);
 
-	// 피해 적용
-	// 폭발탄일 경우, 범위 피해 적용
-	if (ProjectileParams.bEnableAoeOnImpact)
-	{
-		ExecuteAoeDamage(SweepResult.ImpactPoint);
-	}
+	ProcessImpact(SweepResult, bFromSweep);
 
 	// 단일 피해 적용 여부
 	// 일반탄이거나, 또는 폭발탄이면서 '직격 시 추가 피해' 옵션이 켜진 경우
@@ -373,33 +361,58 @@ void ADrgProjectile::DestroyProjectile()
 	SetLifeSpan(0.2f);
 }
 
-void ADrgProjectile::PlayImpactEffects(const FHitResult& HitResult, bool bFromSweep)
+void ADrgProjectile::ProcessImpact(const FHitResult& HitResult, bool bFromSweep)
 {
-	const FVector SpawnLocation = bFromSweep ? FVector(HitResult.ImpactPoint) : GetActorLocation();
+	FVector ImpactLocation;
+	FRotator ImpactRotation;
+	FVector SurfaceNormal;
 
-	FRotator SpawnRotation;
+	if (bFromSweep && !HitResult.ImpactNormal.IsNearlyZero())
+	{
+		ImpactLocation = HitResult.ImpactPoint;
+		SurfaceNormal = HitResult.ImpactNormal;
+	}
+	else
+	{
+		ImpactLocation = GetActorLocation();
+		SurfaceNormal = GetActorForwardVector();
+	}
+
+	const FVector FinalSpawnLocation = ImpactLocation + SurfaceNormal * ProjectileParams.ImpactOffset;
 
 	switch (ProjectileParams.RotationMethod)
 	{
 	case EImpactRotationMethod::AlignToProjectile:
-		SpawnRotation = GetActorRotation();
+		ImpactRotation = GetActorRotation();
 		break;
 	case EImpactRotationMethod::ZeroRotation:
-		SpawnRotation = FRotator::ZeroRotator;
+		ImpactRotation = FRotator::ZeroRotator;
 		break;
 	case EImpactRotationMethod::AlignToImpactNormal:
 	default:
-		SpawnRotation = HitResult.ImpactNormal.Rotation();
+		ImpactRotation = SurfaceNormal.Rotation();
 		break;
 	}
 
+	// 폭발탄이라면, 범위 피해 적용
+	if (ProjectileParams.bEnableAoeOnImpact)
+	{
+		ExecuteAoeDamage(FinalSpawnLocation);
+	}
+
+	// 충돌 이펙트 재생
+	PlayImpactEffects(FinalSpawnLocation, ImpactRotation);
+}
+
+void ADrgProjectile::PlayImpactEffects(const FVector& Location, const FRotator& Rotation)
+{
 	if (ProjectileParams.ImpactVFX)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ProjectileParams.ImpactVFX, SpawnLocation, SpawnRotation,
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ProjectileParams.ImpactVFX, Location, Rotation,
 		                                               ProjectileParams.ImpactScale);
 	}
 	if (ProjectileParams.ImpactSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, ProjectileParams.ImpactSound, SpawnLocation);
+		UGameplayStatics::PlaySoundAtLocation(this, ProjectileParams.ImpactSound, Location);
 	}
 }

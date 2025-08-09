@@ -165,11 +165,13 @@ protected:
 	virtual void DestroyProjectile();
 
 private:
+	// 충돌 처리 로직을 총괄하는 함수
+	void ProcessImpact(const FHitResult& HitResult, bool bFromSweep);
 	// 충돌 이펙트와 사운드를 재생하는 함수
-	void PlayImpactEffects(const FHitResult& HitResult, bool bFromSweep);
+	void PlayImpactEffects(const FVector& Location, const FRotator& Rotation);
 
 	// 범위 피해를 계산하고 적용하는 함수
-	void ExecuteAoeDamage(const FVector& ImpactLocation);
+	void ExecuteAoeDamage(const FVector& ImpactCenter);
 
 	FGameplayEffectSpecHandle DamageEffectSpecHandle;
 	FGameplayEffectSpecHandle AoeDamageEffectSpecHandle;
