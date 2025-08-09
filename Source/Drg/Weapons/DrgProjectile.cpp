@@ -10,6 +10,7 @@
 #include "Components/SphereComponent.h"
 #include "Drg/Character/DrgBaseCharacter.h"
 #include "Drg/System/DrgGameplayStatics.h"
+#include "Drg/System/DrgGameplayTags.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -53,6 +54,71 @@ void ADrgProjectile::SetDamageEffectSpec(const FGameplayEffectSpecHandle& InDama
 	DamageEffectSpecHandle = InDamageEffectSpecHandle;
 }
 
+void ADrgProjectile::SetAoeDamageEffectSpec(const FGameplayEffectSpecHandle& InAoeDamageEffectSpecHandle)
+{
+	AoeDamageEffectSpecHandle = InAoeDamageEffectSpecHandle;
+}
+
+void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactCenter)
+{
+	if (!AoeDamageEffectSpecHandle.IsValid())
+	{
+		return;
+	}
+
+	AActor* OwnerActor = GetOwner();
+	if (!ensure(OwnerActor))
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DrgProjectile::ExecuteAoeDamage] : OwnerActor가 유효하지 않습니다. 범위 피해를 적용할 수 없습니다."));
+		return;
+	}
+
+	UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerActor);
+	if (!ensure(SourceAsc))
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DrgProjectile::ExecuteAoeDamage] : SourceAsc가 유효하지 않습니다. 범위 피해를 적용할 수 없습니다."));
+		return;
+	}
+
+	// SphereOverlap으로 주변 액터를 탐지
+	TArray<AActor*> OverlappedActors;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+
+	// 탐지 무시 목록
+	TArray<AActor*> IgnoreActors;
+	IgnoreActors.Add(OwnerActor);
+	IgnoreActors.Add(this);
+
+	UKismetSystemLibrary::SphereOverlapActors(
+		this,
+		ImpactCenter,
+		ProjectileParams.AoeRadius,
+		ObjectTypes,
+		ADrgBaseCharacter::StaticClass(),
+		IgnoreActors,
+		OverlappedActors
+	);
+
+	for (AActor* TargetActor : OverlappedActors)
+	{
+		//이미 피해를 받은 액터 제외
+		if (!TargetActor) continue;
+
+		UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+		if (TargetAsc)
+		{
+			// 아군 여부, 사망 여부 등 체크
+			if (UDrgGameplayStatics::AreTeamsFriendly(OwnerTeamTag, TargetAsc)) continue;
+			ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(TargetActor);
+			if (TargetCharacter && TargetCharacter->IsDead()) continue;
+
+			// 데미지 이펙트 적용
+			SourceAsc->ApplyGameplayEffectSpecToTarget(*AoeDamageEffectSpecHandle.Data.Get(), TargetAsc);
+		}
+	}
+}
+
 void ADrgProjectile::BeginPlay()
 {
 	Super::BeginPlay();
@@ -62,9 +128,8 @@ void ADrgProjectile::BeginPlay()
 		UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
 		if (OwnerAsc)
 		{
-			const FGameplayTag TeamRootTag = FGameplayTag::RequestGameplayTag(TEXT("Team"));
 			// 주인의 태그 중 Team 카테고리에 속하는 태그를 찾아서 저장.
-			OwnerTeamTag = OwnerAsc->GetOwnedGameplayTags().Filter(FGameplayTagContainer(TeamRootTag)).First();
+			OwnerTeamTag = OwnerAsc->GetOwnedGameplayTags().Filter(FGameplayTagContainer(DrgGameplayTags::Team)).First();
 		}
 	}
 
@@ -112,53 +177,61 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                      const FHitResult& SweepResult)
 {
-	if (!IsValid(OtherActor) || DamagedActors.Contains(OtherActor) || OtherActor == this || OtherActor == GetOwner())
+	// --- 유효한 적 대상인지 확인 ---
+
+	if (!IsValid(OtherActor) || DamagedActors.Contains(OtherActor) || OtherActor == this || OtherActor ==
+		GetOwner())
 	{
 		return;
 	}
 
-	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
-	if (TargetCharacter && TargetCharacter->IsDead()) return;
-
 	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 
+	// 지형지물 또는 ASC가 없는 액터와 충돌한 경우
+	if (!TargetAsc)
+	{
+		ProcessImpact(SweepResult, bFromSweep);
+		DestroyProjectile();
+		return;
+	}
+
+	// 팀 태그가 같을 경우
 	if (UDrgGameplayStatics::AreTeamsFriendly(OwnerTeamTag, TargetAsc))
 	{
 		return;
 	}
 
-	// 충돌 이펙트 재생
-	PlayImpactEffects(SweepResult, bFromSweep);
+	// 캐릭터가 죽음 상태일 경우
+	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
+	if (TargetCharacter && TargetCharacter->IsDead()) return;
 
-	if (TargetAsc && DamageEffectSpecHandle.IsValid())
+	// --- 유효한 적 대상에 대한 로직 ---
+
+	// 중복 피해 목록에 추가
+	DamagedActors.Add(OtherActor);
+
+	ProcessImpact(SweepResult, bFromSweep);
+
+	// 단일 피해 적용 여부
+	// 일반탄이거나, 또는 폭발탄이면서 '직격 시 추가 피해' 옵션이 켜진 경우
+	const bool bShouldApplyDirectDamage = !ProjectileParams.bEnableAoeOnImpact ||
+		ProjectileParams.bApplyBaseDamageToInitialTarget;
+
+	UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
+
+	if (SourceAsc && bShouldApplyDirectDamage && DamageEffectSpecHandle.IsValid())
 	{
-		if (FGameplayEffectSpec* SpecToApply = DamageEffectSpecHandle.Data.Get())
-		{
-			UAbilitySystemComponent* SourceAsc = SpecToApply->GetContext().GetInstigatorAbilitySystemComponent();
-
-			if (SourceAsc)
-			{
-				SourceAsc->ApplyGameplayEffectSpecToTarget(*SpecToApply, TargetAsc);
-
-				// 중복 피해 방지 목록에 추가합니다.
-				DamagedActors.Add(OtherActor);
-
-				//관통 제한이 있다면 관통 횟수를 확인하고 0이 되면 파괴
-				if (!ProjectileParams.bInfinitePierce)
-				{
-					ProjectileParams.MaxTargetHits--;
-					if (ProjectileParams.MaxTargetHits <= 0)
-					{
-						DestroyProjectile();
-						return;
-					}
-				}
-			}
-		}
+		SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
 	}
-	else
+
+	// 관통 및 파괴 처리
+	if (!ProjectileParams.bInfinitePierce)
 	{
-		DestroyProjectile();
+		ProjectileParams.MaxTargetHits--;
+		if (ProjectileParams.MaxTargetHits <= 0)
+		{
+			DestroyProjectile();
+		}
 	}
 }
 
@@ -195,15 +268,15 @@ void ADrgProjectile::StartProjectileArc()
 
 void ADrgProjectile::DetectTarget()
 {
-	// 이미 유도 상태이거나, 투사체를 발사한 주인(Owner)이 사라졌다면 더 이상 탐색할 필요가 없으므로 함수를 종료
-	if (ProjectileState == EProjectileState::Homing || !GetOwner())
+	// 내가 파괴 중이거나, 이미 유도 상태이거나, 투사체를 발사한 주인(Owner)이 사라졌다면 더 이상 탐색할 필요가 없으므로 함수를 종료
+	if (!IsValid(this) || ProjectileState == EProjectileState::Homing || !GetOwner())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(DetectTargetTimerHandle);
 		return;
 	}
 
 	// SphereOverlap으로 찾은 액터들을 담을 배열
-	TArray<AActor*> OutActors;
+	TArray<AActor*> DetectedActors;
 	// SphereOverlap에서 무시할 액터 목록
 	TArray<AActor*> IgnoreActors;
 	// 발사한 주인과 투사체 자신은 탐색 대상에서 제외
@@ -222,22 +295,22 @@ void ADrgProjectile::DetectTarget()
 		ObjectTypes,
 		ADrgBaseCharacter::StaticClass(),
 		IgnoreActors,
-		OutActors
+		DetectedActors
 	);
 
 	// 주변에 탐색된 액터가 없으면 함수를 종료
-	if (OutActors.Num() == 0)
+	if (DetectedActors.Num() == 0)
 	{
 		return;
 	}
 
 	// 가장 가까운 적
-	AActor* NearEnemy = nullptr;
+	AActor* ClosestTarget = nullptr;
 	// 최대 탐지 거리
-	float NearDistance = ProjectileParams.DetectionRadius;
+	float ClosestTargetDistance = ProjectileParams.DetectionRadius;
 
 	// 탐색된 모든 액터들을 순회해서 가장 가까운 적을 찾기
-	for (AActor* TargetCandidate : OutActors)
+	for (AActor* TargetCandidate : DetectedActors)
 	{
 		if (!IsValid(TargetCandidate)) continue;
 
@@ -257,17 +330,17 @@ void ADrgProjectile::DetectTarget()
 
 		// 투사체와 후보 사이의 거리를 계산
 		const float Distance = FVector::Dist(GetActorLocation(), TargetCandidate->GetActorLocation());
-		if (Distance < NearDistance)
+		if (Distance < ClosestTargetDistance)
 		{
-			NearDistance = Distance;
-			NearEnemy = TargetCandidate;
+			ClosestTargetDistance = Distance;
+			ClosestTarget = TargetCandidate;
 		}
 	}
 
 	// 유효한 근접 타겟을 찾았다면 유도 상태로 전환
-	if (IsValid(NearEnemy))
+	if (IsValid(ClosestTarget))
 	{
-		HomingTarget = NearEnemy;
+		HomingTarget = ClosestTarget;
 		ProjectileState = EProjectileState::Homing;
 
 		// ProjectileMovementComponent을 유도 모드로 설정
@@ -293,33 +366,58 @@ void ADrgProjectile::DestroyProjectile()
 	SetLifeSpan(0.2f);
 }
 
-void ADrgProjectile::PlayImpactEffects(const FHitResult& HitResult, bool bFromSweep)
+void ADrgProjectile::ProcessImpact(const FHitResult& HitResult, bool bFromSweep)
 {
-	const FVector SpawnLocation = bFromSweep ? FVector(HitResult.ImpactPoint) : GetActorLocation();
+	FVector ImpactLocation;
+	FRotator ImpactRotation;
+	FVector SurfaceNormal;
 
-	FRotator SpawnRotation;
+	if (bFromSweep && !HitResult.ImpactNormal.IsNearlyZero())
+	{
+		ImpactLocation = HitResult.ImpactPoint;
+		SurfaceNormal = HitResult.ImpactNormal;
+	}
+	else
+	{
+		ImpactLocation = GetActorLocation();
+		SurfaceNormal = GetActorForwardVector();
+	}
+
+	const FVector FinalSpawnLocation = ImpactLocation + SurfaceNormal * ProjectileParams.ImpactOffset;
 
 	switch (ProjectileParams.RotationMethod)
 	{
 	case EImpactRotationMethod::AlignToProjectile:
-		SpawnRotation = GetActorRotation();
+		ImpactRotation = GetActorRotation();
 		break;
 	case EImpactRotationMethod::ZeroRotation:
-		SpawnRotation = FRotator::ZeroRotator;
+		ImpactRotation = FRotator::ZeroRotator;
 		break;
 	case EImpactRotationMethod::AlignToImpactNormal:
 	default:
-		SpawnRotation = HitResult.ImpactNormal.Rotation();
+		ImpactRotation = SurfaceNormal.Rotation();
 		break;
 	}
 
+	// 폭발탄이라면, 범위 피해 적용
+	if (ProjectileParams.bEnableAoeOnImpact)
+	{
+		ExecuteAoeDamage(FinalSpawnLocation);
+	}
+
+	// 충돌 이펙트 재생
+	PlayImpactEffects(FinalSpawnLocation, ImpactRotation);
+}
+
+void ADrgProjectile::PlayImpactEffects(const FVector& Location, const FRotator& Rotation)
+{
 	if (ProjectileParams.ImpactVFX)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ProjectileParams.ImpactVFX, SpawnLocation, SpawnRotation,
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ProjectileParams.ImpactVFX, Location, Rotation,
 		                                               ProjectileParams.ImpactScale);
 	}
 	if (ProjectileParams.ImpactSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, ProjectileParams.ImpactSound, SpawnLocation);
+		UGameplayStatics::PlaySoundAtLocation(this, ProjectileParams.ImpactSound, Location);
 	}
 }

@@ -4,6 +4,7 @@
 #include "DrgGameplayStatics.h"
 
 #include "AbilitySystemComponent.h"
+#include "DrgGameplayTags.h"
 #include "GameplayTagContainer.h"
 
 bool UDrgGameplayStatics::AreTeamsFriendly(UAbilitySystemComponent* ASC1, UAbilitySystemComponent* ASC2)
@@ -13,14 +14,12 @@ bool UDrgGameplayStatics::AreTeamsFriendly(UAbilitySystemComponent* ASC1, UAbili
 		return false;
 	}
 
-	const FGameplayTag TeamTag = FGameplayTag::RequestGameplayTag(TEXT("Team"));
-
 	FGameplayTagContainer Tags1, Tags2;
 	ASC1->GetOwnedGameplayTags(Tags1);
 	ASC2->GetOwnedGameplayTags(Tags2);
 
-	const FGameplayTagContainer TeamTags1 = Tags1.Filter(FGameplayTagContainer(TeamTag));
-	const FGameplayTagContainer TeamTags2 = Tags2.Filter(FGameplayTagContainer(TeamTag));
+	const FGameplayTagContainer TeamTags1 = Tags1.Filter(FGameplayTagContainer(DrgGameplayTags::Team));
+	const FGameplayTagContainer TeamTags2 = Tags2.Filter(FGameplayTagContainer(DrgGameplayTags::Team));
 
 	return TeamTags1.HasAny(TeamTags2);
 }
@@ -32,11 +31,5 @@ bool UDrgGameplayStatics::AreTeamsFriendly(const FGameplayTag& TeamTag1, UAbilit
 		return false;
 	}
 
-	const FGameplayTag TeamRootTag = FGameplayTag::RequestGameplayTag(TEXT("Team"));
-
-	FGameplayTagContainer Tags2;
-	ASC2->GetOwnedGameplayTags(Tags2);
-	const FGameplayTagContainer TeamTags2 = Tags2.Filter(FGameplayTagContainer(TeamRootTag));
-
-	return TeamTags2.HasTag(TeamTag1);
+	return ASC2->HasMatchingGameplayTag(TeamTag1);
 }

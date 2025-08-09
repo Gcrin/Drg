@@ -33,8 +33,14 @@ struct FDrgFireProjectileParams
 	FTransform ProjectileLocalTransform = FTransform();
 
 	// 데미지 계산에 사용될 효과 배율 (1.0 = 100%).
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.01", UIMin = "0.01"))
-	float EffectMultiplier = 1.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,
+		meta = (ClampMin = "0.01", UIMin = "0.01", EditCondition = "DamageEffectClass != nullptr"))
+	float DirectDamageMultiplier = 1.0f;
+
+	// 범위 데미지 계산에 사용될 효과 배율 (1.0 = 100%).
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,
+		meta = (ClampMin = "0.01", UIMin = "0.01", EditCondition = "DamageEffectClass != nullptr"))
+	float AoeDamageMultiplier = 1.0f;
 
 	// 첫 발이 발사되기 전까지의 대기 시간 (초).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
