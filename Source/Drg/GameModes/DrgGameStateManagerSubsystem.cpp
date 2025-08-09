@@ -2,33 +2,42 @@
 
 #include "DrgGameStateManagerSubsystem.h"
 #include "Drg/Maps/Data/DrgMapDataAsset.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 
 void UDrgGameStateManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	// 초기화 시점에 데이터 에셋 로드 (동기)
-	LoadMapDataAsset();
-}
-
-void UDrgGameStateManagerSubsystem::LoadMapDataAsset()
-{
+	// 경로 유효성 검사
 	if (MapDataAssetPath.IsNull())
 	{
-		ensureAlwaysMsgf(false, TEXT("MapDataAssetPath가 설정되지 않았습니다 DefaultGame.ini 또는 서브시스템의 CDO를 확인해주세요."));
+		ensureAlwaysMsgf(false, TEXT("MapDataAssetPath가 설정되지 않았습니다! DefaultGame.ini 또는 서브시스템의 CDO를 확인해주세요."));
 		return;
 	}
 
-	LoadedMapDataAsset = MapDataAssetPath.LoadSynchronous();
+	// 비동기 로드 요청
+	FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
+	StreamableManager.RequestAsyncLoad(MapDataAssetPath.ToSoftObjectPath(),
+	                                   FStreamableDelegate::CreateUObject(
+		                                   this, &UDrgGameStateManagerSubsystem::OnMapDataLoaded));
+}
 
-	if (!ensureAlwaysMsgf(LoadedMapDataAsset != nullptr, TEXT("맵 데이터 애셋 로드에 실패했습니다. 경로가 올바른지 확인해주세요: %s"),
+void UDrgGameStateManagerSubsystem::OnMapDataLoaded()
+{
+	LoadedMapDataAsset = Cast<UDrgMapDataAsset>(MapDataAssetPath.Get());
+
+	// 로드 및 캐스팅 결과 확인
+	if (!ensureAlwaysMsgf(LoadedMapDataAsset != nullptr, TEXT("맵 데이터 애셋 비동기 로드 혹은 캐스팅에 실패했습니다: %s"),
 	                      *MapDataAssetPath.ToString()))
 	{
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("맵 데이터 애셋 로드 성공: %s"), *GetNameSafe(LoadedMapDataAsset));
+	UE_LOG(LogTemp, Log, TEXT("맵 데이터 애셋 비동기 로드 성공: %s"), *GetNameSafe(LoadedMapDataAsset));
+
+	StartGame();
 }
 
 void UDrgGameStateManagerSubsystem::StartGame()
