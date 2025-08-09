@@ -53,6 +53,66 @@ void ADrgProjectile::SetDamageEffectSpec(const FGameplayEffectSpecHandle& InDama
 	DamageEffectSpecHandle = InDamageEffectSpecHandle;
 }
 
+void ADrgProjectile::SetAoeDamageEffectSpec(const FGameplayEffectSpecHandle& InAoeDamageEffectSpecHandle)
+{
+	AoeDamageEffectSpecHandle = InAoeDamageEffectSpecHandle;
+}
+
+void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactLocation)
+{
+	if (!AoeDamageEffectSpecHandle.IsValid())
+	{
+		return;
+	}
+
+	AActor* OwnerActor = GetOwner();
+	if (!ensure(OwnerActor))
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DrgProjectile::ExecuteAoeDamage] : OwnerActor가 유효하지 않습니다. 범위 피해를 적용할 수 없습니다."));
+		return;
+	}
+
+	UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerActor);
+	if (!ensure(SourceAsc))
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DrgProjectile::ExecuteAoeDamage] : SourceAsc가 유효하지 않습니다. 범위 피해를 적용할 수 없습니다."));
+		return;
+	}
+
+	// SphereOverlap으로 주변 액터를 탐지
+	TArray<AActor*> OverlappedActors;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+
+	UKismetSystemLibrary::SphereOverlapActors(
+		this,
+		ImpactLocation,
+		ProjectileParams.AoeRadius,
+		ObjectTypes,
+		ADrgBaseCharacter::StaticClass(),
+		{GetOwner()}, // 자기 자신은 제외
+		OverlappedActors
+	);
+
+	for (AActor* TargetActor : OverlappedActors)
+	{
+		//이미 피해를 받은 액터 제외
+		if (!TargetActor) continue;
+
+		UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+		if (TargetAsc)
+		{
+			// 아군 여부, 사망 여부 등 체크
+			if (UDrgGameplayStatics::AreTeamsFriendly(OwnerTeamTag, TargetAsc)) continue;
+			ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(TargetActor);
+			if (TargetCharacter && TargetCharacter->IsDead()) continue;
+
+			// 데미지 이펙트 적용
+			SourceAsc->ApplyGameplayEffectSpecToTarget(*AoeDamageEffectSpecHandle.Data.Get(), TargetAsc);
+		}
+	}
+}
+
 void ADrgProjectile::BeginPlay()
 {
 	Super::BeginPlay();
@@ -112,53 +172,73 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                      const FHitResult& SweepResult)
 {
-	if (!IsValid(OtherActor) || DamagedActors.Contains(OtherActor) || OtherActor == this || OtherActor == GetOwner())
+	// --- 유효한 적 대상인지 확인 ---
+
+	if (!IsValid(OtherActor) || DamagedActors.Contains(OtherActor) || OtherActor == this || OtherActor ==
+		GetOwner())
 	{
 		return;
 	}
 
-	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
-	if (TargetCharacter && TargetCharacter->IsDead()) return;
-
 	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 
+	// 지형지물 또는 ASC가 없는 액터와 충돌한 경우
+	if (!TargetAsc)
+	{
+		// 폭발탄이라면, 범위에 피해 이펙트 적용
+		if (ProjectileParams.bEnableAoeOnImpact)
+		{
+			ExecuteAoeDamage(SweepResult.ImpactPoint);
+		}
+		PlayImpactEffects(SweepResult, bFromSweep);
+		DestroyProjectile();
+		return;
+	}
+
+	// 팀 태그가 같을 경우
 	if (UDrgGameplayStatics::AreTeamsFriendly(OwnerTeamTag, TargetAsc))
 	{
 		return;
 	}
 
+	// 캐릭터가 죽음 상태일 경우
+	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
+	if (TargetCharacter && TargetCharacter->IsDead()) return;
+
+	// --- 유효한 적 대상에 대한 로직 ---
+
+	// 중복 피해 목록에 추가
+	DamagedActors.Add(OtherActor);
 	// 충돌 이펙트 재생
 	PlayImpactEffects(SweepResult, bFromSweep);
 
-	if (TargetAsc && DamageEffectSpecHandle.IsValid())
+	// 피해 적용
+	// 폭발탄일 경우, 범위 피해 적용
+	if (ProjectileParams.bEnableAoeOnImpact)
 	{
-		if (FGameplayEffectSpec* SpecToApply = DamageEffectSpecHandle.Data.Get())
-		{
-			UAbilitySystemComponent* SourceAsc = SpecToApply->GetContext().GetInstigatorAbilitySystemComponent();
-
-			if (SourceAsc)
-			{
-				SourceAsc->ApplyGameplayEffectSpecToTarget(*SpecToApply, TargetAsc);
-
-				// 중복 피해 방지 목록에 추가합니다.
-				DamagedActors.Add(OtherActor);
-
-				//관통 제한이 있다면 관통 횟수를 확인하고 0이 되면 파괴
-				if (!ProjectileParams.bInfinitePierce)
-				{
-					ProjectileParams.MaxTargetHits--;
-					if (ProjectileParams.MaxTargetHits <= 0)
-					{
-						DestroyProjectile();
-						return;
-					}
-				}
-			}
-		}
+		ExecuteAoeDamage(SweepResult.ImpactPoint);
 	}
-	else
+
+	// 단일 피해 적용 여부
+	// 일반탄이거나, 또는 폭발탄이면서 '직격 시 추가 피해' 옵션이 켜진 경우
+	const bool bShouldApplyDirectDamage = !ProjectileParams.bEnableAoeOnImpact ||
+		ProjectileParams.bApplyBaseDamageToInitialTarget;
+
+	UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
+
+	if (SourceAsc && bShouldApplyDirectDamage && DamageEffectSpecHandle.IsValid())
 	{
-		DestroyProjectile();
+		SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
+	}
+
+	// 관통 및 파괴 처리
+	if (!ProjectileParams.bInfinitePierce)
+	{
+		ProjectileParams.MaxTargetHits--;
+		if (ProjectileParams.MaxTargetHits <= 0)
+		{
+			DestroyProjectile();
+		}
 	}
 }
 

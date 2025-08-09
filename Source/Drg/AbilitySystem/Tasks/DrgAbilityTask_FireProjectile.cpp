@@ -4,6 +4,7 @@
 #include "DrgAbilityTask_FireProjectile.h"
 
 #include "AbilitySystemComponent.h"
+#include "Drg/System/DrgGameplayTags.h"
 #include "Drg/Weapons/DrgProjectile.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
@@ -68,6 +69,14 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 		return;
 	}
 
+	UAbilitySystemComponent* SourceASC = Ability->GetAbilitySystemComponentFromActorInfo();
+	if (!SourceASC || !Params.DamageEffectClass)
+	{
+		OnFinished.Broadcast();
+		EndTask();
+		return;
+	}
+
 	/*
 	 * 지연된 스폰(Deferred Spawn)을 사용하는 이유:
 	 * 
@@ -90,37 +99,39 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 
 	if (SpawnedProjectile)
 	{
+		// 발사체의 Instigator를 현재 Task의 실행 주체(사용자)로 설정
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
-
+		// 발사체 생명주기
 		SpawnedProjectile->InitialLifeSpan = Params.ProjectileLifeSpan;
 
-		if (Params.DamageEffectClass)
-		{
-			UAbilitySystemComponent* SourceASC = Ability->GetAbilitySystemComponentFromActorInfo();
-			if (SourceASC)
-			{
-				FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
-				ContextHandle.AddSourceObject(AvatarActor);
-				ContextHandle.AddInstigator(AvatarActor, SpawnedProjectile);
-				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(
-					Params.DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
+		// 컨텍스트(Context) 생성
+		FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
+		ContextHandle.AddInstigator(AvatarActor, SpawnedProjectile);
+		ContextHandle.AddSourceObject(AvatarActor);
 
-				if (SpecHandle.IsValid())
-				{
-					SpecHandle.Data->SetSetByCallerMagnitude(
-						FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), Params.EffectMultiplier);
-					SpawnedProjectile->SetDamageEffectSpec(SpecHandle);
-				}
-			}
+		// 직격 피해 Spec 생성 및 전달
+		FGameplayEffectSpecHandle DirectSpecHandle = SourceASC->MakeOutgoingSpec(
+			Params.DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
+		if (DirectSpecHandle.IsValid())
+		{
+			DirectSpecHandle.Data->SetSetByCallerMagnitude(DrgGameplayTags::Ability_Multiplier,
+			                                               Params.DirectDamageMultiplier);
+			SpawnedProjectile->SetDamageEffectSpec(DirectSpecHandle);
+		}
+
+		// 범위 피해 Spec 생성 및 전달
+		FGameplayEffectSpecHandle AoeSpecHandle = SourceASC->MakeOutgoingSpec(
+			Params.DamageEffectClass, Ability->GetAbilityLevel(), ContextHandle);
+		if (AoeSpecHandle.IsValid())
+		{
+			AoeSpecHandle.Data->
+			              SetSetByCallerMagnitude(DrgGameplayTags::Ability_Multiplier, Params.AoeDamageMultiplier);
+			SpawnedProjectile->SetAoeDamageEffectSpec(AoeSpecHandle);
 		}
 
 		// 스폰 완료: 준비된 액터를 월드에 최종적으로 배치.
 		UGameplayStatics::FinishSpawningActor(SpawnedProjectile, SpawnWorldTransform);
-	}
 
-	// 발사체 스폰 체크
-	if (SpawnedProjectile)
-	{
 		ProjectilesFired++;
 		OnFired.Broadcast(ProjectilesFired); // 몇 번째 발사인지 신호를 보냄
 	}
@@ -132,18 +143,9 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	// 더 쏠 발사체가 남았는지 확인
 	if (ProjectilesFired < Params.NumberOfProjectiles)
 	{
-		// 딜레이가 있다면 타이머 설정, 없다면 그냥 무시
-		if (Params.DelayBetweenShots > 0.0f)
-		{
-			GetWorld()->GetTimerManager().SetTimer(
-				TimerHandle, this, &UDrgAbilityTask_FireProjectile::FireNextProjectile, Params.DelayBetweenShots,
-				false);
-		}
-		else
-		{
-			// 딜레이가 0이면 그냥 바로 다음 발사
-			FireNextProjectile();
-		}
+		const float Delay = FMath::Max(0.001f, Params.DelayBetweenShots);
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle, this, &UDrgAbilityTask_FireProjectile::FireNextProjectile, Delay, false);
 	}
 	else
 	{
