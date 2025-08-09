@@ -15,7 +15,7 @@ struct FDrgDeathMessage
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, Category = "Drg|Message")
-	TObjectPtr<AActor> DeadActor = nullptr;;
+	TObjectPtr<AActor> DeadActor = nullptr;
 };
 
 UCLASS()
