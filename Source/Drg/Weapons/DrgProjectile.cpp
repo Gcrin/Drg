@@ -85,13 +85,18 @@ void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactCenter)
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
 
+	// 탐지 무시 목록
+	TArray<AActor*> IgnoreActors;
+	IgnoreActors.Add(OwnerActor);
+	IgnoreActors.Add(this);
+
 	UKismetSystemLibrary::SphereOverlapActors(
 		this,
 		ImpactCenter,
 		ProjectileParams.AoeRadius,
 		ObjectTypes,
 		ADrgBaseCharacter::StaticClass(),
-		{GetOwner()}, // 자기 자신은 제외
+		IgnoreActors,
 		OverlappedActors
 	);
 
@@ -263,8 +268,8 @@ void ADrgProjectile::StartProjectileArc()
 
 void ADrgProjectile::DetectTarget()
 {
-	// 이미 유도 상태이거나, 투사체를 발사한 주인(Owner)이 사라졌다면 더 이상 탐색할 필요가 없으므로 함수를 종료
-	if (ProjectileState == EProjectileState::Homing || !GetOwner())
+	// 내가 파괴 중이거나, 이미 유도 상태이거나, 투사체를 발사한 주인(Owner)이 사라졌다면 더 이상 탐색할 필요가 없으므로 함수를 종료
+	if (!IsValid(this) || ProjectileState == EProjectileState::Homing || !GetOwner())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(DetectTargetTimerHandle);
 		return;

@@ -35,7 +35,7 @@ struct FDrgProjectileParams
 
 	// 포물선의 높이를 조절합니다. (0.0 ~ 1.0 사이 값 권장)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc",
-		meta = (EditCondition = "bEnableArc", EditConditionHides))
+	meta = (EditCondition = "bEnableArc", EditConditionHides, ClampMin = "0.0", UIMin = "0.0"))
 	float ArcHeightRatio = 0.5f;
 
 	// 포물선 계산에 사용될 상대적인 목표 위치입니다.
@@ -149,6 +149,7 @@ protected:
 	UPROPERTY(EditAnywhere, meta = (ShowOnlyInnerProperties))
 	FDrgProjectileParams ProjectileParams;
 
+	// 여러 문제로 인해 블루프린트에서 생성하고 연결
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Components")
 	TObjectPtr<UNiagaraComponent> TrailComponent;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Components")
