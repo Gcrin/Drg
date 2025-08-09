@@ -283,7 +283,7 @@ void ADrgProjectile::DetectTarget()
 	}
 
 	// SphereOverlap으로 찾은 액터들을 담을 배열
-	TArray<AActor*> OutActors;
+	TArray<AActor*> DetectedActors;
 	// SphereOverlap에서 무시할 액터 목록
 	TArray<AActor*> IgnoreActors;
 	// 발사한 주인과 투사체 자신은 탐색 대상에서 제외
@@ -302,22 +302,22 @@ void ADrgProjectile::DetectTarget()
 		ObjectTypes,
 		ADrgBaseCharacter::StaticClass(),
 		IgnoreActors,
-		OutActors
+		DetectedActors
 	);
 
 	// 주변에 탐색된 액터가 없으면 함수를 종료
-	if (OutActors.Num() == 0)
+	if (DetectedActors.Num() == 0)
 	{
 		return;
 	}
 
 	// 가장 가까운 적
-	AActor* NearEnemy = nullptr;
+	AActor* ClosestTarget = nullptr;
 	// 최대 탐지 거리
-	float NearDistance = ProjectileParams.DetectionRadius;
+	float ClosestTargetDistance = ProjectileParams.DetectionRadius;
 
 	// 탐색된 모든 액터들을 순회해서 가장 가까운 적을 찾기
-	for (AActor* TargetCandidate : OutActors)
+	for (AActor* TargetCandidate : DetectedActors)
 	{
 		if (!IsValid(TargetCandidate)) continue;
 
@@ -337,17 +337,17 @@ void ADrgProjectile::DetectTarget()
 
 		// 투사체와 후보 사이의 거리를 계산
 		const float Distance = FVector::Dist(GetActorLocation(), TargetCandidate->GetActorLocation());
-		if (Distance < NearDistance)
+		if (Distance < ClosestTargetDistance)
 		{
-			NearDistance = Distance;
-			NearEnemy = TargetCandidate;
+			ClosestTargetDistance = Distance;
+			ClosestTarget = TargetCandidate;
 		}
 	}
 
 	// 유효한 근접 타겟을 찾았다면 유도 상태로 전환
-	if (IsValid(NearEnemy))
+	if (IsValid(ClosestTarget))
 	{
-		HomingTarget = NearEnemy;
+		HomingTarget = ClosestTarget;
 		ProjectileState = EProjectileState::Homing;
 
 		// ProjectileMovementComponent을 유도 모드로 설정
