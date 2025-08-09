@@ -9,6 +9,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Drg/Character/DrgBaseCharacter.h"
+#include "Drg/System/DrgDebug.h"
 #include "Drg/System/DrgGameplayStatics.h"
 #include "Drg/System/DrgGameplayTags.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -90,7 +91,7 @@ void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactCenter)
 	IgnoreActors.Add(OwnerActor);
 	IgnoreActors.Add(this);
 
-	UKismetSystemLibrary::SphereOverlapActors(
+	bool bHasOverlap = UKismetSystemLibrary::SphereOverlapActors(
 		this,
 		ImpactCenter,
 		ProjectileParams.AoeRadius,
@@ -99,6 +100,17 @@ void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactCenter)
 		IgnoreActors,
 		OverlappedActors
 	);
+
+#if ENABLE_DRAW_DEBUG
+	DrgDebug::DrawDebugSphereWithCVarCheck(
+		GetWorld(),
+		CVarDrgDebugOverlapQueries, // 어떤 CVar를 쓸지 지정
+		ImpactCenter,
+		ProjectileParams.AoeRadius,
+		24,
+		bHasOverlap ? FColor::Green : FColor::Red
+	);
+#endif
 
 	for (AActor* TargetActor : OverlappedActors)
 	{
@@ -129,7 +141,8 @@ void ADrgProjectile::BeginPlay()
 		if (OwnerAsc)
 		{
 			// 주인의 태그 중 Team 카테고리에 속하는 태그를 찾아서 저장.
-			OwnerTeamTag = OwnerAsc->GetOwnedGameplayTags().Filter(FGameplayTagContainer(DrgGameplayTags::Team)).First();
+			OwnerTeamTag = OwnerAsc->GetOwnedGameplayTags().Filter(FGameplayTagContainer(DrgGameplayTags::Team)).
+			                         First();
 		}
 	}
 
@@ -288,7 +301,7 @@ void ADrgProjectile::DetectTarget()
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
 
 	// 현재 투사체 위치를 중심으로, 지정된 반경 내의 액터들을 탐색
-	UKismetSystemLibrary::SphereOverlapActors(
+	bool bHasOverlap = UKismetSystemLibrary::SphereOverlapActors(
 		this,
 		GetActorLocation(),
 		ProjectileParams.DetectionRadius,
@@ -297,6 +310,17 @@ void ADrgProjectile::DetectTarget()
 		IgnoreActors,
 		DetectedActors
 	);
+
+#if ENABLE_DRAW_DEBUG
+	DrgDebug::DrawDebugSphereWithCVarCheck(
+		GetWorld(),
+		CVarDrgDebugOverlapQueries, // 어떤 CVar를 쓸지 지정
+		GetActorLocation(),
+		ProjectileParams.DetectionRadius,
+		24,
+		bHasOverlap ? FColor::Green : FColor::Red
+	);
+#endif
 
 	// 주변에 탐색된 액터가 없으면 함수를 종료
 	if (DetectedActors.Num() == 0)
