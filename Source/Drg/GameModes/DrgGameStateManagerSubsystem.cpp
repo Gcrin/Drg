@@ -72,6 +72,12 @@ void UDrgGameStateManagerSubsystem::ChangeState(EGameFlowState NewState)
 	}
 }
 
+void UDrgGameStateManagerSubsystem::ChangeStateWithResult(EGameFlowState NewState, EGameResult GameResult)
+{
+	CurrentGameResult = GameResult;
+	ChangeState(NewState);
+}
+
 void UDrgGameStateManagerSubsystem::HandleMainMenuState()
 {
 	UE_LOG(LogTemp, Display, TEXT("메인 메뉴로 이동"));
@@ -86,7 +92,20 @@ void UDrgGameStateManagerSubsystem::HandleInGameState()
 
 void UDrgGameStateManagerSubsystem::HandlePostGameState()
 {
-	UE_LOG(LogTemp, Display, TEXT("게임 결과창으로 이동"));
+	if (CurrentGameResult == EGameResult::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("버그 발생, 의도치 않은 게임 오버입니다."));
+	}
+	else if (CurrentGameResult == EGameResult::Victory)
+	{
+		UE_LOG(LogTemp, Display, TEXT("보스 처치! 게임에서 승리했습니다."));
+		// 승리 UI 위젯 추가
+	}
+	else if (CurrentGameResult == EGameResult::Defeat)
+	{
+		UE_LOG(LogTemp, Display, TEXT("캐릭터 사망! 게임에서 패배했습니다."));
+		// 패배 UI 위젯 추가
+	}
 }
 
 void UDrgGameStateManagerSubsystem::HandleQuittingState()
