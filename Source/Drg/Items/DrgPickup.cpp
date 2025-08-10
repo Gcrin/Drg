@@ -6,6 +6,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
+#include "Drg/System/DrgGameplayTags.h"
 
 ADrgPickup::ADrgPickup()
 {
@@ -41,6 +42,12 @@ void ADrgPickup::ApplyEffect(AActor* TargetActor)
 {
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
 	if (!TargetASC)
+	{
+		return;
+	}
+
+	
+	if (!TargetASC->HasMatchingGameplayTag(DrgGameplayTags::Team_Player))
 	{
 		return;
 	}
