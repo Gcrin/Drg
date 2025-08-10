@@ -93,10 +93,14 @@ void UDrgDropManagerSubsystem::OnActorDeathMessageReceived(FGameplayTag Channel,
 	// 드롭 테이블에 정의된 모든 아이템 목록을 순회
 	for (const FDrgDropItemInfo& DropInfo : DropDataAsset->PossibleDrops)
 	{
-		// 각 아이템의 개별 확률에 따라 드롭 여부 결정.
-		if (FMath::FRand() <= DropInfo.Probability)
+		// 드롭 확률 체크
+		const float Probability = FMath::Clamp(DropInfo.Probability, 0.0f, 1.0f);
+		if (Probability <= 0.0f)
 		{
-			// 성공 시 지정된 개수만큼 스폰.
+			continue;
+		}
+		if (Probability == 1.0f || FMath::FRand() < Probability)
+		{
 			SpawnItems(DropInfo, SpawnLocation, World);
 		}
 	}
