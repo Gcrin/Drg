@@ -4,18 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "DrgPickup.generated.h"
+#include "DrgPickupBase.generated.h"
 
 class UGameplayEffect;
 class USphereComponent;
+class UStaticMeshComponent;
 
 UCLASS()
-class DRG_API ADrgPickup : public AActor
+class DRG_API ADrgPickupBase : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ADrgPickup();
+	ADrgPickupBase();
 
 protected:
 	virtual void BeginPlay() override;
@@ -29,7 +30,7 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category = "Drg|Pickup")
 	virtual void ApplyEffect(AActor* TargetActor);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Pickup")

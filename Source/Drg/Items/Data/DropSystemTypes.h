@@ -34,7 +34,7 @@ struct FDrgDropItemInfo
  * @brief 드롭 아이템 목록을 담는 독립적인 데이터 애셋
  */
 UCLASS()
-class YOURPROJECT_API UDropTableDataAsset : public UDataAsset
+class DRG_API UDropTableDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
 
@@ -48,7 +48,7 @@ public:
  * @brief 드롭 레지스트리 데이터 에셋
  */
 UCLASS()
-class YOURPROJECT_API UDropRegistryDataAsset  : public UDataAsset
+class DRG_API UDropRegistryDataAsset  : public UDataAsset
 {
 	GENERATED_BODY()
 

@@ -1,14 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "DrgPickup.h"
+#include "DrgPickupBase.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
 #include "Drg/System/DrgGameplayTags.h"
 
-ADrgPickup::ADrgPickup()
+ADrgPickupBase::ADrgPickupBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -24,21 +24,21 @@ ADrgPickup::ADrgPickup()
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-void ADrgPickup::BeginPlay()
+void ADrgPickupBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgPickup::OnSphereOverlap);
+	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgPickupBase::OnSphereOverlap);
 }
 
-void ADrgPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                 const FHitResult& SweepResult)
+void ADrgPickupBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                                     const FHitResult& SweepResult)
 {
 	ApplyEffect(OtherActor);
 }
 
-void ADrgPickup::ApplyEffect(AActor* TargetActor)
+void ADrgPickupBase::ApplyEffect(AActor* TargetActor)
 {
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
 	if (!TargetASC)
@@ -46,7 +46,7 @@ void ADrgPickup::ApplyEffect(AActor* TargetActor)
 		return;
 	}
 
-	
+
 	if (!TargetASC->HasMatchingGameplayTag(DrgGameplayTags::Team_Player))
 	{
 		return;
@@ -63,7 +63,10 @@ void ADrgPickup::ApplyEffect(AActor* TargetActor)
 	const FGameplayEffectSpecHandle EffectSpecHandle = TargetASC->MakeOutgoingSpec(
 		PickupEffectClass, 1.0f, EffectContext);
 
-	TargetASC->ApplyGameplayEffectSpecToSelf(*EffectSpecHandle.Data.Get());
+	if (EffectSpecHandle.IsValid())
+	{
+		TargetASC->ApplyGameplayEffectSpecToSelf(*EffectSpecHandle.Data.Get());
+	}
 
 	Destroy();
 }
