@@ -37,6 +37,10 @@ protected:
 	TSubclassOf<UGameplayEffect> PickupEffectClass;
 
 private:
+	void AdjustSpawnLocationToGround();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> SceneComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USphereComponent> SphereComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components", meta = (AllowPrivateAccess = "true"))

@@ -12,8 +12,11 @@ ADrgPickupBase::ADrgPickupBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
+	RootComponent = SceneComponent;
+
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
-	SetRootComponent(SphereComponent);
+	SphereComponent->SetupAttachment(RootComponent);
 	SphereComponent->SetSphereRadius(80.0f);
 	SphereComponent->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -29,6 +32,8 @@ void ADrgPickupBase::BeginPlay()
 	Super::BeginPlay();
 
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgPickupBase::OnSphereOverlap);
+
+	AdjustSpawnLocationToGround();
 }
 
 void ADrgPickupBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -69,4 +74,29 @@ void ADrgPickupBase::ApplyEffect(AActor* TargetActor)
 	}
 
 	Destroy();
+}
+
+void ADrgPickupBase::AdjustSpawnLocationToGround()
+{
+	if (!SphereComponent) return;
+	
+	const float SphereRadius = SphereComponent->GetScaledSphereRadius();
+	const FVector StartLocation = GetActorLocation() + FVector(0.f, 0.f, SphereRadius + 50.f);
+	const FVector EndLocation = GetActorLocation() - FVector(0.f, 0.f, 1000.f);
+	
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	
+	FHitResult HitResult;
+	const bool bHit = GetWorld()->LineTraceSingleByObjectType(
+		HitResult,
+		StartLocation,
+		EndLocation,
+		ObjectQueryParams
+	);
+
+	if (bHit)
+	{
+		SetActorLocation(HitResult.Location);
+	}
 }
