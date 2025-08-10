@@ -3,6 +3,7 @@
 
 #include "DrgAICharacter.h"
 #include "Drg/AI/DrgAIController.h"
+#include "Drg/Character/Data/DrgCharacterData.h"
 
 
 // Sets default values
@@ -10,6 +11,11 @@ ADrgAICharacter::ADrgAICharacter()
 {
 	CachedAIController = nullptr;
 	bIsAIControlled = true;
+}
+
+FGameplayTag ADrgAICharacter::GetDropTag() const
+{
+	return CharacterData ? CharacterData->DropTag : FGameplayTag::EmptyTag;
 }
 
 // Called when the game starts or when spawned
