@@ -70,6 +70,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Animation")
 	TSubclassOf<UAnimInstance> AnimClass;
 
+	// 이 캐릭터가 죽었을 때 사용할 드롭 규칙을 식별하는 태그
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Drop")
+	FGameplayTag DropTag;
+
 #if WITH_EDITOR
 	// 에디터에서 프로퍼티가 변경되었을 때 호출되는 함수
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
