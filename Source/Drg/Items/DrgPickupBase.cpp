@@ -79,20 +79,17 @@ void ADrgPickupBase::ApplyEffect(AActor* TargetActor)
 void ADrgPickupBase::AdjustSpawnLocationToGround()
 {
 	if (!SphereComponent) return;
-	
+
 	const float SphereRadius = SphereComponent->GetScaledSphereRadius();
 	const FVector StartLocation = GetActorLocation() + FVector(0.f, 0.f, SphereRadius + 50.f);
 	const FVector EndLocation = GetActorLocation() - FVector(0.f, 0.f, 1000.f);
-	
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-	
+
 	FHitResult HitResult;
-	const bool bHit = GetWorld()->LineTraceSingleByObjectType(
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
 		HitResult,
 		StartLocation,
 		EndLocation,
-		ObjectQueryParams
+		ECC_Visibility
 	);
 
 	if (bHit)
