@@ -25,6 +25,8 @@ public:
 	/** UWorldSubsystem의 해제 함수. 레벨 종료 시 호출. */
 	virtual void Deinitialize() override;
 
+	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+
 private:
 	/**
 	 * @brief GameplayMessageSubsystem에 등록되어 'Event.Actor.Death' 메시지를 수신하는 콜백 함수.
@@ -50,4 +52,10 @@ private:
 
 	// GameplayMessageSubsystem에 등록된 리스너의 핸들. Deinitialize 시 리스너 해제에 사용.
 	FGameplayMessageListenerHandle ListenerHandle;
+
+	/**
+	 * @brief GameplayMessageSubsystem에 대한 약한 참조 포인터.
+	 * 서브시스템을 캐싱하여 반복적인 조회를 피하고, 종료 시 안전하게 접근하기 위해 사용.
+	 */
+	TWeakObjectPtr<UGameplayMessageSubsystem> CachedMessageSubsystem;
 };

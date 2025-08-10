@@ -16,31 +16,32 @@ void UDrgDropManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	// TODO: 경로를 하드코딩하는 대신 프로젝트 설정 등에서 가져오게 변경하기
 	DropRegistryDataAsset = Cast<UDropRegistryDataAsset>(DropRegistryPath.TryLoad());
 	check(DropRegistryDataAsset != nullptr);
-
-	// 'Event.Broadcast.ActorDied' 채널로 메시지가 오면 OnActorDeathMessageReceived 함수를 호출하도록 등록
-	UWorld* World = GetWorld();
-	if (ensure(World))
-	{
-		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(World);
-		ListenerHandle = MessageSubsystem.RegisterListener(
-			DrgGameplayTags::Event_Broadcast_ActorDied,
-			this,
-			&UDrgDropManagerSubsystem::OnActorDeathMessageReceived
-		);
-	}
 }
 
 void UDrgDropManagerSubsystem::Deinitialize()
 {
 	// 레벨 종료 시, 등록했던 메시지 리스너를 해제하여 메모리 누수 방지
-	UWorld* World = GetWorld();
-	if (ensure(World))
+	if (CachedMessageSubsystem.IsValid() && ListenerHandle.IsValid())
 	{
-		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(World);
-		MessageSubsystem.UnregisterListener(ListenerHandle);
+		CachedMessageSubsystem->UnregisterListener(ListenerHandle);
 	}
-
 	Super::Deinitialize();
+}
+
+void UDrgDropManagerSubsystem::OnWorldBeginPlay(UWorld& InWorld)
+{
+	Super::OnWorldBeginPlay(InWorld);
+
+	CachedMessageSubsystem = &UGameplayMessageSubsystem::Get(&InWorld);
+
+	if (CachedMessageSubsystem.IsValid())
+	{
+		ListenerHandle = CachedMessageSubsystem->RegisterListener(
+			DrgGameplayTags::Event_Broadcast_ActorDied,
+			this,
+			&UDrgDropManagerSubsystem::OnActorDeathMessageReceived
+		);
+	}
 }
 
 void UDrgDropManagerSubsystem::OnActorDeathMessageReceived(FGameplayTag Channel, const FDrgActorDeathMessage& Message)
