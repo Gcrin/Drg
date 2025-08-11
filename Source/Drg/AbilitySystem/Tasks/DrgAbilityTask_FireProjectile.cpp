@@ -168,19 +168,18 @@ bool UDrgAbilityTask_FireProjectile::CalculateSpawnTransform(ACharacter* Charact
 	// 회전 투사체용 스폰 위치 계산
 	if (Params.ProjectileParams.MovementType == EProjectileMovementType::Orbit)
 	{
-		const FVector CharacterLocation = Character->GetActorLocation();
-		const FVector CharacterForward = Character->GetActorForwardVector();
+		const FVector OrbitCenterLocation = Character->GetActorLocation();
+		const FVector BaseDirection = FVector::ForwardVector; // 월드 X축 기준
 
-		// 캐릭터 전방, OrbitRadius만큼 떨어진 위치에 스폰
-		const FVector SpawnLocation = CharacterLocation + (CharacterForward * Params.ProjectileParams.OrbitRadius);
-
-		// 투사체는 이동 방향(궤도의 접선 방향)을 바라보게 설정
-		const FVector TangentDirection = CharacterForward.RotateAngleAxis(
-			Params.ProjectileParams.bClockwise ? -90.f : 90.f, FVector::UpVector);
+		const float AngleOffset = Params.ProjectileParams.OrbitStartAngle;
+		
+		const FVector DirectionFromCenter = BaseDirection.RotateAngleAxis(AngleOffset, FVector::UpVector);
+		const FVector SpawnLocation = OrbitCenterLocation + (DirectionFromCenter * Params.ProjectileParams.OrbitRadius);
+		const FVector TangentDirection = DirectionFromCenter.RotateAngleAxis(Params.ProjectileParams.bClockwise ? -90.f : 90.f, FVector::UpVector);
 		const FRotator SpawnRotation = TangentDirection.Rotation();
 
 		OutSpawnTransform = FTransform(SpawnRotation, SpawnLocation);
-
+		
 		return true;
 	}
 

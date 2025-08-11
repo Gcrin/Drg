@@ -17,17 +17,18 @@ void UProjectileOrbitSubsystem::RegisterOrbitingProjectile(ADrgProjectile* Proje
 	NewData.OrbitCenter = ProjectileToRegister->GetOwner();
 
 	// 발사 시점의 데이터를 캐싱
+	NewData.CurrentOrbitAngle = FMath::DegreesToRadians(ProjectileToRegister->GetOrbitStartAngle());
 	NewData.CachedOrbitRadius = ProjectileToRegister->GetOrbitRadius();
 	NewData.CachedOrbitSpeed = ProjectileToRegister->GetOrbitSpeed();
 	NewData.bIsOrbitingClockwise = ProjectileToRegister->IsOrbitClockwise();
 
 	// 회전 중심과 현재 위치를 기준으로 초기 각도를 계산
-	if (NewData.OrbitCenter.IsValid())
+	/*if (NewData.OrbitCenter.IsValid())
 	{
 		const FVector DirectionFromCenter = (ProjectileToRegister->GetActorLocation() - NewData.OrbitCenter->
 			GetActorLocation()).GetSafeNormal2D();
 		NewData.CurrentOrbitAngle = FMath::Atan2(DirectionFromCenter.Y, DirectionFromCenter.X);
-	}
+	}*/
 
 	// 관리 배열에 추가
 	OrbitingProjectilesData.Add(NewData);
