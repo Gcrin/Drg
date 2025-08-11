@@ -12,6 +12,7 @@
 #include "Drg/System/DrgDebug.h"
 #include "Drg/System/DrgGameplayStatics.h"
 #include "Drg/System/DrgGameplayTags.h"
+#include "Drg/System/ProjectileOrbitSubsystem.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -153,14 +154,27 @@ void ADrgProjectile::BeginPlay()
 
 	ProjectileState = EProjectileState::FlyingStraight;
 
-	// 포물선 기능이 활성화되지 않았다면 직선으로 발사
-	if (!ProjectileParams.bEnableArc)
+	switch (ProjectileParams.MovementType)
 	{
-		ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileMovement->InitialSpeed;
-	}
-	else
-	{
+	case EProjectileMovementType::Orbit:
+		ProjectileMovement->Deactivate();
+		if (UWorld* World = GetWorld())
+		{
+			if (UProjectileOrbitSubsystem* OrbitSubsystem = World->GetSubsystem<UProjectileOrbitSubsystem>())
+			{
+				OrbitSubsystem->RegisterOrbitingProjectile(this);
+			}
+		}
+		break;
+
+	case EProjectileMovementType::Arc:
 		StartProjectileArc();
+		break;
+		
+	case EProjectileMovementType::Straight:
+	default:
+		ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileMovement->InitialSpeed;
+		break;
 	}
 
 	// 추적 기능이 활성화된 경우, 주기적으로 타겟 탐색 시작
@@ -186,16 +200,53 @@ void ADrgProjectile::BeginPlay()
 	}
 }
 
+void ADrgProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// 회전 타입일 경우, 서브시스템에서 자신을 등록 해제
+	if (ProjectileParams.MovementType == EProjectileMovementType::Orbit)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			// 서브시스템이 이미 소멸 중일 수 있으므로 유효성 검사
+			if (UProjectileOrbitSubsystem* OrbitSubsystem = World->GetSubsystem<UProjectileOrbitSubsystem>())
+			{
+				OrbitSubsystem->UnregisterOrbitingProjectile(this);
+			}
+		}
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
 void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                      const FHitResult& SweepResult)
 {
-	// --- 유효한 적 대상인지 확인 ---
+	// 유효성 검사
 
-	if (!IsValid(OtherActor) || DamagedActors.Contains(OtherActor) || OtherActor == this || OtherActor ==
-		GetOwner())
+	if (!IsValid(OtherActor) || OtherActor == this || OtherActor == GetOwner())
 	{
 		return;
+	}
+
+	if (ProjectileParams.bAllowRepeatDamage)
+	{
+		// --- 반복 피해 로직 ---
+		if (const float* NextDamageTime = DamagedTargetsForRepeatableHit.Find(OtherActor))
+		{
+			// 쿨타임 중인지 확인
+			if (GetWorld()->GetTimeSeconds() < *NextDamageTime)
+			{
+				return;
+			}
+		}
+	}
+	else
+	{
+		// --- 단일 피해 로직 ---
+		if (DamagedTargetsForSingleHit.Contains(OtherActor))
+		{
+			return;
+		}
 	}
 
 	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
@@ -220,8 +271,15 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 	// --- 유효한 적 대상에 대한 로직 ---
 
-	// 중복 피해 목록에 추가
-	DamagedActors.Add(OtherActor);
+	// 중복 피해 목록에 추가(반복 피해 구분)
+	if (ProjectileParams.bAllowRepeatDamage)
+	{
+		DamagedTargetsForRepeatableHit.Add(OtherActor, GetWorld()->GetTimeSeconds() + ProjectileParams.DamageCooldown);
+	}
+	else
+	{
+		DamagedTargetsForSingleHit.Add(OtherActor);
+	}
 
 	ProcessImpact(SweepResult, bFromSweep);
 
@@ -250,8 +308,6 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 void ADrgProjectile::StartProjectileArc()
 {
-	if (!ProjectileParams.bEnableArc)
-		return;
 	ProjectileMovement->ProjectileGravityScale = 1.0f;
 
 	FVector LaunchVelocity;

@@ -24,44 +24,70 @@ enum class EImpactRotationMethod : uint8
 	ZeroRotation
 };
 
+UENUM(BlueprintType)
+enum class EProjectileMovementType : uint8
+{
+	// 직선 이동: 일정한 방향과 속도로 곧게 이동
+	Straight UMETA(DisplayName = "Straight"),
+	// 포물선 이동: 중력 영향을 받아 곡선을 그리며 이동
+	Arc UMETA(DisplayName = "Arc"),
+	// 궤도 이동: 특정 대상 또는 지점을 중심으로 회전하며 이동
+	Orbit UMETA(DisplayName = "Orbit")
+};
+
 USTRUCT(BlueprintType)
 struct FDrgProjectileParams
 {
 	GENERATED_BODY()
 
-	// true이면 포물선 궤적으로 발사합니다.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc")
-	bool bEnableArc = false;
+	// 투사체의 이동 방식을 결정
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Movement")
+	EProjectileMovementType MovementType = EProjectileMovementType::Straight;
 
-	// 포물선의 높이를 조절합니다. (0.0 ~ 1.0 사이 값 권장)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc",
-	meta = (EditCondition = "bEnableArc", EditConditionHides, ClampMin = "0.0", UIMin = "0.0"))
+	// 포물선의 높이를 조절 (0.0 ~ 1.0 사이 값 권장)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc", meta = (EditCondition =
+		"MovementType == EProjectileMovementType::Arc", EditConditionHides, ClampMin = "0.0", UIMin = "0.0"))
 	float ArcHeightRatio = 0.5f;
 
-	// 포물선 계산에 사용될 상대적인 목표 위치입니다.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc",
-		meta = (EditCondition = "bEnableArc", EditConditionHides))
+	// 포물선 계산에 사용될 상대적인 목표 위치
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc", meta = (EditCondition =
+		"MovementType == EProjectileMovementType::Arc", EditConditionHides))
 	FVector TargetOffset;
 
-	// true이면 비행 중 주변의 적을 탐지하고 유도합니다.
+	// 회전 궤도의 반지름 (cm 단위)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbit",
+		meta = (EditCondition = "MovementType == EProjectileMovementType::Orbit", EditConditionHides))
+	float OrbitRadius = 300.f;
+
+	// 회전 속도 (초당 회전 각도, 180이면 2초에 한 바퀴)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbit",
+		meta = (EditCondition = "MovementType == EProjectileMovementType::Orbit", EditConditionHides))
+	float OrbitSpeed = 180.f;
+
+	// true이면 시계 방향으로, false이면 반시계 방향으로 회전
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbit",
+		meta = (EditCondition = "MovementType == EProjectileMovementType::Orbit", EditConditionHides))
+	bool bClockwise = true;
+
+	// true이면 비행 중 주변의 적을 탐지하고 유도
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Homing")
 	bool bEnableHoming = false;
 
-	// 유도 시 타겟을 향해 꺾는 가속도의 크기입니다.
+	// 유도 시 타겟을 향해 꺾는 가속도의 크기
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Homing",
 		meta = (EditCondition = "bEnableHoming", EditConditionHides))
 	float HomingAcceleration = 5000.f;
 
-	// 유도 기능이 켜졌을 때, 적을 탐지하는 최대 반경입니다.
+	// 유도 기능이 켜졌을 때, 적을 탐지하는 최대 반경
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Homing",
 		meta = (EditCondition = "bEnableHoming", EditConditionHides))
 	float DetectionRadius = 1000.f;
 
-	// true이면 관통 횟수 제한 없이 무한으로 관통합니다.
+	// true이면 관통 횟수 제한 없이 무한으로 관통
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Pierce")
 	bool bInfinitePierce = false;
 
-	// 이 투사체가 파괴되기 전까지 피해를 입힐 수 있는 최대 대상의 수입니다.
+	// 이 투사체가 파괴되기 전까지 피해를 입힐 수 있는 최대 대상의 수
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Pierce",
 		meta=(EditCondition = "!bInfinitePierce", ClampMin = "1", UIMin = "1"))
 	int32 MaxTargetHits = 1;
@@ -80,41 +106,50 @@ struct FDrgProjectileParams
 		meta = (EditCondition = "bEnableAoeOnImpact", EditConditionHides))
 	bool bApplyBaseDamageToInitialTarget = false;
 
-	// 발사 시 재생할 사운드입니다.
+	// 발사 시 재생할 사운드
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Muzzle")
 	TObjectPtr<USoundBase> MuzzleSound;
 
-	// 발사 시 스폰할 나이아가라 이펙트입니다.
+	// 발사 시 스폰할 나이아가라 이펙트
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Muzzle")
 	TObjectPtr<UNiagaraSystem> MuzzleVFX;
 
-	// 발사 이펙트의 크기를 조절합니다.
+	// 발사 이펙트의 크기를 조절
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Muzzle",
 		meta = (EditCondition = "MuzzleVFX != nullptr"))
 	FVector MuzzleScale = FVector::OneVector;
 
-	// 충돌 시 재생할 사운드입니다.
+	// 충돌 시 재생할 사운드
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact")
 	TObjectPtr<USoundBase> ImpactSound;
 
-	// 충돌 시 스폰할 나이아가라 이펙트입니다.
+	// 충돌 시 스폰할 나이아가라 이펙트
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact")
 	TObjectPtr<UNiagaraSystem> ImpactVFX;
 
-	// 충돌 이펙트의 크기를 조절합니다.
+	// 충돌 이펙트의 크기를 조절
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact",
 		meta = (EditCondition = "ImpactVFX != nullptr"))
 	FVector ImpactScale = FVector::OneVector;
 
-	// 충돌 이펙트의 초기 회전 방식을 결정합니다.
+	// 충돌 이펙트의 초기 회전 방식을 결정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact",
 		meta = (EditCondition = "ImpactVFX != nullptr"))
 	EImpactRotationMethod RotationMethod = EImpactRotationMethod::AlignToImpactNormal;
 
-	// 충돌 지점으로부터 이펙트가 얼마나 떨어져서 스폰될지 결정합니다. (cm 단위)
+	// 충돌 지점으로부터 이펙트가 얼마나 떨어져서 스폰될지 결정 (cm 단위)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact",
 		meta = (EditCondition = "ImpactVFX != nullptr"))
 	float ImpactOffset = 0.0f;
+
+	// true이면 동일한 대상에게 반복적으로 피해 적용 가능
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Damage")
+	bool bAllowRepeatDamage = true;
+
+	// 반복 피해가 활성화되었을 때, 동일한 대상에게 다시 피해를 입히기까지의 대기 시간(초)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Damage",
+		meta = (EditCondition = "bAllowRepeatDamage", ClampMin = "0.1", UIMin = "0.1"))
+	float DamageCooldown = 1.0f;
 };
 
 UENUM(BlueprintType)
@@ -135,9 +170,15 @@ public:
 	void SetDamageEffectSpec(const FGameplayEffectSpecHandle& InDamageEffectSpecHandle);
 	void SetAoeDamageEffectSpec(const FGameplayEffectSpecHandle& InAoeDamageEffectSpecHandle);
 
+	float GetOrbitRadius() const { return ProjectileParams.OrbitRadius; }
+	float GetOrbitSpeed() const { return ProjectileParams.OrbitSpeed; }
+	bool IsOrbitClockwise() const { return ProjectileParams.bClockwise; }
+
+	void SetProjectileParams(const FDrgProjectileParams& InProjectileParams) { ProjectileParams = InProjectileParams; };
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -146,7 +187,7 @@ protected:
 	void StartProjectileArc();
 	void DetectTarget();
 
-	UPROPERTY(EditAnywhere, meta = (ShowOnlyInnerProperties))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Config")
 	FDrgProjectileParams ProjectileParams;
 
 	// 여러 문제로 인해 블루프린트에서 생성하고 연결
@@ -181,6 +222,9 @@ private:
 	FTimerHandle DetectTargetTimerHandle;
 	TWeakObjectPtr<AActor> HomingTarget;
 	FGameplayTag OwnerTeamTag;
-	// 이미 피해를 입힌 액터들을 저장하는 배열
-	TArray<TObjectPtr<AActor>> DamagedActors;
+
+	// 반복 피해가 비활성화되었을 때 이미 피해를 입힌 대상을 기록
+	TSet<TObjectPtr<AActor>> DamagedTargetsForSingleHit;
+	// 반복 피해가 활성화되었을 때 대상별 다음 피해 가능 시간을 기록
+	TMap<TObjectPtr<AActor>, float> DamagedTargetsForRepeatableHit;
 };
