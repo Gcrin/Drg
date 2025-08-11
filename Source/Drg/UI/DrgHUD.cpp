@@ -38,6 +38,9 @@ void ADrgHUD::ShowGameOverUI(bool bIsVictory)
 		
 		// UI 전용 입력 모드로 전환
 		SetUIInputMode(true);
+
+		// 게임 월드 일시정지
+		GetWorld()->GetFirstPlayerController()->SetPause(true);
 		
 		UE_LOG(LogTemp, Warning, TEXT("게임오버 UI 표시됨! Victory: %s"), bIsVictory ? TEXT("true") : TEXT("false"));
 	}
@@ -49,6 +52,9 @@ void ADrgHUD::HideGameOverUI()
 	{
 		CurrentGameOverWidget->RemoveFromParent();
 		CurrentGameOverWidget = nullptr;
+
+		// 게임 일시정지 해제
+		GetWorld()->GetFirstPlayerController()->SetPause(false);
 		
 		// 게임 입력 모드로 복원
 		SetUIInputMode(false);

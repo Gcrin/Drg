@@ -40,11 +40,11 @@ void UGameOverWidget::SetGameResult(const FGameResultData& ResultData, bool bIsV
 	{
 		if (bIsVictory)
 		{
-			GameResultTitleText->SetText(FText::FromString(TEXT("축하합니다!\n보스를 물리쳤습니다!")));
+			GameResultTitleText->SetText(FText::FromString(TEXT("Clear!\n보스를 물리쳤습니다!")));
 		}
 		else
 		{
-			GameResultTitleText->SetText(FText::FromString(TEXT("게임 오버\n용감한 드래곤이 쓰러졌습니다...")));
+			GameResultTitleText->SetText(FText::FromString(TEXT("Game Over\n용감한 드래곤이 쓰러졌습니다...")));
 		}
 	}
 
