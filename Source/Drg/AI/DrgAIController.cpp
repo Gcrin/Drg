@@ -34,6 +34,11 @@ void ADrgAIController::OnPossess(APawn* InPawn)
 			if (UBlackboardComponent* BlackboardComp = GetBlackboardComponent())
 			{
 				BlackboardComp->InitializeBlackboard(*BlackboardAsset);
+				// 모든 키를 초기화하는 로직
+				for (const FBlackboardEntry& Entry : BlackboardComp->GetBlackboardAsset()->Keys)
+				{
+					BlackboardComp->ClearValue(Entry.EntryName);
+				}
 			}
 		}
 		RunBehaviorTree(CharacterData->BehaviorTree);
