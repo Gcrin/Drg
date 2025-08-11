@@ -70,6 +70,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Animation")
 	TSubclassOf<UAnimInstance> AnimClass;
 
+	// AI 캐릭터가 사용할 비해비어 트리
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|AI")
+	TObjectPtr<class UBehaviorTree> BehaviorTree;
+
 	// 이 캐릭터가 죽었을 때 사용할 드롭 규칙을 식별하는 태그
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Drop")
 	FGameplayTag DropTag;

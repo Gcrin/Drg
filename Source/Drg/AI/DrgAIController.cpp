@@ -3,14 +3,17 @@
 
 #include "DrgAIController.h"
 #include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Drg/Character/DrgBaseCharacter.h"
+#include "Drg/Character/Data/DrgCharacterData.h"
 #include "Drg/System/DrgGameplayTags.h"
 
 void ADrgAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	if (ADrgBaseCharacter* ControlledCharacter = Cast<ADrgBaseCharacter>(InPawn))
+	ADrgBaseCharacter* ControlledCharacter = Cast<ADrgBaseCharacter>(InPawn);
+	if (ControlledCharacter)
 	{
 		if (UAbilitySystemComponent* ASC = ControlledCharacter->GetAbilitySystemComponent())
 		{
@@ -20,9 +23,20 @@ void ADrgAIController::OnPossess(APawn* InPawn)
 		}
 	}
 
-	if (BehaviorTree)
+	// 캐릭터 데이터 에셋의 비해비어 트리 실행
+	UDrgCharacterData* CharacterData = ControlledCharacter->GetCharacterData();
+	if (CharacterData && CharacterData->BehaviorTree)
 	{
-		RunBehaviorTree(BehaviorTree);
+		UBlackboardData* BlackboardAsset = CharacterData->BehaviorTree->BlackboardAsset;
+		if (BlackboardAsset)
+		{
+			// 현재 컨트롤러의 블랙보드 컴포넌트를 새로운 에셋으로 초기화
+			if (UBlackboardComponent* BlackboardComp = GetBlackboardComponent())
+			{
+				BlackboardComp->InitializeBlackboard(*BlackboardAsset);
+			}
+		}
+		RunBehaviorTree(CharacterData->BehaviorTree);
 	}
 }
 
