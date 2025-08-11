@@ -29,11 +29,10 @@ ADrgBaseCharacter::ADrgBaseCharacter()
 
 	//회전투사체 중심축
 	OrbitPivotComponent = CreateDefaultSubobject<UDrgOrbitalMovementComponent>(TEXT("OrbitPivotComponent"));
-	OrbitPivotComponent->SetupAttachment(GetMesh());
-	// 2. 궤도 로직 컴포넌트 생성
-	OrbitalMovementComponent = CreateDefaultSubobject<UDrgOrbitalMovementComponent>(TEXT("OrbitalMovementComponent"));
+	OrbitPivotComponent->SetupAttachment(RootComponent);
+
 	// 궤도 로직 컴포넌트를 회전 중심점 컴포넌트에 부착합니다.
-	// 이렇게 해야 OrbitalMovementComponent가 OrbitPivotComponent를 기준으로 움직입니다.
+	OrbitalMovementComponent = CreateDefaultSubobject<UDrgOrbitalMovementComponent>(TEXT("OrbitalMovementComponent"));
 	OrbitalMovementComponent->SetupAttachment(OrbitPivotComponent);
 }
 
