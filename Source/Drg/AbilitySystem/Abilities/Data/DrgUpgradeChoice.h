@@ -14,9 +14,6 @@ USTRUCT(BlueprintType)
 struct FDrgUpgradeChoice
 {
 	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
-	EUpgradeType UpgradeType;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
 	TObjectPtr<UDrgAbilityDataAsset> AbilityData = nullptr;

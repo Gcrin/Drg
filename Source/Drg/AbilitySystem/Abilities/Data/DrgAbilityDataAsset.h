@@ -7,13 +7,6 @@
 #include "DrgAbilityLevelData.h"
 #include "DrgAbilityDataAsset.generated.h"
 
-UENUM(BlueprintType)
-enum class EUpgradeType : uint8
-{
-	Ability UMETA(DisplayName = "Ability"),
-	Effect UMETA(DisplayName = "Effect")
-};
-
 /**
  *  @brief 어빌리티의 주요 데이터를 저장
  *  PrimaryDataAsset = 비동기
@@ -25,8 +18,6 @@ class DRG_API UDrgAbilityDataAsset : public UPrimaryDataAsset
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade|Display", meta = (DisplayName = "업그레이드 타입"))
-	EUpgradeType UpgradeTyp;
 	// 어빌리티 이름
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade|Display", meta = (DisplayName = "이름"))
 	FText AbilityName;

@@ -6,24 +6,36 @@
 #include "Abilities/GameplayAbility.h"
 #include "DrgAbilityLevelData.generated.h"
 
+UENUM(BlueprintType)
+enum class EUpgradeType : uint8
+{
+	Ability UMETA(DisplayName = "Ability"),
+	Effect UMETA(DisplayName = "Effect")
+};
+
 /**
- *  @brief 레벨 별 어빌리티 데이터 구조체, (Index 0 = Level 1)
+ *  @brief 레벨 별 업그레이드 데이터 구조체, (Index 0 = Level 1)
  */
 USTRUCT(BlueprintType)
 struct FDrgAbilityLevelData
 {
 	GENERATED_BODY()
 
-	// 어빌리티 설명
+	// 업그레이드 타입
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade|Display", meta = (DisplayName = "업그레이드 타입"))
+	EUpgradeType UpgradeType;
+	// 업그레이드 설명
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (MultiLine = true, DisplayName = "설명"))
 	FText AbilityDescription;
-	// 어빌리티 아이콘
+	// 업그레이드 아이콘
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "아이콘"))
 	TSoftObjectPtr<UTexture2D> AbilityIcon;
 	// 어빌리티 클래스
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability", meta = (DisplayName = "어빌리티 클래스"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability", meta = (DisplayName = "어빌리티 클래스",
+		EditCondition = "UpgradeType == EUpgradeType::Ability", EditConditionHides))
 	TSubclassOf<UGameplayAbility> AbilityClass;
 	// 이펙트 클래스
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Effect", meta = (DisplayName = "이펙트 클래스"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Effect", meta = (DisplayName = "이펙트 클래스",
+		EditCondition = "UpgradeType == EUpgradeType::Effect", EditConditionHides))
 	TSubclassOf<UGameplayEffect> EffectClass;
 };
