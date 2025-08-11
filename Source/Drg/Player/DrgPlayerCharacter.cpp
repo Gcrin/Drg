@@ -8,6 +8,10 @@
 #include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
+// UI 관련 include 추가
+#include "Drg/UI/LevelUp/DrgSkillSelectionWidget.h"
+#include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
+#include "Kismet/GameplayStatics.h"
 
 ADrgPlayerCharacter::ADrgPlayerCharacter()
 {
@@ -68,6 +72,58 @@ void ADrgPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ActivateCharacter();
+
+	// UI 위젯 생성 및 델리게이트 바인딩
+	if (SkillSelectionWidgetClass && AbilityUpgradeComponent)
+	{
+		if (APlayerController* PC = GetController<APlayerController>())
+		{
+			SkillSelectionWidget = CreateWidget<UDrgSkillSelectionWidget>(PC, SkillSelectionWidgetClass);
+			
+			if (SkillSelectionWidget)
+			{
+				// 컴포넌트의 선택지 준비 완료 → UI 표시
+				AbilityUpgradeComponent->OnLevelUpChoiceReady.AddDynamic(
+					SkillSelectionWidget, &UDrgSkillSelectionWidget::ShowUpgradeChoices);
+				
+				// UI의 스킬 선택 완료 → 캐릭터 처리  
+				SkillSelectionWidget->OnSkillSelected.AddDynamic(
+					this, &ADrgPlayerCharacter::OnSkillSelected);
+			}
+			else
+			{
+				ensureAlwaysMsgf(false, TEXT("ADrgPlayerCharacter: 스킬 선택 위젯 생성 실패!"));
+			}
+		}
+	}
+	else if (!SkillSelectionWidgetClass)
+	{
+		ensureAlwaysMsgf(false, TEXT("ADrgPlayerCharacter: SkillSelectionWidgetClass가 설정되지 않았습니다! 블루프린트에서 설정하세요!"));
+	}
+}
+
+void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
+{
+	if (!SkillSelectionWidget || !AbilityUpgradeComponent)
+	{
+		return;
+	}
+
+	// 시간 배율 복원 (UI 제거 전에 먼저)
+	if (UWorld* World = GetWorld())
+	{
+		UGameplayStatics::SetGlobalTimeDilation(World, 1.0f);  // 정상 속도로 복원
+	}
+
+	// UI에서 현재 선택지 가져오기
+	TArray<FDrgUpgradeChoice> CurrentChoices = SkillSelectionWidget->GetCurrentUpgradeChoices();
+	
+	if (CurrentChoices.IsValidIndex(SkillIndex))
+	{
+		// 선택된 스킬 적용
+		const FDrgUpgradeChoice& SelectedChoice = CurrentChoices[SkillIndex];
+		AbilityUpgradeComponent->ApplyUpgradeChoice(SelectedChoice);
+	}
 }
 
 void ADrgPlayerCharacter::PossessedBy(AController* NewController)

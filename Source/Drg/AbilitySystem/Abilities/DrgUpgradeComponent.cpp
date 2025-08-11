@@ -14,7 +14,14 @@ UDrgUpgradeComponent::UDrgUpgradeComponent()
 void UDrgUpgradeComponent::PresentLevelUpChoices(int32 NumChoices)
 {
 	TArray<FDrgUpgradeChoice> Choices = GetLevelUpChoices(NumChoices);
-	OnLevelUpChoiceReady.Broadcast(Choices);
+	if (Choices.Num() > 0)
+	{
+		OnLevelUpChoiceReady.Broadcast(Choices);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Display, TEXT("더 이상 어빌리티를 강화하거나, 획득할 수 없습니다."));	
+	}
 }
 
 void UDrgUpgradeComponent::BeginPlay()
@@ -114,7 +121,6 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 			}
 		}
 	}
-	while (FinalChoices.Num() < NumChoices) { FinalChoices.Add(FDrgUpgradeChoice()); }
 	return FinalChoices;
 }
 

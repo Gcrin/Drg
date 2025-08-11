@@ -27,7 +27,7 @@ public:
 	FText AbilityDescription;
 	// 어빌리티 아이콘
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "아이콘"))
-	TObjectPtr<UTexture2D> AbilityIcon;
+	TSoftObjectPtr<UTexture2D> AbilityIcon;
 	// 어빌리티 등장 가중치
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Upgrade", meta = (ClampMin = "0.0"), meta = (DisplayName = "가중치"))
 	float SelectionWeight = 1.0f;
