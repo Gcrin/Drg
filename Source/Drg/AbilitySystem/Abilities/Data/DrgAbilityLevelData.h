@@ -3,26 +3,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Abilities/GameplayAbility.h"
 #include "DrgAbilityLevelData.generated.h"
 
 /**
- *  @brief 어빌리티의 레벨 별 스텟 구조체, (Index 0 = Level 1)
+ *  @brief 레벨 별 어빌리티 데이터 구조체, (Index 0 = Level 1)
  */
 USTRUCT(BlueprintType)
 struct FDrgAbilityLevelData
 {
 	GENERATED_BODY()
 
-	// 어빌리티 데미지
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats", meta = (DisplayName = "데미지"))
-	float Damage = 0.0f;
-	// 어빌리티 쿨타임
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats", meta = (DisplayName = "쿨타임"))
-	float CooldownDuration = 1.0f;
-	// 어빌리티 투사체 개수
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats", meta = (DisplayName = "투사체 수"))
-	int32 ProjectileCount = 1;
-	// 어빌리티 범위
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Stats", meta = (DisplayName = "효과 범위"))
-	float AreaOfEffect = 100.0f;
+	// 어빌리티 설명
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (MultiLine = true, DisplayName = "설명"))
+	FText AbilityDescription;
+	// 어빌리티 아이콘
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "아이콘"))
+	TSoftObjectPtr<UTexture2D> AbilityIcon;
+	// 어빌리티 블루프린트 클래스
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|GAS", meta = (DisplayName = "어빌리티 클래스"))
+	TSubclassOf<UGameplayAbility> AbilityClass;
 };
