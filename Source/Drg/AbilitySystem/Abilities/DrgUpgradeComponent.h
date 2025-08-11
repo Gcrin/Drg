@@ -10,6 +10,7 @@
 #include "DrgUpgradeComponent.generated.h"
 
 class UAbilitySystemComponent;
+class UDrgUpgradeDataCollection;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelUpChoicesReady, const TArray<FDrgUpgradeChoice>&, Choices);
 
@@ -30,14 +31,20 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	void UpgradeAbility(const FDrgUpgradeChoice& SelectedChoice);
+	void UpgradeEffect(const FDrgUpgradeChoice& SelectedChoice);
+
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability")
-	TArray<TObjectPtr<UDrgAbilityDataAsset>> AllAvailableAbilities;
+	TObjectPtr<UDrgUpgradeDataCollection> AbilityCollectionData;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Ability")
 	TMap<TObjectPtr<UDrgAbilityDataAsset>, FGameplayAbilitySpecHandle> OwnedAbilityHandles;
+
+	UPROPERTY()
+	TMap<UDrgAbilityDataAsset*, FActiveGameplayEffectHandle> ActiveEffectHandles;
 
 public:
 	/**
