@@ -19,7 +19,10 @@ void UDrgOrbitalMovementComponent::BeginPlay()
 void UDrgOrbitalMovementComponent::UpdateAllProjectilePositions()
 {
 	const int32 ProjectileCount = OrbitingProjectiles.Num();
-	if (ProjectileCount == 0) return;
+	if (ProjectileCount == 0)
+		return;
+
+	const FVector ComponentWorldLocation = GetOwner()->GetActorLocation();
 
 	// 투사체들이 원형으로 균일하게 분포하기 위한 각도 간격입니다.
 	const float AngleStep = 360.0f / ProjectileCount;
@@ -46,10 +49,14 @@ void UDrgOrbitalMovementComponent::UpdateAllProjectilePositions()
 		const float NewRelativeY = OrbitRadius * FMath::Sin(FMath::DegreesToRadians(TargetAngle));
 
 		// Z축 위치는 변경하지 않고 X, Y 위치만 업데이트합니다.
-		const FVector NewRelativeLocation(NewRelativeX, NewRelativeY, Projectile->GetActorLocation().Z);
+		const FVector NewRelativeLocation(NewRelativeX, NewRelativeY, 0.0f);
 
-		// 부모(OrbitPivotComponent) 기준의 상대 위치를 설정합니다.
-		Projectile->SetActorRelativeLocation(NewRelativeLocation);
+		// 컴포넌트의 월드 위치에 계산된 상대 위치를 더하여 투사체의 최종 월드 위치를 결정합니다.
+		const FVector NewWorldLocation = ComponentWorldLocation + NewRelativeLocation;
+
+		// 투사체의 월드 위치를 직접 설정합니다.
+		// Z축 위치는 기존 투사체의 Z 위치를 유지합니다.
+		Projectile->SetActorLocation(FVector(NewWorldLocation.X, NewWorldLocation.Y, Projectile->GetActorLocation().Z));
 	}
 }
 
