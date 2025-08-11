@@ -141,7 +141,8 @@ void ADrgProjectile::SetDamageCooldownForTarget(AActor* TargetActor)
 	FTimerDelegate TimerDelegate;
 	TimerDelegate.BindUFunction(this, FName("OnDamageCooldownExpired"), TWeakObjectPtr<AActor>(TargetActor));
 
-	GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, TimerDelegate, ProjectileParams.OrbitalDamageCooldown, false);
+	GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, TimerDelegate, ProjectileParams.OrbitalDamageCooldown,
+	                                       false);
 }
 
 void ADrgProjectile::OnDamageCooldownExpired(TWeakObjectPtr<AActor> TargetToRemove)
@@ -156,25 +157,6 @@ void ADrgProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 오버랩 바인딩은 모드와 상관없이 필요하므로 가장 먼저 수행합니다.
-	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgProjectile::OnSphereOverlap);
-
-	// 회전 모드일 경우, 자체 이동 로직을 비활성화하고 즉시 종료합니다.
-	if (ProjectileParams.bIsOrbital)
-	{
-		if (ensure(ProjectileMovement))
-		{
-			ProjectileMovement->Deactivate();
-		}
-		// 회전 모드에서는 이후의 발사/유도 로직이 필요 없습니다.
-
-		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
-		{
-			Cast<ADrgPlayerCharacter>(PlayerPawn)->AddProjectile(this);
-		}
-		return;
-	}
-
 	if (GetOwner())
 	{
 		UAbilitySystemComponent* OwnerAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
@@ -185,13 +167,30 @@ void ADrgProjectile::BeginPlay()
 			                         First();
 		}
 	}
-
-	StartTransform = GetActorTransform();
-
-	// 오버랩 이벤트가 발생하면 OnSphereOverlap 함수를 호출하도록 바인딩
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgProjectile::OnSphereOverlap);
 
+
+	// 오버랩 이벤트가 발생하면 OnSphereOverlap 함수를 호출하도록 바인딩
+
 	ProjectileState = EProjectileState::FlyingStraight;
+	StartTransform = GetActorTransform();
+
+
+	// 회전 모드일 경우, 자체 이동 로직을 비활성화하고 즉시 종료합니다.
+	if (ProjectileParams.bIsOrbital)
+	{
+		if (ensure(ProjectileMovement))
+		{
+			ProjectileMovement->Deactivate();
+		}
+
+		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+		{
+			Cast<ADrgPlayerCharacter>(PlayerPawn)->AddProjectile(this);
+		}
+		return;
+	}
+
 
 	// 포물선 기능이 활성화되지 않았다면 직선으로 발사
 	if (!ProjectileParams.bEnableArc)
@@ -230,22 +229,34 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                      const FHitResult& SweepResult)
 {
-	// --- 유효한 적 대상인지 확인 ---
-
-	// if (!IsValid(OtherActor) || DamagedActors.Contains(OtherActor) || OtherActor == this || OtherActor ==
-	// 	GetOwner())
-	// {
-	// 	return;
-	// }
-	if (!IsValid(OtherActor) || RecentlyDamagedActors.Contains(OtherActor) || OtherActor ==
-		GetOwner())
+	// 충돌한 액터가 유효하지 않거나, 자기 자신 또는 Owner일 경우 즉시 종료합니다.
+	if (!IsValid(OtherActor) || OtherActor == this || OtherActor == GetOwner())
 	{
 		return;
 	}
 
+	// --- bIsOrbital 모드일 경우의 로직 ---
+	if (ProjectileParams.bIsOrbital)
+	{
+		// 이미 쿨다운 중인 액터와 충돌했다면 데미지를 주지 않고 종료합니다.
+		if (RecentlyDamagedActors.Contains(OtherActor))
+		{
+			return;
+		}
+	}
+	// --- 일반 투사체 모드일 경우의 로직 ---
+	else
+	{
+		// 관통되지 않는 발사체라면, 이미 피해를 준 액터와 충돌 시 데미지를 주지 않고 종료합니다.
+		if (!ProjectileParams.bInfinitePierce && DamagedActors.Contains(OtherActor))
+		{
+			return;
+		}
+	}
+
 	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 
-	// 지형지물 또는 ASC가 없는 액터와 충돌한 경우
+	// ASC가 없는 액터 (지형지물 등)와 충돌한 경우
 	if (!TargetAsc)
 	{
 		ProcessImpact(SweepResult, bFromSweep);
@@ -253,39 +264,43 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 		return;
 	}
 
-	// 팀 태그가 같을 경우
+	// 아군이거나, 이미 사망한 대상일 경우 데미지 적용을 건너뜁니다.
 	if (UDrgGameplayStatics::AreTeamsFriendly(OwnerTeamTag, TargetAsc))
 	{
 		return;
 	}
-
-	// 캐릭터가 죽음 상태일 경우
 	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
 	if (TargetCharacter && TargetCharacter->IsDead()) return;
 
-	// --- 유효한 적 대상에 대한 로직 ---
+	// --- 유효한 적 대상에 대한 데미지 로직 ---
 
-	// 중복 피해 목록에 추가
-	// DamagedActors.Add(OtherActor);
-	//회전체 추가후
-	SetDamageCooldownForTarget(OtherActor);
+	UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
+	if (!ensure(SourceAsc)) return;
+
+	// 회전체 모드일 경우 쿨다운을 설정합니다.
+	if (ProjectileParams.bIsOrbital)
+	{
+		SetDamageCooldownForTarget(OtherActor);
+	}
+	// 일반 투사체 모드일 경우, 피해를 준 액터 목록에 추가합니다.
+	else
+	{
+		DamagedActors.Add(OtherActor);
+	}
 
 	ProcessImpact(SweepResult, bFromSweep);
 
-	// 단일 피해 적용 여부
-	// 일반탄이거나, 또는 폭발탄이면서 '직격 시 추가 피해' 옵션이 켜진 경우
-	const bool bShouldApplyDirectDamage = !ProjectileParams.bEnableAoeOnImpact ||
-		ProjectileParams.bApplyBaseDamageToInitialTarget;
+	// 단일 피해 적용 여부 확인
+	const bool bShouldApplyDirectDamage = !ProjectileParams.bEnableAoeOnImpact || ProjectileParams.
+		bApplyBaseDamageToInitialTarget;
 
-	UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
-
-	if (SourceAsc && bShouldApplyDirectDamage && DamageEffectSpecHandle.IsValid())
+	if (bShouldApplyDirectDamage && DamageEffectSpecHandle.IsValid())
 	{
 		SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
 	}
 
-	// 관통 및 파괴 처리
-	if (!ProjectileParams.bInfinitePierce)
+	// 관통 및 파괴 처리 (회전체 모드에서는 파괴하지 않음)
+	if (!ProjectileParams.bInfinitePierce && !ProjectileParams.bIsOrbital)
 	{
 		ProjectileParams.MaxTargetHits--;
 		if (ProjectileParams.MaxTargetHits <= 0)
