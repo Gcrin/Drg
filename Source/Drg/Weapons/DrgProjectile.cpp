@@ -9,6 +9,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Drg/Character/DrgBaseCharacter.h"
+#include "Drg/Player/DrgPlayerCharacter.h"
 #include "Drg/System/DrgDebug.h"
 #include "Drg/System/DrgGameplayStatics.h"
 #include "Drg/System/DrgGameplayTags.h"
@@ -166,6 +167,11 @@ void ADrgProjectile::BeginPlay()
 			ProjectileMovement->Deactivate();
 		}
 		// 회전 모드에서는 이후의 발사/유도 로직이 필요 없습니다.
+
+		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+		{
+			Cast<ADrgPlayerCharacter>(PlayerPawn)->AddProjectile(this);
+		}
 		return;
 	}
 

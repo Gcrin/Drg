@@ -11,6 +11,8 @@
 class UDrgCharacterData;
 class UDrgAttributeSet;
 class UDrgAbilitySystemComponent;
+class ADrgProjectile;
+class UDrgOrbitalMovementComponent;
 
 UCLASS()
 class DRG_API ADrgBaseCharacter : public ACharacter, public IAbilitySystemInterface
@@ -43,6 +45,7 @@ public:
 	UFUNCTION()
 	virtual void OnDeathCleanup();
 
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -63,7 +66,10 @@ protected:
 	//회전투사체 중심축
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<USceneComponent> OrbitPivotComponent;
-
+	// 실제 투사체 관리와 회전 로직을 담당하는 컴포넌트입니다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
+	TObjectPtr<UDrgOrbitalMovementComponent> OrbitalMovementComponent;
+	// TObjectPtr<UDrgOrbitalMovementComponent> OrbitPivotComponent;
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
 	TObjectPtr<UDrgAbilitySystemComponent> AbilitySystemComponent;

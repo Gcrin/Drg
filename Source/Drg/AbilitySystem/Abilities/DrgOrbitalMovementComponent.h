@@ -9,7 +9,7 @@
 class ADrgProjectile;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class DRG_API UDrgOrbitalMovementComponent : public UActorComponent
+class DRG_API UDrgOrbitalMovementComponent : public USceneComponent
 {
 	GENERATED_BODY()
 

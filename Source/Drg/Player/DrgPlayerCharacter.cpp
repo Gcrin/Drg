@@ -9,8 +9,10 @@
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
 // UI 관련 include 추가
+#include "Drg/AbilitySystem/Abilities/DrgOrbitalMovementComponent.h"
 #include "Drg/UI/LevelUp/DrgSkillSelectionWidget.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
+#include "Drg/Weapons/DrgProjectile.h"
 #include "Kismet/GameplayStatics.h"
 
 ADrgPlayerCharacter::ADrgPlayerCharacter()
@@ -31,6 +33,10 @@ ADrgPlayerCharacter::ADrgPlayerCharacter()
 	CameraComponent->bUsePawnControlRotation = false;
 
 	AbilityUpgradeComponent = CreateDefaultSubobject<UDrgUpgradeComponent>(TEXT("AbilityUpgradeComponent"));
+
+	// // CreateDefaultSubobject를 사용하여 OrbitalMovementComponent를 생성하고 할당합니다.
+	// OrbitalMovementComponent = CreateDefaultSubobject<UDrgOrbitalMovementComponent>(TEXT("OrbitalMovement"));
+
 
 	bIsAIControlled = false;
 }
@@ -68,24 +74,45 @@ void ADrgPlayerCharacter::ActivateCharacter()
 	}
 }
 
+void ADrgPlayerCharacter::AddProjectile(ADrgProjectile* Projectile)
+{
+	if (IsValid(OrbitalMovementComponent))
+	{
+	
+		// Projectile->AttachToComponent(
+		// 	OrbitPivotComponent,
+		// 	FAttachmentTransformRules::SnapToTargetNotIncludingScale
+		// );
+		OrbitalMovementComponent->AddProjectile(Projectile);
+
+	}
+	
+
+}
+
+TObjectPtr<USceneComponent> ADrgPlayerCharacter::GetOrbitPivotComponent() const
+{
+	return OrbitPivotComponent;
+}
+
 void ADrgPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ActivateCharacter();
-
+	
 	// UI 위젯 생성 및 델리게이트 바인딩
 	if (SkillSelectionWidgetClass && AbilityUpgradeComponent)
 	{
 		if (APlayerController* PC = GetController<APlayerController>())
 		{
 			SkillSelectionWidget = CreateWidget<UDrgSkillSelectionWidget>(PC, SkillSelectionWidgetClass);
-			
+
 			if (SkillSelectionWidget)
 			{
 				// 컴포넌트의 선택지 준비 완료 → UI 표시
 				AbilityUpgradeComponent->OnLevelUpChoiceReady.AddDynamic(
 					SkillSelectionWidget, &UDrgSkillSelectionWidget::ShowUpgradeChoices);
-				
+
 				// UI의 스킬 선택 완료 → 캐릭터 처리  
 				SkillSelectionWidget->OnSkillSelected.AddDynamic(
 					this, &ADrgPlayerCharacter::OnSkillSelected);
@@ -112,12 +139,12 @@ void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
 	// 시간 배율 복원 (UI 제거 전에 먼저)
 	if (UWorld* World = GetWorld())
 	{
-		UGameplayStatics::SetGlobalTimeDilation(World, 1.0f);  // 정상 속도로 복원
+		UGameplayStatics::SetGlobalTimeDilation(World, 1.0f); // 정상 속도로 복원
 	}
 
 	// UI에서 현재 선택지 가져오기
 	TArray<FDrgUpgradeChoice> CurrentChoices = SkillSelectionWidget->GetCurrentUpgradeChoices();
-	
+
 	if (CurrentChoices.IsValidIndex(SkillIndex))
 	{
 		// 선택된 스킬 적용

@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Data/DrgCharacterData.h"
 #include "Drg/AbilitySystem/DrgAbilitySystemComponent.h"
+#include "Drg/AbilitySystem/Abilities/DrgOrbitalMovementComponent.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "Drg/System/DrgGameplayTags.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -27,8 +28,13 @@ ADrgBaseCharacter::ADrgBaseCharacter()
 	AttributeSet = CreateDefaultSubobject<UDrgAttributeSet>(TEXT("AttributeSet"));
 
 	//회전투사체 중심축
-	OrbitPivotComponent = CreateDefaultSubobject<USceneComponent>(TEXT("OrbitPivotComponent"));
+	OrbitPivotComponent = CreateDefaultSubobject<UDrgOrbitalMovementComponent>(TEXT("OrbitPivotComponent"));
 	OrbitPivotComponent->SetupAttachment(GetMesh());
+	// 2. 궤도 로직 컴포넌트 생성
+	OrbitalMovementComponent = CreateDefaultSubobject<UDrgOrbitalMovementComponent>(TEXT("OrbitalMovementComponent"));
+	// 궤도 로직 컴포넌트를 회전 중심점 컴포넌트에 부착합니다.
+	// 이렇게 해야 OrbitalMovementComponent가 OrbitPivotComponent를 기준으로 움직입니다.
+	OrbitalMovementComponent->SetupAttachment(OrbitPivotComponent);
 }
 
 bool ADrgBaseCharacter::IsDead() const

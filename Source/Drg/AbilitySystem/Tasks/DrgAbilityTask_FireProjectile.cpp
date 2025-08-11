@@ -4,6 +4,8 @@
 #include "DrgAbilityTask_FireProjectile.h"
 
 #include "AbilitySystemComponent.h"
+#include "Drg/AbilitySystem/Abilities/DrgOrbitalMovementComponent.h"
+#include "Drg/Player/DrgPlayerCharacter.h"
 #include "Drg/System/DrgGameplayTags.h"
 #include "Drg/Weapons/DrgProjectile.h"
 #include "GameFramework/Character.h"
@@ -132,6 +134,13 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 		// 스폰 완료: 준비된 액터를 월드에 최종적으로 배치.
 		UGameplayStatics::FinishSpawningActor(SpawnedProjectile, SpawnWorldTransform);
 
+
+		// if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+		// {
+		// 	//플레이어 쪽으로 GA Task의 Param 보내주고 
+		// 	Cast<ADrgPlayerCharacter>(PlayerPawn)->AddProjectile(SpawnedProjectile);
+		// }
+		
 		ProjectilesFired++;
 		OnFired.Broadcast(ProjectilesFired); // 몇 번째 발사인지 신호를 보냄
 	}

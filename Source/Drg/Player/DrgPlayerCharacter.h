@@ -10,7 +10,7 @@ class UDrgSkillSelectionWidget;
 class UCameraComponent;
 class USpringArmComponent;
 class UDrgUpgradeComponent;
-
+class ADrgProjectile;
 /**
  * 
  */
@@ -29,6 +29,9 @@ public:
 	virtual void DeactivateCharacter() override;
 	virtual void ActivateCharacter() override;
 
+	void AddProjectile(ADrgProjectile* Projectile);
+
+	TObjectPtr<USceneComponent> GetOrbitPivotComponent() const; 
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -42,6 +45,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilityComp")
 	TObjectPtr<UDrgUpgradeComponent> AbilityUpgradeComponent;
 
+	// UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
+	// TObjectPtr<UDrgOrbitalMovementComponent> OrbitalMovementComponent;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|Data")
 	UDataTable* MaxExperienceDataTable;
 
