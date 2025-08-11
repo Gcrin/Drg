@@ -2,6 +2,7 @@
 
 #include "DrgGameStateManagerSubsystem.h"
 #include "Drg/Maps/Data/DrgMapDataAsset.h"
+#include "Drg/UI/DrgHUD.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -123,23 +124,38 @@ void UDrgGameStateManagerSubsystem::OpenInGameLevel()
 
 void UDrgGameStateManagerSubsystem::ShowPostGameResults()
 {
-	switch (CurrentGameResult)
+	// HUD를 통해 게임오버 UI 표시
+	if (UWorld* World = GetWorld())
 	{
-	case EGameResult::Victory:
-		UE_LOG(LogTemp, Log, TEXT("승리!"));
-		// TODO: 승리 UI 표시
-		break;
-	case EGameResult::Defeat:
-		UE_LOG(LogTemp, Log, TEXT("패배..."));
-		// TODO: 패배 UI 표시
-		break;
-	case EGameResult::Draw:
-		UE_LOG(LogTemp, Log, TEXT("무승부"));
-		// TODO: 무승부 UI 표시
-		break;
-	default:
-		UE_LOG(LogTemp, Warning, TEXT("알 수 없는 게임 결과"));
-		break;
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (ADrgHUD* HUD = PC->GetHUD<ADrgHUD>())
+			{
+				switch (CurrentGameResult)
+				{
+				case EGameResult::Victory:
+					UE_LOG(LogTemp, Log, TEXT("승리!"));
+					HUD->ShowGameOverUI(true);  // 승리
+					break;
+				case EGameResult::Defeat:
+					UE_LOG(LogTemp, Log, TEXT("패배..."));
+					HUD->ShowGameOverUI(false); // 패배
+					break;
+				case EGameResult::Draw:
+					UE_LOG(LogTemp, Log, TEXT("무승부"));
+					HUD->ShowGameOverUI(false); // 무승부
+					break;
+				default:
+					UE_LOG(LogTemp, Warning, TEXT("알 수 없는 게임 결과"));
+					HUD->ShowGameOverUI(false); // 기본값
+					break;
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("DrgHUD를 찾을 수 없습니다!"));
+			}
+		}
 	}
 }
 

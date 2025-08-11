@@ -6,7 +6,6 @@
 
 class UGameOverWidget;
 class UUserWidget;
-struct FGameResultData;
 
 /**
  * 모든 UI를 관리하는 HUD 클래스

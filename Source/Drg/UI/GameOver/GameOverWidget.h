@@ -45,6 +45,9 @@ protected:
 
 	// 결과 표시 텍스트들
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> GameResultTitleText;
+	
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> MonstersKilledText;
 
 	UPROPERTY(meta = (BindWidget))

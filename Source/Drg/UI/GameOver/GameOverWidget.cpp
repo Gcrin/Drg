@@ -1,7 +1,7 @@
 #include "GameOverWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "Drg/GameModes/DrgGameStateManagerSubsystem.h"
 
 void UGameOverWidget::NativeConstruct()
 {
@@ -36,51 +36,48 @@ void UGameOverWidget::SetGameResult(const FGameResultData& ResultData, bool bIsV
 	UpdateResultTexts();
 	
 	// 승리/패배에 따른 상단 텍스트 변경
-	// 나중에 상단 타이틀 텍스트 위젯 추가 후 구현
-	if (bIsVictory)
+	if (GameResultTitleText)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GameOver: Victory! Boss defeated!"));
+		if (bIsVictory)
+		{
+			GameResultTitleText->SetText(FText::FromString(TEXT("축하합니다!\n보스를 물리쳤습니다!")));
+		}
+		else
+		{
+			GameResultTitleText->SetText(FText::FromString(TEXT("게임 오버\n용감한 드래곤이 쓰러졌습니다...")));
+		}
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GameOver: Defeat! Dragon has fallen..."));
-	}
+
+	// 결과 텍스트 업데이트
+	UpdateResultTexts();
 }
 
 void UGameOverWidget::OnRestartClicked()
 {
-	// GameStateManager->ChangeState(InGame) 호출 예정
 	UE_LOG(LogTemp, Warning, TEXT("GameOver: Restart Button Clicked"));
-	
-	// 임시: 위젯 숨기기
-	SetVisibility(ESlateVisibility::Hidden);
-	
-	// 나중에 구현 예정:
-	// if (UGameInstance* GI = GetGameInstance())
-	// {
-	//     if (UDrgGameStateManagerSubsystem* Manager = GI->GetSubsystem<UDrgGameStateManagerSubsystem>())
-	//     {
-	//         Manager->ChangeState(EGameFlowState::InGame);
-	//     }
-	// }
+
+	// GameStateManager를 통해 게임 재시작
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UDrgGameStateManagerSubsystem* Manager = GI->GetSubsystem<UDrgGameStateManagerSubsystem>())
+		{
+			Manager->ChangeState(EGameFlowState::InGame);
+		}
+	}
 }
 
 void UGameOverWidget::OnMainMenuClicked()
 {
-	// GameStateManager->ChangeState(MainMenu) 호출 예정
 	UE_LOG(LogTemp, Warning, TEXT("GameOver: Main Menu Button Clicked"));
 	
-	// 임시: 위젯 숨기기
-	SetVisibility(ESlateVisibility::Hidden);
-	
-	// 나중에 구현 예정:
-	// if (UGameInstance* GI = GetGameInstance())
-	// {
-	//     if (UDrgGameStateManagerSubsystem* Manager = GI->GetSubsystem<UDrgGameStateManagerSubsystem>())
-	//     {
-	//         Manager->ChangeState(EGameFlowState::MainMenu);
-	//     }
-	// }
+	// GameStateManager를 통해 메인메뉴로 이동
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UDrgGameStateManagerSubsystem* Manager = GI->GetSubsystem<UDrgGameStateManagerSubsystem>())
+		{
+			Manager->ChangeState(EGameFlowState::MainMenu);
+		}
+	}
 }
 
 void UGameOverWidget::UpdateResultTexts()
