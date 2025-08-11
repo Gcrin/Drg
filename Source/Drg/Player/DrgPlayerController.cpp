@@ -7,6 +7,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Drg/AbilitySystem/Abilities/DrgGameplayAbility.h"
+#include "Drg/UI/DrgHUD.h"
 
 ADrgPlayerController::ADrgPlayerController()
 {
@@ -34,6 +35,12 @@ void ADrgPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADrgPlayerController::Move);
 		check(AttackAction);
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ADrgPlayerController::Attack);
+
+		// 일시정지 액션 바인딩 추가
+		if (PauseAction)
+		{
+			EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Started, this, &ADrgPlayerController::TogglePause);
+		}
 	}
 }
 
@@ -63,5 +70,18 @@ void ADrgPlayerController::Attack(const FInputActionValue& Value)
 	if (AttackInputTag.IsValid())
 	{
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetPawn(), AttackInputTag, FGameplayEventData());
+	}
+}
+
+void ADrgPlayerController::TogglePause(const FInputActionValue& Value)
+{
+	if (ADrgHUD* HUD = GetHUD<ADrgHUD>())
+	{
+		// HUD를 통해 일시정지 메뉴 표시
+		HUD->ShowPauseMenu();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("DrgHUD를 찾을 수 없습니다!"));
 	}
 }

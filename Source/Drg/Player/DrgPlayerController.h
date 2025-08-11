@@ -33,9 +33,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Input")
 	TObjectPtr<UInputAction> AttackAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Input")
+	TObjectPtr<UInputAction> PauseAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Input")
 	FGameplayTag AttackInputTag;
 
 private:
 	void Move(const FInputActionValue& Value);
 	void Attack(const FInputActionValue& Value);
+	void TogglePause(const FInputActionValue& Value);
 };
