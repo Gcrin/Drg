@@ -33,6 +33,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	// 블루프린트에서 바인딩할 UI 컴포넌트들
 	UPROPERTY(meta = (BindWidget))

@@ -40,11 +40,8 @@ void UDrgSkillCardWidget::SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeCho
 {
 	UpgradeChoice = InUpgradeChoice;
 	SkillIndex = InSkillIndex;
-
-	// 클릭 가능 상태 초기화
 	bIsClickable = true;
-
-	// 필수 컴포넌트 체크 - 더 눈에 띄게 수정
+	
 	if (!SkillNameText)
 	{
 		ensureAlwaysMsgf(false, TEXT("UDrgSkillCardWidget: SkillNameText가 바인딩되지 않았습니다!"));
@@ -77,8 +74,18 @@ void UDrgSkillCardWidget::SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeCho
 	}
 
 	// 스킬 정보 설정 (AbilityDataAsset에서 가져오기)
-	SkillNameText->SetText(UpgradeChoice.AbilityData->AbilityName);
-	SkillDescriptionText->SetText(UpgradeChoice.AbilityData->AbilityDescription);
+	FDrgAbilityLevelData LevelData;
+	if (UpgradeChoice.AbilityData->GetLevelData(UpgradeChoice.NextLevel, LevelData))
+	{
+		if (SkillNameText) SkillNameText->SetText(UpgradeChoice.AbilityData->AbilityName);
+		if (SkillDescriptionText) SkillDescriptionText->SetText(LevelData.AbilityDescription);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("UDrgSkillCardWidget: 유효하지 않은 레벨 데이터가 전달되었습니다. Level: %d"), UpgradeChoice.NextLevel);
+		if (SkillNameText) SkillNameText->SetText(FText::FromString(TEXT("Unknown")));
+		if (SkillDescriptionText) SkillDescriptionText->SetText(FText::FromString(TEXT("Error loading ability data.")));
+	}
 
 	// 스킬 타입 설정 (업그레이드 여부에 따라)
 	FText TypeText;
@@ -120,17 +127,15 @@ void UDrgSkillCardWidget::SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeCho
 void UDrgSkillCardWidget::LoadSkillIconAsync()
 {
 	// 소프트 포인터가 유효하지 않으면 디폴트 아이콘 유지
-	if (UpgradeChoice.AbilityData->AbilityIcon.IsNull())
+	FDrgAbilityLevelData LevelData;
+	if (!UpgradeChoice.AbilityData || !UpgradeChoice.AbilityData->GetLevelData(UpgradeChoice.NextLevel, LevelData) || LevelData.AbilityIcon.IsNull())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UDrgSkillCardWidget: '%s' 스킬에 아이콘이 설정되지 않았습니다.\n")
-			   TEXT("해결 방법: %s DataAsset에서 AbilityIcon을 설정하세요."), 
-			   *UpgradeChoice.AbilityData->AbilityName.ToString(),
-			   *UpgradeChoice.AbilityData->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("UDrgSkillCardWidget: 아이콘이 설정되지 않았거나 데이터가 유효하지 않습니다."));
 		return;
 	}
 
 	// 캐시에서 먼저 확인
-	if (TWeakObjectPtr<UTexture2D>* CachedIcon = IconCache.Find(UpgradeChoice.AbilityData->AbilityIcon))
+	if (TWeakObjectPtr<UTexture2D>* CachedIcon = IconCache.Find(LevelData.AbilityIcon))
 	{
 		if (CachedIcon->IsValid())
 		{
@@ -141,7 +146,7 @@ void UDrgSkillCardWidget::LoadSkillIconAsync()
 		else
 		{
 			// 캐시에 있지만 GC(가비지 컬렉션)된 경우 제거
-			IconCache.Remove(UpgradeChoice.AbilityData->AbilityIcon);
+			IconCache.Remove(LevelData.AbilityIcon);
 		}
 	}
 
@@ -155,7 +160,7 @@ void UDrgSkillCardWidget::LoadSkillIconAsync()
 	// 비동기 로딩 시작
 	UAssetManager& AssetManager = UAssetManager::Get();
 	IconLoadHandle = AssetManager.GetStreamableManager().RequestAsyncLoad(
-		UpgradeChoice.AbilityData->AbilityIcon.ToSoftObjectPath(),
+		LevelData.AbilityIcon.ToSoftObjectPath(),
 		FStreamableDelegate::CreateUObject(this, &UDrgSkillCardWidget::OnIconLoaded)
 	);
 
@@ -165,40 +170,31 @@ void UDrgSkillCardWidget::LoadSkillIconAsync()
 
 void UDrgSkillCardWidget::OnIconLoaded()
 {
-	if (!SkillIcon || !UpgradeChoice.AbilityData)
+	if (!SkillIcon || !UpgradeChoice.AbilityData || !IconLoadHandle.IsValid())
 	{
 		return;
 	}
-
-	// 로딩된 텍스처 가져오기
-	if (IconLoadHandle.IsValid())
+	
+	FDrgAbilityLevelData LevelDataForIcon;
+	if (!UpgradeChoice.AbilityData->GetLevelData(UpgradeChoice.NextLevel, LevelDataForIcon))
 	{
-		if (UTexture2D* LoadedTexture = Cast<UTexture2D>(IconLoadHandle->GetLoadedAsset()))
+		return;
+	}
+	
+	if (UTexture2D* LoadedTexture = Cast<UTexture2D>(IconLoadHandle->GetLoadedAsset()))
+	{
+		SkillIcon->SetBrushFromTexture(LoadedTexture);
+		IconCache.Add(LevelDataForIcon.AbilityIcon, LoadedTexture);
+	}
+	else
+	{
+		if (DefaultSkillIcon)
 		{
-			// UI에 적용
-			SkillIcon->SetBrushFromTexture(LoadedTexture);
-            
-			// 캐시에 저장
-			IconCache.Add(UpgradeChoice.AbilityData->AbilityIcon, LoadedTexture);
-            
-			UE_LOG(LogTemp, Log, TEXT("UDrgSkillCardWidget: 아이콘 로딩 완료 및 캐시 저장 - %s"), 
-				   *UpgradeChoice.AbilityData->AbilityName.ToString());
+			SkillIcon->SetBrushFromTexture(DefaultSkillIcon);
 		}
-		else
-		{
-			// 로딩 실패 시 디폴트 아이콘 유지
-			if (DefaultSkillIcon)
-			{
-				SkillIcon->SetBrushFromTexture(DefaultSkillIcon);
-			}
-            
-			UE_LOG(LogTemp, Warning, TEXT("UDrgSkillCardWidget: 스킬 아이콘 로딩 실패!\n")
-				   TEXT("문제 원인: DataAsset의 소프트 포인터 경로가 잘못되었습니다.\n")
-				   TEXT("해결 방법: %s DataAsset에서 AbilityIcon 경로를 확인하세요.\n")
-				   TEXT("실패한 경로: %s"), 
-				   *UpgradeChoice.AbilityData->GetName(),
-				   *UpgradeChoice.AbilityData->AbilityIcon.ToString());
-		}
+		UE_LOG(LogTemp, Warning, TEXT("스킬 아이콘 로딩 실패! %s DataAsset의 AbilityIcon 경로(%s)를 확인하세요."),
+			*UpgradeChoice.AbilityData->GetName(),
+			*LevelDataForIcon.AbilityIcon.ToString());
 	}
 
 	// 핸들 정리

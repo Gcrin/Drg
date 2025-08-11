@@ -44,7 +44,10 @@ void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
 {
 	if (AbilityUpgradeComponent)
 	{
-		AbilityUpgradeComponent->PresentLevelUpChoices();
+		UpgradeCount++;
+		UE_LOG(LogTemp, Warning, TEXT("%d"), UpgradeCount);
+
+		if (UpgradeCount == 1) AbilityUpgradeComponent->PresentLevelUpChoices();
 	}
 }
 
@@ -123,7 +126,23 @@ void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
 		// 선택된 스킬 적용
 		const FDrgUpgradeChoice& SelectedChoice = CurrentChoices[SkillIndex];
 		AbilityUpgradeComponent->ApplyUpgradeChoice(SelectedChoice);
+		UpgradeCount--;
 	}
+
+	if (UpgradeCount > 0)
+	{
+		GetWorld()->GetTimerManager().SetTimer(LevelUpTimerHandle, this,
+			&ADrgPlayerCharacter::CheckLevelUp, 0.5f, false);
+	}
+}
+
+void ADrgPlayerCharacter::CheckLevelUp()
+{
+	if (UpgradeCount > 0)
+	{
+		AbilityUpgradeComponent->PresentLevelUpChoices();
+	}
+	UE_LOG(LogTemp, Warning, TEXT("남은 업그레이드: %d"), UpgradeCount);
 }
 
 void ADrgPlayerCharacter::PossessedBy(AController* NewController)

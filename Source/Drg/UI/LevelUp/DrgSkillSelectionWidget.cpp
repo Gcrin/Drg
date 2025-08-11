@@ -20,6 +20,15 @@ void UDrgSkillSelectionWidget::NativeConstruct()
 	}
 }
 
+void UDrgSkillSelectionWidget::NativeDestruct()
+{
+	if (UWorld* World = GetWorld())
+	{
+		UGameplayStatics::SetGlobalTimeDilation(World, OriginalTimeDilation);
+	}
+	Super::NativeDestruct();
+}
+
 void UDrgSkillSelectionWidget::ShowUpgradeChoices(const TArray<FDrgUpgradeChoice>& UpgradeChoices)
 {
 	if (!SkillCardContainer)
