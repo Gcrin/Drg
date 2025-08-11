@@ -99,6 +99,8 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 
 	if (SpawnedProjectile)
 	{
+		// ProjectileParams 적용
+		SpawnedProjectile->SetProjectileParams(Params.ProjectileParams);
 		// 발사체의 Instigator를 현재 Task의 실행 주체(사용자)로 설정
 		SpawnedProjectile->SetInstigator(Cast<APawn>(AvatarActor));
 		// 발사체 생명주기
@@ -155,16 +157,35 @@ void UDrgAbilityTask_FireProjectile::FireNextProjectile()
 	}
 }
 
-bool UDrgAbilityTask_FireProjectile::CalculateSpawnTransform(ACharacter* pCharacter, FTransform& OutSpawnTransform)
+bool UDrgAbilityTask_FireProjectile::CalculateSpawnTransform(ACharacter* Character, FTransform& OutSpawnTransform)
 {
-	check(pCharacter);
-	USkeletalMeshComponent* pMesh = pCharacter->GetMesh();
+	check(Character);
+	USkeletalMeshComponent* pMesh = Character->GetMesh();
 	check(pMesh);
 
 	// TODO: 실패 조건- 캐릭터가 발사 불가능한 상태 예)캐릭터 스턴
 
+	// 회전 투사체용 스폰 위치 계산
+	if (Params.ProjectileParams.MovementType == EProjectileMovementType::Orbit)
+	{
+		const FVector CharacterLocation = Character->GetActorLocation();
+		const FVector CharacterForward = Character->GetActorForwardVector();
+
+		// 캐릭터 전방, OrbitRadius만큼 떨어진 위치에 스폰
+		const FVector SpawnLocation = CharacterLocation + (CharacterForward * Params.ProjectileParams.OrbitRadius);
+
+		// 투사체는 이동 방향(궤도의 접선 방향)을 바라보게 설정
+		const FVector TangentDirection = CharacterForward.RotateAngleAxis(
+			Params.ProjectileParams.bClockwise ? -90.f : 90.f, FVector::UpVector);
+		const FRotator SpawnRotation = TangentDirection.Rotation();
+
+		OutSpawnTransform = FTransform(SpawnRotation, SpawnLocation);
+
+		return true;
+	}
+
 	FTransform SocketWorldTransform;
-	const FRotator CharacterRotation = pCharacter->GetActorRotation();
+	const FRotator CharacterRotation = Character->GetActorRotation();
 
 	if (pMesh->DoesSocketExist(Params.SocketName))
 	{
@@ -180,32 +201,14 @@ bool UDrgAbilityTask_FireProjectile::CalculateSpawnTransform(ACharacter* pCharac
 		{
 			UE_LOG(LogTemp, Warning,
 			       TEXT( "[DrgAbilityTask_FireProjectile] : 캐릭터 '%s'에서 소켓 '%s'를 찾을 수 없습니다. 캐릭터의 기본 위치에서 발사합니다." ),
-			       *pCharacter->GetName(), *Params.SocketName.ToString());
+			       *Character->GetName(), *Params.SocketName.ToString());
 		}
 
 		// 소켓이 없을 경우 캐릭터의 위치와 회전을 기준으로
 		// 이때 스케일이 커지는 문제를 방지하기 위해 위치와 회전만으로 새로 생성
-		SocketWorldTransform = FTransform(CharacterRotation, pCharacter->GetActorLocation());
+		SocketWorldTransform = FTransform(CharacterRotation, Character->GetActorLocation());
 	}
 
 	OutSpawnTransform = Params.ProjectileLocalTransform * SocketWorldTransform;
 	return true;
-}
-
-FVector UDrgAbilityTask_FireProjectile::GetSocketLocation(ACharacter* pCharacter) const
-{
-	// SocketName이 유효한지('None'이 아닌지) 먼저 확인
-	if (Params.SocketName != NAME_None && pCharacter && pCharacter->GetMesh())
-	{
-		// 실제로 그 이름의 소켓이 존재하는지 추가로 확인
-		if (pCharacter->GetMesh()->DoesSocketExist(Params.SocketName))
-		{
-			return pCharacter->GetMesh()->GetSocketLocation(Params.SocketName);
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("[DrgAbilityTask_FireProjectile] : 소켓 '%s'를 찾을 수 없습니다. 기본 위치에서 발사합니다."),
-		       *Params.SocketName.ToString());
-	}
-	// 소켓이 유효하지 않은 경우 기본 위치 사용
-	return pCharacter->GetActorLocation();
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/Tasks/AbilityTask.h"
+#include "Drg/Weapons/DrgProjectile.h"
 #include "DrgAbilityTask_FireProjectile.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FFireProjectileFinishedDelegate);
@@ -57,6 +58,9 @@ struct FDrgFireProjectileParams
 	// 투사체가 파괴되기까지의 시간(초). 사거리 역할
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.01", UIMin = "0.01"))
 	float ProjectileLifeSpan = 3.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FDrgProjectileParams ProjectileParams;
 };
 
 UCLASS()
@@ -90,8 +94,7 @@ private:
 	UFUNCTION()
 	void FireNextProjectile();
 
-	bool CalculateSpawnTransform(ACharacter* pCharacter, FTransform& OutSpawnTransform);
-	FVector GetSocketLocation(ACharacter* pCharacter) const;
+	bool CalculateSpawnTransform(ACharacter* Character, FTransform& OutSpawnTransform);
 
 	FDrgFireProjectileParams Params;
 
