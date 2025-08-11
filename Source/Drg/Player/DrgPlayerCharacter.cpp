@@ -78,16 +78,12 @@ void ADrgPlayerCharacter::AddProjectile(ADrgProjectile* Projectile)
 {
 	if (IsValid(OrbitalMovementComponent))
 	{
-	
-		// Projectile->AttachToComponent(
-		// 	OrbitPivotComponent,
-		// 	FAttachmentTransformRules::SnapToTargetNotIncludingScale
-		// );
+		Projectile->AttachToComponent(
+			OrbitPivotComponent,
+			FAttachmentTransformRules::SnapToTargetNotIncludingScale
+		);
 		OrbitalMovementComponent->AddProjectile(Projectile);
-
 	}
-	
-
 }
 
 TObjectPtr<USceneComponent> ADrgPlayerCharacter::GetOrbitPivotComponent() const
@@ -99,7 +95,7 @@ void ADrgPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ActivateCharacter();
-	
+
 	// UI 위젯 생성 및 델리게이트 바인딩
 	if (SkillSelectionWidgetClass && AbilityUpgradeComponent)
 	{
