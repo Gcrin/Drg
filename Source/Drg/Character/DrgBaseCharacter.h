@@ -60,6 +60,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Data", meta = (ExposeOnSpawn = "true"))
 	TObjectPtr<UDrgCharacterData> CharacterData;
 
+	//회전투사체 중심축
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
+	TObjectPtr<USceneComponent> OrbitPivotComponent;
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|AbilitySystem")
 	TObjectPtr<UDrgAbilitySystemComponent> AbilitySystemComponent;

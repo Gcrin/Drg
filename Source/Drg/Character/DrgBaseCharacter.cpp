@@ -25,6 +25,10 @@ ADrgBaseCharacter::ADrgBaseCharacter()
 
 	AbilitySystemComponent = CreateDefaultSubobject<UDrgAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AttributeSet = CreateDefaultSubobject<UDrgAttributeSet>(TEXT("AttributeSet"));
+
+	//회전투사체 중심축
+	OrbitPivotComponent = CreateDefaultSubobject<USceneComponent>(TEXT("OrbitPivotComponent"));
+	OrbitPivotComponent->SetupAttachment(GetMesh());
 }
 
 bool ADrgBaseCharacter::IsDead() const

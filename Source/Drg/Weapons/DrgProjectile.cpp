@@ -131,9 +131,43 @@ void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactCenter)
 	}
 }
 
+void ADrgProjectile::SetDamageCooldownForTarget(AActor* TargetActor)
+{
+	if (!TargetActor || ProjectileParams.OrbitalDamageCooldown <= 0.f) return;
+
+	FTimerHandle& CooldownTimerHandle = RecentlyDamagedActors.FindOrAdd(TargetActor);
+
+	FTimerDelegate TimerDelegate;
+	TimerDelegate.BindUFunction(this, FName("OnDamageCooldownExpired"), TWeakObjectPtr<AActor>(TargetActor));
+
+	GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, TimerDelegate, ProjectileParams.OrbitalDamageCooldown, false);
+}
+
+void ADrgProjectile::OnDamageCooldownExpired(TWeakObjectPtr<AActor> TargetToRemove)
+{
+	if (TargetToRemove.IsValid())
+	{
+		RecentlyDamagedActors.Remove(TargetToRemove.Get());
+	}
+}
+
 void ADrgProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 오버랩 바인딩은 모드와 상관없이 필요하므로 가장 먼저 수행합니다.
+	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgProjectile::OnSphereOverlap);
+
+	// 회전 모드일 경우, 자체 이동 로직을 비활성화하고 즉시 종료합니다.
+	if (ProjectileParams.bIsOrbital)
+	{
+		if (ensure(ProjectileMovement))
+		{
+			ProjectileMovement->Deactivate();
+		}
+		// 회전 모드에서는 이후의 발사/유도 로직이 필요 없습니다.
+		return;
+	}
 
 	if (GetOwner())
 	{
@@ -192,7 +226,12 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 {
 	// --- 유효한 적 대상인지 확인 ---
 
-	if (!IsValid(OtherActor) || DamagedActors.Contains(OtherActor) || OtherActor == this || OtherActor ==
+	// if (!IsValid(OtherActor) || DamagedActors.Contains(OtherActor) || OtherActor == this || OtherActor ==
+	// 	GetOwner())
+	// {
+	// 	return;
+	// }
+	if (!IsValid(OtherActor) || RecentlyDamagedActors.Contains(OtherActor) || OtherActor ==
 		GetOwner())
 	{
 		return;
@@ -221,7 +260,9 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	// --- 유효한 적 대상에 대한 로직 ---
 
 	// 중복 피해 목록에 추가
-	DamagedActors.Add(OtherActor);
+	// DamagedActors.Add(OtherActor);
+	//회전체 추가후
+	SetDamageCooldownForTarget(OtherActor);
 
 	ProcessImpact(SweepResult, bFromSweep);
 

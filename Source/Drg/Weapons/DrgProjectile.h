@@ -66,6 +66,19 @@ struct FDrgProjectileParams
 		meta=(EditCondition = "!bInfinitePierce", ClampMin = "1", UIMin = "1"))
 	int32 MaxTargetHits = 1;
 
+	// true이면 UOrbitalMovementComponent에 의해 제어되는 회전형 투사체로 동작합니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbital")
+	bool bIsOrbital = false;
+	
+	// bIsOrbital이 true일 때, 동일한 대상에게 다시 피해를 입히기까지의 최소 시간 (초)
+	// 0보다 큰 값으로 설정해야 반복 피해가 가능합니다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbital", meta = (EditCondition = "bIsOrbital", ClampMin = "0.1"))
+	float OrbitalDamageCooldown = 1.0f;
+
+	//플레이어와의 투사체 사이의간격
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbital", meta = (EditCondition = "bIsOrbital"))
+	float OrbitalPlayDistance = 200.f;
+	
 	// true이면 충돌 시 폭발하여 주변에 범위 피해
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|AoE")
 	bool bEnableAoeOnImpact = false;
@@ -183,4 +196,15 @@ private:
 	FGameplayTag OwnerTeamTag;
 	// 이미 피해를 입힌 액터들을 저장하는 배열
 	TArray<TObjectPtr<AActor>> DamagedActors;
+
+	// 변경: 대상별 쿨타임 관리를 위한 TMap
+	TMap<TObjectPtr<AActor>, FTimerHandle> RecentlyDamagedActors;
+
+	// 대상에 대한 피해 쿨타임을 설정하는 함수
+	void SetDamageCooldownForTarget(AActor* TargetActor);
+
+	// 피해 쿨타임이 만료되었을 때 호출되는 함수
+	UFUNCTION() // 타이머 델리게이트에 바인딩하려면 UFUNCTION() 매크로가 필요합니다.
+	void OnDamageCooldownExpired(TWeakObjectPtr<AActor> TargetToRemove);
+	
 };
