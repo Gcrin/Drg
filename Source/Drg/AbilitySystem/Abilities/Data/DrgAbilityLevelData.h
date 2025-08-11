@@ -20,7 +20,10 @@ struct FDrgAbilityLevelData
 	// 어빌리티 아이콘
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "아이콘"))
 	TSoftObjectPtr<UTexture2D> AbilityIcon;
-	// 어빌리티 블루프린트 클래스
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|GAS", meta = (DisplayName = "어빌리티 클래스"))
+	// 어빌리티 클래스
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability", meta = (DisplayName = "어빌리티 클래스"))
 	TSubclassOf<UGameplayAbility> AbilityClass;
+	// 이펙트 클래스
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Effect", meta = (DisplayName = "이펙트 클래스"))
+	TSubclassOf<UGameplayEffect> EffectClass;
 };

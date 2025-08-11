@@ -7,6 +7,13 @@
 #include "DrgAbilityLevelData.h"
 #include "DrgAbilityDataAsset.generated.h"
 
+UENUM(BlueprintType)
+enum class EUpgradeType : uint8
+{
+	Ability UMETA(DisplayName = "Ability"),
+	Effect UMETA(DisplayName = "Effect")
+};
+
 /**
  *  @brief 어빌리티의 주요 데이터를 저장
  *  PrimaryDataAsset = 비동기
@@ -18,14 +25,16 @@ class DRG_API UDrgAbilityDataAsset : public UPrimaryDataAsset
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade|Display", meta = (DisplayName = "업그레이드 타입"))
+	EUpgradeType UpgradeTyp;
 	// 어빌리티 이름
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "이름"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade|Display", meta = (DisplayName = "이름"))
 	FText AbilityName;
 	// 어빌리티 등장 가중치
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Upgrade", meta = (ClampMin = "0.0"), meta = (DisplayName = "가중치"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade", meta = (ClampMin = "0.0"), meta = (DisplayName = "가중치"))
 	float SelectionWeight = 1.0f;
 	// 어빌리티 레벨 별 데이터
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Upgrade", meta = (DisplayName = "레벨 데이터 / 인덱스[0] = 1Lv"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade", meta = (DisplayName = "레벨 데이터 / 인덱스[0] = 1Lv"))
 	TArray<FDrgAbilityLevelData> AbilityLevelData;
 
 public:
