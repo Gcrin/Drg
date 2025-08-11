@@ -47,119 +47,117 @@ void UDrgUpgradeComponent::BeginPlay()
 TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoices)
 {
 	TArray<FDrgUpgradeChoice> FinalChoices;
-	bool bIsExecuted = true;
 
-	if (!ensure(AbilitySystemComponent)) { bIsExecuted = false; }
+	if (!ensure(AbilitySystemComponent)) { return FinalChoices; }
 	if (!ensureMsgf(AllAvailableAbilities.Num() > 0,
-	                TEXT("UpgradeComponent에 설정된 어빌리티가 없습니다."))) { bIsExecuted = false; }
+	                TEXT("UpgradeComponent에 설정된 어빌리티가 없습니다."))) { return FinalChoices; }
+	
+	TArray<FDrgUpgradeChoice> CandidateChoices;
+	TArray<float> CandidateWeights;
+	float TotalWeight = 0.0f;
 
-	if (bIsExecuted)
+	for (UDrgAbilityDataAsset* AbilityData : AllAvailableAbilities)
 	{
-		TArray<FDrgUpgradeChoice> CandidateChoices;
-		TArray<float> CandidateWeights;
-		float TotalWeight = 0.0f;
+		if (!AbilityData || AbilityData->GetMaxLevel() <= 0) continue;
 
-		for (UDrgAbilityDataAsset* AbilityData : AllAvailableAbilities)
+		FDrgUpgradeChoice Choice;
+		Choice.AbilityData = AbilityData;
+		bool bIsUpgrade = false;
+		int32 CurrentLevel = 0;
+
+		if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(AbilityData))
 		{
-			if (!AbilityData) continue;
-
-			FDrgUpgradeChoice Choice;
-			Choice.AbilityData = AbilityData;
-			bool bShouldBeCandidate = false;
-
-			if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(AbilityData))
+			const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle);
+			if (Spec && Spec->Level < AbilityData->GetMaxLevel())
 			{
-				const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle);
-				if (Spec && Spec->Level < AbilityData->GetMaxLevel())
-				{
-					bShouldBeCandidate = true;
-					Choice.bIsUpgrade = true;
-					Choice.PreviousLevel = Spec->Level;
-					Choice.NextLevel = Spec->Level + 1;
-				}
-			}
-			else
-			{
-				bShouldBeCandidate = true;
-				Choice.bIsUpgrade = false;
-				Choice.PreviousLevel = 0;
-				Choice.NextLevel = 1;
-			}
-
-			if (bShouldBeCandidate)
-			{
-				CandidateChoices.Add(Choice);
-				CandidateWeights.Add(AbilityData->SelectionWeight);
-				TotalWeight += AbilityData->SelectionWeight;
+				bIsUpgrade = true;
+				CurrentLevel = Spec->Level;
 			}
 		}
-
-		for (int32 i = 0; i < NumChoices; ++i)
+        
+		if (bIsUpgrade || !OwnedAbilityHandles.Contains(AbilityData))
 		{
-			if (CandidateChoices.Num() <= 0) break;
+			Choice.bIsUpgrade = bIsUpgrade;
+			Choice.PreviousLevel = CurrentLevel;
+			Choice.NextLevel = CurrentLevel + 1;
 
-			if (TotalWeight <= 0.0f)
+			CandidateChoices.Add(Choice);
+			CandidateWeights.Add(AbilityData->SelectionWeight);
+			TotalWeight += AbilityData->SelectionWeight;
+		}
+	}
+    
+	for (int32 i = 0; i < NumChoices; ++i)
+	{
+		if (CandidateChoices.Num() == 0 || TotalWeight <= 0.0f)	break;
+
+		float RandomValue = FMath::RandRange(0.0f, TotalWeight);
+		float WeightSum = 0.0f;
+
+		for (int32 j = CandidateChoices.Num() - 1; j >= 0; --j)
+		{
+			WeightSum += CandidateWeights[j];
+			if (WeightSum > RandomValue)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("가중치 오류 발생. 어빌리티 가중치를 확인해주세요."));
+				FinalChoices.Add(CandidateChoices[j]);
+				TotalWeight -= CandidateWeights[j];
+				CandidateChoices.RemoveAtSwap(j);
+				CandidateWeights.RemoveAtSwap(j);
 				break;
-			}
-
-			float RandomValue = FMath::RandRange(0.0f, TotalWeight);
-			float WeightSum = 0.0f;
-
-			for (int32 j = CandidateChoices.Num() - 1; j >= 0; --j)
-			{
-				WeightSum += CandidateWeights[j];
-				if (WeightSum > RandomValue)
-				{
-					FinalChoices.Add(CandidateChoices[j]);
-					TotalWeight -= CandidateWeights[j];
-					CandidateChoices.RemoveAtSwap(j);
-					CandidateWeights.RemoveAtSwap(j);
-					break;
-				}
 			}
 		}
 	}
+
 	return FinalChoices;
 }
 
 void UDrgUpgradeComponent::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice)
 {
-	if (!ensure(AbilitySystemComponent)) return;
+    if (!AbilitySystemComponent) return;
 
-	if (!SelectedChoice.AbilityData)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("플레이어에 적용할 Ability Data가 없습니다."));
-		return;
-	}
-	if (!SelectedChoice.AbilityData->AbilityClass)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("플레이어에 적용할 Ability Class가 없습니다."));
-		return;
-	}
+    if (!SelectedChoice.AbilityData || !SelectedChoice.AbilityData->GetMaxLevel() > 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("선택된 어빌리티 데이터가 유효하지 않습니다."));
+        return;
+    }
 
-	if (SelectedChoice.bIsUpgrade)
-	{
-		if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(SelectedChoice.AbilityData))
-		{
-			if (FGameplayAbilitySpec* SpecToUpgrade = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle))
-			{
-				SpecToUpgrade->Level = SelectedChoice.NextLevel;
-				AbilitySystemComponent->MarkAbilitySpecDirty(*SpecToUpgrade);
-			}
-		}
-	}
-	else
-	{
-		FGameplayAbilitySpec NewSpec(SelectedChoice.AbilityData->AbilityClass, SelectedChoice.NextLevel, INDEX_NONE,
-		                             SelectedChoice.AbilityData);
-		const FGameplayAbilitySpecHandle NewHandle = AbilitySystemComponent->GiveAbility(NewSpec);
-		if (NewHandle.IsValid())
-		{
-			OwnedAbilityHandles.Add(SelectedChoice.AbilityData, NewHandle);
-		}
-	}
+    FDrgAbilityLevelData NextLevelData;
+    if (!SelectedChoice.AbilityData->GetLevelData(SelectedChoice.NextLevel, NextLevelData))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("강화될 어빌리티 데이터가 유효하지 않습니다."));
+        return;
+    }
+	
+    if (!SelectedChoice.bIsUpgrade || (SelectedChoice.bIsUpgrade && NextLevelData.AbilityClass != nullptr &&
+        AbilitySystemComponent->FindAbilitySpecFromHandle(OwnedAbilityHandles[SelectedChoice.AbilityData])->Ability->GetClass() != NextLevelData.AbilityClass))
+    {
+        if (SelectedChoice.bIsUpgrade)
+        {
+            if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(SelectedChoice.AbilityData))
+            {
+                AbilitySystemComponent->ClearAbility(*FoundHandle);
+                OwnedAbilityHandles.Remove(SelectedChoice.AbilityData);
+            }
+        }
+    	
+        if (NextLevelData.AbilityClass)
+        {
+            FGameplayAbilitySpec NewSpec(NextLevelData.AbilityClass, SelectedChoice.NextLevel, INDEX_NONE, SelectedChoice.AbilityData);
+            const FGameplayAbilitySpecHandle NewHandle = AbilitySystemComponent->GiveAbility(NewSpec);
+            if (NewHandle.IsValid()) OwnedAbilityHandles.Add(SelectedChoice.AbilityData, NewHandle);
+        }
+    }
+    else
+    {
+       if (const FGameplayAbilitySpecHandle* FoundHandle = OwnedAbilityHandles.Find(SelectedChoice.AbilityData))
+       {
+          if (FGameplayAbilitySpec* SpecToUpgrade = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundHandle))
+          {
+              SpecToUpgrade->Level = SelectedChoice.NextLevel;
+              AbilitySystemComponent->MarkAbilitySpecDirty(*SpecToUpgrade);
+          }
+       }
+    }
 }
 
 void UDrgUpgradeComponent::RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData)
