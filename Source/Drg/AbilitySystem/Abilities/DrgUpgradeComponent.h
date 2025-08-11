@@ -14,12 +14,12 @@ class UDrgUpgradeDataCollection;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelUpChoicesReady, const TArray<FDrgUpgradeChoice>&, Choices);
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class DRG_API UDrgUpgradeComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	UDrgUpgradeComponent();
 
 	UPROPERTY(BlueprintAssignable, Category = "Drg|Ability|Events")
@@ -27,6 +27,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
 	void PresentLevelUpChoices(int32 NumChoices = 3);
+
+	// 소유 가능한 최대 어빌리티 종류의 수
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade", meta=(ClampMin = "1"))
+	int32 MaxAcquirableAbilityCount = 6;
 
 protected:
 	virtual void BeginPlay() override;
@@ -36,7 +40,7 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability")
 	TObjectPtr<UDrgUpgradeDataCollection> AbilityCollectionData;
 
@@ -44,7 +48,7 @@ protected:
 	TMap<TObjectPtr<UDrgAbilityDataAsset>, FGameplayAbilitySpecHandle> OwnedAbilityHandles;
 
 	UPROPERTY()
-	TMap<UDrgAbilityDataAsset*, FActiveGameplayEffectHandle> ActiveEffectHandles;
+	TMap<TObjectPtr<UDrgAbilityDataAsset>, FActiveGameplayEffectHandle> ActiveEffectHandles;
 
 public:
 	/**
@@ -54,7 +58,7 @@ public:
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
 	TArray<FDrgUpgradeChoice> GetLevelUpChoices(int32 NumChoices = 3);
-	
+
 	// @brief 선택된 어빌리티를 플레이어에 적용해 주는 함수입니다.
 	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
 	void ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedChoice);
