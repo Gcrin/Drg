@@ -47,7 +47,7 @@ protected:
 	int32 UIZOrder = 100;
 
 	// 시간 느리게 하기 배율 (0.1 = 10배 느리게)
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI", meta = (ClampMin = "0.01", ClampMax = "1.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float TimeSlowRatio = 0.0f;
 
 private:
