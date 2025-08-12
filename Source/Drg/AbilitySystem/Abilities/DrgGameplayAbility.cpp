@@ -47,6 +47,17 @@ void UDrgGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorIn
 {
 	Super::OnGiveAbility(ActorInfo, Spec);
 
+	// 자동 시전 활성화 시 자동 시전
+	if (bIsOnAutoCast)
+	{
+		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();;
+
+		if (ensure(ASC))
+		{
+			ASC->TryActivateAbility(Spec.Handle, false);
+		}
+	}
+
 	K2_OnAbilityGranted();
 }
 
