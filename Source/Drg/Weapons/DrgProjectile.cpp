@@ -452,6 +452,17 @@ void ADrgProjectile::DestroyProjectile()
 	SetLifeSpan(0.2f);
 }
 
+void ADrgProjectile::SetTargetOrbitLocation(FVector NewRelativeLocation)
+{
+	TargetOrbitLocation = NewRelativeLocation;
+}
+
+FVector ADrgProjectile::GetTargetOrbitLocation() const
+{
+	return TargetOrbitLocation;
+}
+
+
 void ADrgProjectile::ProcessImpact(const FHitResult& HitResult, bool bFromSweep)
 {
 	FVector ImpactLocation;

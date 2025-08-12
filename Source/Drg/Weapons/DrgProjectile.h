@@ -35,7 +35,7 @@ struct FDrgProjectileParams
 
 	// 포물선의 높이를 조절합니다. (0.0 ~ 1.0 사이 값 권장)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Arc",
-	meta = (EditCondition = "bEnableArc", EditConditionHides, ClampMin = "0.0", UIMin = "0.0"))
+		meta = (EditCondition = "bEnableArc", EditConditionHides, ClampMin = "0.0", UIMin = "0.0"))
 	float ArcHeightRatio = 0.5f;
 
 	// 포물선 계산에 사용될 상대적인 목표 위치입니다.
@@ -69,16 +69,13 @@ struct FDrgProjectileParams
 	// true이면 UOrbitalMovementComponent에 의해 제어되는 회전형 투사체로 동작합니다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbital")
 	bool bIsOrbital = false;
-	
+
 	// bIsOrbital이 true일 때, 동일한 대상에게 다시 피해를 입히기까지의 최소 시간 (초)
 	// 0보다 큰 값으로 설정해야 반복 피해가 가능합니다.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbital", meta = (EditCondition = "bIsOrbital", ClampMin = "0.1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbital",
+		meta = (EditCondition = "bIsOrbital", ClampMin = "0.1"))
 	float OrbitalDamageCooldown = 1.0f;
 
-	//플레이어와의 투사체 사이의간격
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Orbital", meta = (EditCondition = "bIsOrbital"))
-	float OrbitalPlayDistance = 200.f;
-	
 	// true이면 충돌 시 폭발하여 주변에 범위 피해
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|AoE")
 	bool bEnableAoeOnImpact = false;
@@ -148,6 +145,9 @@ public:
 	void SetDamageEffectSpec(const FGameplayEffectSpecHandle& InDamageEffectSpecHandle);
 	void SetAoeDamageEffectSpec(const FGameplayEffectSpecHandle& InAoeDamageEffectSpecHandle);
 
+	// 회전투사체가 적용될 최종궤도 관련 함수
+	void SetTargetOrbitLocation(FVector NewRelativeLocation);
+	FVector GetTargetOrbitLocation() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -206,5 +206,7 @@ private:
 	// 피해 쿨타임이 만료되었을 때 호출되는 함수
 	UFUNCTION() // 타이머 델리게이트에 바인딩하려면 UFUNCTION() 매크로가 필요합니다.
 	void OnDamageCooldownExpired(TWeakObjectPtr<AActor> TargetToRemove);
-	
+
+	// 회전투사체가 도달해야 할 최종 궤도 위치
+	FVector TargetOrbitLocation; 
 };
