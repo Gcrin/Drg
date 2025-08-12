@@ -170,7 +170,7 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 		// 새로운 업그레이드를 얻으려 하지만, 이미 최대 개수를 소유한 경우 후보에서 제외
 		const bool bIsNewAcquisition = (CurrentLevel == 0);
 		if (bIsNewAcquisition && NextLevelData.UpgradeType ==
-			EUpgradeType::Ability && CurrentOwnedAbilityCount >= MaxAcquirableAbilityCount)
+			EUpgradeType::Ability && CurrentOwnedAbilityCount >= MaxAcquirableAbilityCount - 1)
 		{
 			continue;
 		}
