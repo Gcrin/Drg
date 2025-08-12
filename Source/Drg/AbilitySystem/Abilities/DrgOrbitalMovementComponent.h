@@ -45,6 +45,7 @@ private:
 	/** 현재 회전 각도입니다. 매 프레임 이 값이 업데이트됩니다. */
 	float CurrentAngle = 0.0f;
 
-
+	// 각 투사체의 목표 위치를 저장하는 맵
+	TMap<TWeakObjectPtr<ADrgProjectile>, FVector> TargetLocations;
 		
 };
