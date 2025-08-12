@@ -48,6 +48,13 @@ void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
 		UE_LOG(LogTemp, Warning, TEXT("%d"), UpgradeCount);
 
 		if (UpgradeCount == 1) AbilityUpgradeComponent->PresentLevelUpChoices();
+
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			FInputModeUIOnly InputMode;
+			PlayerController->SetInputMode(InputMode);
+			PlayerController->bShowMouseCursor = true;
+		}
 	}
 }
 
@@ -118,6 +125,14 @@ void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
 		UGameplayStatics::SetGlobalTimeDilation(World, 1.0f);  // 정상 속도로 복원
 	}
 
+	// 마우스 커서 복원 (숨기기)
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		FInputModeGameOnly InputMode;
+		PlayerController->SetInputMode(InputMode);
+		PlayerController->bShowMouseCursor = false;
+	}
+	
 	// UI에서 현재 선택지 가져오기
 	TArray<FDrgUpgradeChoice> CurrentChoices = SkillSelectionWidget->GetCurrentUpgradeChoices();
 	
@@ -140,6 +155,12 @@ void ADrgPlayerCharacter::CheckLevelUp()
 {
 	if (UpgradeCount > 0)
 	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			FInputModeUIOnly InputMode;
+			PlayerController->SetInputMode(InputMode);
+			PlayerController->bShowMouseCursor = true;
+		}
 		AbilityUpgradeComponent->PresentLevelUpChoices();
 	}
 	UE_LOG(LogTemp, Warning, TEXT("남은 업그레이드: %d"), UpgradeCount);
