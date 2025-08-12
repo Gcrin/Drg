@@ -43,6 +43,13 @@ bool UDrgGameplayAbility::CheckCooldown(const FGameplayAbilitySpecHandle Handle,
 	return true;
 }
 
+void UDrgGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
+{
+	Super::OnGiveAbility(ActorInfo, Spec);
+
+	K2_OnAbilityGranted();
+}
+
 void UDrgGameplayAbility::EndTaskAutoCheck()
 {
 	bIsTaskFinished = true;

@@ -24,6 +24,8 @@ public:
 	virtual bool CheckCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	                           OUT FGameplayTagContainer* OptionalRelevantTags) const override;
 
+	virtual void OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
+
 
 	// 자동 시전 관련 체크 해주고 어빌리티 종료해주는 함수 
 	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
@@ -47,6 +49,11 @@ public:
 	FGameplayTagContainer CooldownTags;
 
 protected:
+	// 블루프린트에서 구현할 수 있도록 노출되는 이벤트
+	// 어빌리티가 부여될 때 자동으로 호출
+	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|Ability", meta = (DisplayName = "OnAbilityGranted"))
+	void K2_OnAbilityGranted();
+
 	void StartCooldown();
 
 	void EndAbilityAutoCheck();
