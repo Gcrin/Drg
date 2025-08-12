@@ -50,8 +50,9 @@ void UDrgGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorIn
 	// 자동 시전 활성화 시 자동 시전
 	if (bIsOnAutoCast)
 	{
-		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();;
-
+		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+		// 쿨다운 태그 제거
+		ASC->RemoveActiveEffectsWithGrantedTags(CooldownTags);
 		if (ensure(ASC))
 		{
 			ASC->TryActivateAbility(Spec.Handle, false);
