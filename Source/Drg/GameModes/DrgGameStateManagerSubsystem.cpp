@@ -1,8 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "DrgGameStateManagerSubsystem.h"
+
+#include "DrgGameModeBase.h"
 #include "Drg/Maps/Data/DrgMapDataAsset.h"
 #include "Drg/UI/DrgHUD.h"
+#include "Drg/System/DrgGameplayTags.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -11,6 +14,14 @@ void UDrgGameStateManagerSubsystem::Initialize(FSubsystemCollectionBase& Collect
 {
 	Super::Initialize(Collection);
 
+	// 리스너 등록
+	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+	DeathMessageListenerHandle = MessageSubsystem.RegisterListener(
+		DrgGameplayTags::Event_Broadcast_ActorDied,
+		this,
+		&UDrgGameStateManagerSubsystem::OnDeathMessageReceived
+	);
+	
 	// 경로 유효성 검사
 	if (MapDataAssetPath.IsNull())
 	{
@@ -23,6 +34,17 @@ void UDrgGameStateManagerSubsystem::Initialize(FSubsystemCollectionBase& Collect
 	StreamableManager.RequestAsyncLoad(MapDataAssetPath.ToSoftObjectPath(),
 	                                   FStreamableDelegate::CreateUObject(
 		                                   this, &UDrgGameStateManagerSubsystem::OnMapDataLoaded));
+}
+
+void UDrgGameStateManagerSubsystem::Deinitialize()
+{
+	// 리스너 해제
+	if (DeathMessageListenerHandle.IsValid())
+	{
+		UGameplayMessageSubsystem::Get(GetWorld()).UnregisterListener(DeathMessageListenerHandle);
+	}
+	
+	Super::Deinitialize();
 }
 
 void UDrgGameStateManagerSubsystem::OnMapDataLoaded()
@@ -72,6 +94,20 @@ void UDrgGameStateManagerSubsystem::ChangeStateWithResult(EGameFlowState NewStat
 {
 	CurrentGameResult = GameResult;
 	ChangeState(NewState);
+}
+
+void UDrgGameStateManagerSubsystem::OnDeathMessageReceived(FGameplayTag Channel, const FDrgActorDeathMessage& Message)
+{
+	UE_LOG(LogTemp, Display, TEXT("UDrgGameStateManagerSubsystem::OnDeathMessageReceived"));
+	
+	if (ADrgGameModeBase* GameMode = GetWorld()->GetAuthGameMode<ADrgGameModeBase>())
+	{
+		const EGameResult Result = GameMode->EvaluateGameEndCondition(Message.Victim);
+		if (Result != EGameResult::None)
+		{
+			ChangeStateWithResult(EGameFlowState::PostGame, Result);
+		}
+	}
 }
 
 void UDrgGameStateManagerSubsystem::HandleStateChange()

@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Drg/Items/Data/DropSystemTypes.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "DrgGameStateManagerSubsystem.generated.h"
 
 class UDrgMapDataAsset;
@@ -57,6 +59,7 @@ public:
 	EGameResult GetCurrentGameResult() const { return CurrentGameResult; }
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
 protected:
 	// 맵 정보가 담긴 데이터 에셋 경로 (DefaultGame.ini에서 설정)
@@ -75,6 +78,11 @@ private:
 	UPROPERTY()
 	TObjectPtr<const UDrgMapDataAsset> LoadedMapDataAsset;
 
+	// 메시지 리스너 핸들
+	FGameplayMessageListenerHandle DeathMessageListenerHandle;
+	// 메시지 수신 함수
+	void OnDeathMessageReceived(FGameplayTag Channel, const FDrgActorDeathMessage& Message);
+	
 	// 상태 변경 처리
 	void HandleStateChange();
 

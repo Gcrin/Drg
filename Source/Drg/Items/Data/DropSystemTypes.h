@@ -65,11 +65,11 @@ struct FDrgActorDeathMessage
 {
 	GENERATED_BODY()
 
-	// 죽은 액터
-	UPROPERTY(BlueprintReadWrite, Category = "Drg|Drop")
-	TObjectPtr<AActor> Victim = nullptr;
-
 	// 가해자 액터
 	UPROPERTY(BlueprintReadWrite, Category = "Drg|Drop")
 	TObjectPtr<AActor> Instigator = nullptr;
+
+	// 피해자 액터
+	UPROPERTY(BlueprintReadWrite, Category = "Drg|Drop")
+	TObjectPtr<AActor> Victim = nullptr;
 };
