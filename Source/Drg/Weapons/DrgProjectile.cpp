@@ -180,6 +180,7 @@ void ADrgProjectile::BeginPlay()
 	// 추적 기능이 활성화된 경우, 주기적으로 타겟 탐색 시작
 	if (ProjectileParams.bEnableHoming)
 	{
+		DetectTarget();
 		GetWorld()->GetTimerManager().SetTimer(
 			DetectTargetTimerHandle, this, &ADrgProjectile::DetectTarget, 0.1f, true);
 	}
