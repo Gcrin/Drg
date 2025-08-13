@@ -6,8 +6,9 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Drg/System/DrgGameplayTags.h"
+#include "Drg/GameModes/DrgGameStateManagerSubsystem.h"
 #include "Drg/AbilitySystem/Abilities/DrgGameplayAbility.h"
-#include "Drg/UI/DrgHUD.h"
 
 ADrgPlayerController::ADrgPlayerController()
 {
@@ -22,6 +23,45 @@ void ADrgPlayerController::BeginPlay()
 	{
 		check(DefaultMappingContext);
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	}
+
+	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+	GameStateListenerHandle = MessageSubsystem.RegisterListener(
+		DrgGameplayTags::Event_Broadcast_StateChanged,
+		this,
+		&ADrgPlayerController::OnGameStateChanged
+	);
+}
+
+void ADrgPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (GameStateListenerHandle.IsValid())
+	{
+		UGameplayMessageSubsystem::Get(GetWorld()).UnregisterListener(GameStateListenerHandle);
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+void ADrgPlayerController::OnGameStateChanged(FGameplayTag Channel, const FDrgGameStateChangeMessage& Message)
+{
+	switch (Message.NewState)
+	{
+	case EGameFlowState::MainMenu:
+		SetShowMouseCursor(true);
+		SetInputMode(FInputModeUIOnly());
+		break;
+	case EGameFlowState::PostGame:
+		SetShowMouseCursor(true);
+		SetInputMode(FInputModeUIOnly());
+		break;
+	case EGameFlowState::Pause:
+		SetShowMouseCursor(true);
+		SetInputMode(FInputModeUIOnly());
+		break;
+	case EGameFlowState::InGame:
+		SetShowMouseCursor(false);
+		SetInputMode(FInputModeGameOnly());
+		break;
 	}
 }
 
@@ -75,13 +115,15 @@ void ADrgPlayerController::Attack(const FInputActionValue& Value)
 
 void ADrgPlayerController::TogglePause(const FInputActionValue& Value)
 {
-	if (ADrgHUD* HUD = GetHUD<ADrgHUD>())
+	if (UDrgGameStateManagerSubsystem* Manager = GetGameInstance()->GetSubsystem<UDrgGameStateManagerSubsystem>())
 	{
-		// HUD를 통해 일시정지 메뉴 표시
-		HUD->ShowPauseMenu();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("DrgHUD를 찾을 수 없습니다!"));
+		if (Manager->GetCurrentState() == EGameFlowState::InGame)
+		{
+			Manager->PauseGame();
+		}
+		else if (Manager->GetCurrentState() == EGameFlowState::Pause)
+		{
+			Manager->ResumeGame();
+		}
 	}
 }

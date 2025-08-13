@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
+#include "Drg/GameModes/DrgMessageTypes.h"
 #include "DrgPlayerController.generated.h"
 
 struct FInputActionValue;
@@ -23,6 +25,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void SetupInputComponent() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Input")
@@ -41,4 +44,7 @@ private:
 	void Move(const FInputActionValue& Value);
 	void Attack(const FInputActionValue& Value);
 	void TogglePause(const FInputActionValue& Value);
+
+	void OnGameStateChanged(FGameplayTag Channel, const FDrgGameStateChangeMessage& Message);
+	FGameplayMessageListenerHandle GameStateListenerHandle;
 };
