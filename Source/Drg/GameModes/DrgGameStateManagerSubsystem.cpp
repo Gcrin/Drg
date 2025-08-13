@@ -130,6 +130,12 @@ void UDrgGameStateManagerSubsystem::HandleStateChange()
 		UE_LOG(LogTemp, Warning, TEXT("처리되지 않은 상태: %d"), (int32)CurrentState);
 		break;
 	}
+
+	FDrgGameStateChangeMessage Message;
+	Message.NewState = CurrentState;
+	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+	MessageSubsystem.BroadcastMessage(DrgGameplayTags::Event_Broadcast_StateChanged, Message); 
+	UE_LOG(LogTemp, Log, TEXT("GameStateChanged: %d"), (int32)CurrentState);
 }
 
 void UDrgGameStateManagerSubsystem::OpenMainMenu()
