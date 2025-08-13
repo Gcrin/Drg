@@ -17,6 +17,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
 	void SetCurrentWaveNumber(int32 NewWaveNumber);
+	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
+	void SetNextWave();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	USceneComponent* SceneComp;
