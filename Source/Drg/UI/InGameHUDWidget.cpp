@@ -1,50 +1,106 @@
 #include "InGameHUDWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
-#include "Components/Image.h"
+#include "Drg/System/DrgGameplayTags.h"
+#include "Drg/Player/DrgPlayerCharacter.h"
+#include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 
 void UInGameHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+	AttributeChangeMessageListenerHandle = MessageSubsystem.RegisterListener(
+	   DrgGameplayTags::Event_Broadcast_AttributeChanged,
+	   this,
+	   &UInGameHUDWidget::OnAttributeChangedReceived
+	);
 	
-	// 게임 시작 시간 기록
+	APlayerController* PlayerController = GetOwningPlayer();
+	if (PlayerController)
+	{
+		ADrgPlayerCharacter* PlayerCharacter = Cast<ADrgPlayerCharacter>(PlayerController->GetPawn());
+		if (PlayerCharacter)
+		{
+			const UDrgAttributeSet* Attributes = PlayerCharacter->GetAttributeSet();
+			if (Attributes)
+			{
+				// 현재 값들을 AttributeSet에서 직접 가져와 캐시 변수에 저장
+				CurrentHealth = Attributes->GetHealth();
+				CurrentHealth = Attributes->GetMaxHealth();
+				CurrentExperience = Attributes->GetExperience();
+				CurrentMaxExperience = Attributes->GetMaxExperience();
+				CurrentLevel = Attributes->GetCharacterLevel();
+				CurrentAttackDamage = Attributes->GetAttackDamage();
+
+				// 저장된 값으로 UI 업데이트 함수를 즉시 호출
+				OnHealthChanged(CurrentHealth, CurrentMaxHealth);
+				OnExperienceChanged(CurrentExperience, CurrentMaxExperience, CurrentLevel);
+				OnAttackDamageChanged(CurrentAttackDamage);
+			}
+		}
+	}
+	
 	GameStartTime = GetWorld()->GetTimeSeconds();
-	
-	// AttributeSet 이벤트 구독
-	// AttributeSet->OnHealthChanged.AddUObject(this, &UInGameHUDWidget::OnHealthChanged);
-	// AttributeSet->OnExperienceChanged.AddUObject(this, &UInGameHUDWidget::OnExperienceChanged);
-	// UpgradeComponent->OnSkillSlotsChanged.AddUObject(this, &UInGameHUDWidget::OnSkillSlotsChanged);
-	
-	// 초기 더미 데이터 설정 (테스트용)
-	OnHealthChanged(100.0f, 100.0f);
-	OnExperienceChanged(25.0f, 100.0f, 1.0f);
-	OnStatsChanged(0, 0);
-	
-	UE_LOG(LogTemp, Warning, TEXT("InGame HUD 초기화됨!"));
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerDisplayHandle,
+		this,
+		&UInGameHUDWidget::UpdateTimerDisplay,
+		1.0f,
+		true
+		);
 }
 
-void UInGameHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UInGameHUDWidget::OnAttributeChangedReceived(FGameplayTag Channel, const FDrgAttributeChangeMessage& Message)
 {
-	Super::NativeTick(MyGeometry, InDeltaTime);
-	
-	// 매 프레임마다 타이머 업데이트
-	if (TimerText)
+	if (Message.AttributeType == EAttributeType::Health)
 	{
-		float CurrentTime = GetWorld()->GetTimeSeconds();
-		float ElapsedTime = CurrentTime - GameStartTime;
-		
-		int32 Minutes = FMath::FloorToInt(ElapsedTime / 60.0f);
-		int32 Seconds = FMath::FloorToInt(ElapsedTime) % 60;
-		FString TimeString = FString::Printf(TEXT("%d:%02d"), Minutes, Seconds);
-		TimerText->SetText(FText::FromString(TimeString));
+		CurrentHealth = Message.NewValue;
+		OnHealthChanged(CurrentHealth, CurrentMaxHealth);
+	}
+	else if (Message.AttributeType == EAttributeType::MaxHealth)
+	{
+		CurrentMaxHealth = Message.NewValue;
+		OnHealthChanged(CurrentHealth, CurrentMaxHealth);
+	}
+	else if (Message.AttributeType == EAttributeType::Experience)
+	{
+		CurrentExperience = Message.NewValue;
+		OnExperienceChanged(CurrentExperience, CurrentMaxExperience, CurrentLevel);
+	}
+	else if (Message.AttributeType == EAttributeType::MaxExperience)
+	{
+		CurrentMaxExperience = Message.NewValue;
+		OnExperienceChanged(CurrentExperience, CurrentMaxExperience, CurrentLevel);
+	}
+	else if (Message.AttributeType == EAttributeType::Level)
+	{
+		CurrentLevel = Message.NewValue;
+		OnExperienceChanged(CurrentExperience, CurrentMaxExperience, CurrentLevel);
+	}
+	else if (Message.AttributeType == EAttributeType::AttackDamage)
+	{
+		CurrentAttackDamage = Message.NewValue;
+		OnAttackDamageChanged(CurrentAttackDamage);
 	}
 }
 
-void UInGameHUDWidget::OnHealthChanged(float CurrentHealth, float MaxHealth)
+void UInGameHUDWidget::NativeDestruct()
+{
+	GetWorld()->GetTimerManager().ClearTimer(TimerDisplayHandle);
+	if (AttributeChangeMessageListenerHandle.IsValid())
+	{
+		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+		MessageSubsystem.UnregisterListener(AttributeChangeMessageListenerHandle);
+	}
+	Super::NativeDestruct();
+}
+
+void UInGameHUDWidget::OnHealthChanged(float Health, float MaxHealth)
 {
 	if (HealthBar && MaxHealth > 0.0f)
 	{
-		float HealthPercent = CurrentHealth / MaxHealth;
+		float HealthPercent = Health / MaxHealth;
 		HealthBar->SetPercent(HealthPercent);
 	}
 	
@@ -55,12 +111,18 @@ void UInGameHUDWidget::OnHealthChanged(float CurrentHealth, float MaxHealth)
 	}
 }
 
-void UInGameHUDWidget::OnExperienceChanged(float CurrentExp, float MaxExp, float Level)
+void UInGameHUDWidget::OnExperienceChanged(float Exp, float MaxExp, float Level)
 {
 	if (ExperienceBar && MaxExp > 0.0f)
 	{
-		float ExpPercent = CurrentExp / MaxExp;
+		float ExpPercent = Exp / MaxExp;
 		ExperienceBar->SetPercent(ExpPercent);
+	}
+
+	if (ExperienceText)
+	{
+		FString ExperienceString = FString::Printf(TEXT("%.0f/%.0f"), Exp, MaxExp);
+		ExperienceText->SetText(FText::FromString(ExperienceString));
 	}
 	
 	if (LevelText)
@@ -70,47 +132,26 @@ void UInGameHUDWidget::OnExperienceChanged(float CurrentExp, float MaxExp, float
 	}
 }
 
-void UInGameHUDWidget::OnStatsChanged(int32 MonstersKilled, int32 Gold)
+void UInGameHUDWidget::OnAttackDamageChanged(float AttackDamage)
 {
-	if (MonstersKilledText)
+	if (AttackDamageText)
 	{
-		FString MonsterString = FString::Printf(TEXT("%d"), MonstersKilled);
-		MonstersKilledText->SetText(FText::FromString(MonsterString));
-	}
-	
-	if (GoldText)
-	{
-		FString GoldString = FString::Printf(TEXT("%d"), Gold);
-		GoldText->SetText(FText::FromString(GoldString));
+		FString AttackDamageString = FString::Printf(TEXT("공격력: %.0f"), AttackDamage);
+		AttackDamageText->SetText(FText::FromString(AttackDamageString));
 	}
 }
 
-void UInGameHUDWidget::OnSkillSlotsChanged(const TArray<UDrgAbilityDataAsset*>& OwnedSkills)
+void UInGameHUDWidget::UpdateTimerDisplay()
 {
-	// 스킬 슬롯 1~3에 아이콘 설정
-	TArray<UImage*> SkillSlots = {SkillSlot1, SkillSlot2, SkillSlot3};
-	
-	for (int32 i = 0; i < 3; ++i)
+	if (TimerText)
 	{
-		if (SkillSlots[i])
-		{
-			if (i < OwnedSkills.Num() && OwnedSkills[i] && OwnedSkills[i]->AbilityLevelData.Num() > 0)
-			{
-				// 스킬 아이콘 설정
-				UTexture2D* SkillIcon = OwnedSkills[i]->AbilityLevelData[0].AbilityIcon.LoadSynchronous();
-				if (SkillIcon)
-				{
-					SkillSlots[i]->SetBrushFromTexture(SkillIcon);
-					SkillSlots[i]->SetVisibility(ESlateVisibility::Visible);
-				}
-			}
-			else
-			{
-				// 빈 슬롯 처리
-				SkillSlots[i]->SetVisibility(ESlateVisibility::Hidden);
-			}
-		}
-	}
+		const float CurrentTime = GetWorld()->GetTimeSeconds() - GameStartTime;
+		const int32 TotalSeconds = FMath::FloorToInt(CurrentTime);
+		const int32 Minutes = TotalSeconds / 60;
+		const int32 Seconds = TotalSeconds % 60;
 	
-	UE_LOG(LogTemp, Log, TEXT("스킬 슬롯 업데이트 완료: %d개 스킬"), OwnedSkills.Num());
+		const FString TimerString = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
+        
+		TimerText->SetText(FText::FromString(TimerString));
+	}
 }

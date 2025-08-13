@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
+#include "Drg/GameModes/DrgMessageTypes.h"
 #include "InGameHUDWidget.generated.h"
 
 class UProgressBar;
@@ -18,25 +20,24 @@ class DRG_API UInGameHUDWidget : public UUserWidget
 
 public:
 	virtual void NativeConstruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void NativeDestruct() override;
 
 	// AttributeSet 이벤트 구독용 함수들
 	UFUNCTION()
-	void OnHealthChanged(float CurrentHealth, float MaxHealth);
+	void OnHealthChanged(float Health, float MaxHealth);
 
 	UFUNCTION()
-	void OnExperienceChanged(float CurrentExp, float MaxExp, float Level);
+	void OnExperienceChanged(float Exp, float MaxExp, float Level);
 
 	UFUNCTION()
-	void OnStatsChanged(int32 MonstersKilled, int32 Gold);
-
-	UFUNCTION()
-	void OnSkillSlotsChanged(const TArray<UDrgAbilityDataAsset*>& OwnedSkills);
-
+	void OnAttackDamageChanged(float AttackDamage);
 protected:
 	// === 경험치바 관련 ===
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UProgressBar> ExperienceBar;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> ExperienceText;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> LevelText;
@@ -48,28 +49,27 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> HealthText;
 
+	// 공격력
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> AttackDamageText;
+
 	// === 타이머 ===
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> TimerText;
 
-	// === 스탯 표시 ===
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> MonstersKilledText;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> GoldText;
-
-	// === 스킬 슬롯들 ===
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UImage> SkillSlot1;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UImage> SkillSlot2;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UImage> SkillSlot3;
-
 private:
 	// 타이머 관련
+	void UpdateTimerDisplay();
+	FTimerHandle TimerDisplayHandle;
 	float GameStartTime = 0.0f;
+
+	// 메시지 시스템 관련
+	void OnAttributeChangedReceived(FGameplayTag Channel, const FDrgAttributeChangeMessage& Message);
+	FGameplayMessageListenerHandle AttributeChangeMessageListenerHandle;
+	float CurrentHealth = 0.0f;
+	float CurrentMaxHealth = 0.0f;
+	float CurrentExperience = 0.0f;
+	float CurrentMaxExperience = 0.0f;
+	float CurrentLevel = 0.f;
+	float CurrentAttackDamage = 0.0f;
 };
