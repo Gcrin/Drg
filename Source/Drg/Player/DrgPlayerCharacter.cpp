@@ -45,13 +45,12 @@ void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
 	if (AbilityUpgradeComponent)
 	{
 		UpgradeCount++;
-		UE_LOG(LogTemp, Warning, TEXT("%d"), UpgradeCount);
+		UE_LOG(LogTemp, Warning, TEXT("UpgradeCount: %d"), UpgradeCount);
 
-		if (UpgradeCount == 1) AbilityUpgradeComponent->PresentLevelUpChoices();
-
-		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		if (!bIsLevelUpSequence)
 		{
-			PlayerController->bShowMouseCursor = true;
+			bIsLevelUpSequence = true;
+			CheckLevelUp();
 		}
 	}
 }
@@ -103,6 +102,7 @@ void ADrgPlayerCharacter::BeginPlay()
 				{
 					SkillSelectionWidget->ShowUpgradeChoices(InitialAbility);
 					PC->bShowMouseCursor = true;
+					PC->SetInputMode(FInputModeUIOnly());
 				}
 			}
 			else
@@ -122,12 +122,6 @@ void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
 	if (!SkillSelectionWidget || !AbilityUpgradeComponent)
 	{
 		return;
-	}
-
-	// 시간 배율 복원 (UI 제거 전에 먼저)
-	if (UWorld* World = GetWorld())
-	{
-		UGameplayStatics::SetGlobalTimeDilation(World, 1.0f);  // 정상 속도로 복원
 	}
 
 	// 마우스 커서 복원 (숨기기)
@@ -153,6 +147,10 @@ void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
 		GetWorld()->GetTimerManager().SetTimer(LevelUpTimerHandle, this,
 			&ADrgPlayerCharacter::CheckLevelUp, 0.5f, false);
 	}
+	else
+	{
+		EndLevelUpSequence();
+	}
 }
 
 void ADrgPlayerCharacter::CheckLevelUp()
@@ -162,10 +160,30 @@ void ADrgPlayerCharacter::CheckLevelUp()
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
 			PlayerController->bShowMouseCursor = true;
+			PlayerController->SetInputMode(FInputModeUIOnly());
 		}
-		AbilityUpgradeComponent->PresentLevelUpChoices();
+		// 선택지가 없다면, 시퀀스 중단
+		if (!AbilityUpgradeComponent->PresentLevelUpChoices())
+		{
+			EndLevelUpSequence();
+		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("남은 업그레이드: %d"), UpgradeCount);
+	else
+	{
+		EndLevelUpSequence();
+	}
+}
+
+void ADrgPlayerCharacter::EndLevelUpSequence()
+{
+	bIsLevelUpSequence = false;
+	UpgradeCount = 0;
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		PlayerController->bShowMouseCursor = false;
+		PlayerController->SetInputMode(FInputModeGameOnly());
+	}
+	UE_LOG(LogTemp, Log, TEXT("업그레이드 모두 완료 / 시퀀스 종료"));
 }
 
 void ADrgPlayerCharacter::PossessedBy(AController* NewController)
