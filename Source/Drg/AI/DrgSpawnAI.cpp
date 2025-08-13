@@ -151,7 +151,7 @@ FDrgWaveTableRow* ADrgSpawnAI::GetCurrentWaveDataRow(int32 WaveNumber)
 	static const FString ContextString(TEXT("GetRandomAICharacterDataContext"));
 	WaveDataTable->GetAllRows(ContextString, AllRows);
 
-	if (AllRows.Num() > WaveNumber) return nullptr;
+	if (WaveNumber > AllRows.Num()) return nullptr;
 	if (AllRows.Num() == 0) return nullptr;
 
 	FDrgWaveTableRow* CurrentRow = nullptr;
