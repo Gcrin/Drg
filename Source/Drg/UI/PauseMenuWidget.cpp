@@ -23,16 +23,9 @@ void UPauseMenuWidget::OnResumeClicked()
 {
 	UE_LOG(LogTemp, Warning, TEXT("PauseMenu: Resume Button Clicked"));
 	
-	// HUD를 통해 일시정지 메뉴 숨기기
-	if (UWorld* World = GetWorld())
+	if (UDrgGameStateManagerSubsystem* Manager = GetGameInstance()->GetSubsystem<UDrgGameStateManagerSubsystem>())
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			if (ADrgHUD* HUD = PC->GetHUD<ADrgHUD>())
-			{
-				HUD->HidePauseMenu();
-			}
-		}
+		Manager->ResumeGame();
 	}
 }
 

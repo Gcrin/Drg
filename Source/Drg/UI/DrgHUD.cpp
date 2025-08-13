@@ -42,9 +42,11 @@ void ADrgHUD::OnGameStateChanged(FGameplayTag Channel, const FDrgGameStateChange
 		ShowPauseMenu();
 		break;
 	case EGameFlowState::PostGame:
-		const bool bIsVictory = (Message.GameResult == EGameResult::Victory);
-		ShowGameOverUI(bIsVictory);
-		break;
+		{
+			const bool bIsVictory = (Message.GameResult == EGameResult::Victory);
+			ShowGameOverUI(bIsVictory);
+			break;
+		}
 	default:
 		// MainMenu 등 다른 상태에서는 아무것도 띄우지 않음
 		break;

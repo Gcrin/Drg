@@ -123,6 +123,10 @@ void UDrgGameStateManagerSubsystem::HandleStateChange(EGameFlowState PreviousSta
 	{
 		OpenMainMenu();
 	}
+	else if (CurrentState == EGameFlowState::Quitting)
+	{
+		QuitGame();
+	}
 
 	FDrgGameStateChangeMessage Message;
 	Message.NewState = CurrentState;
