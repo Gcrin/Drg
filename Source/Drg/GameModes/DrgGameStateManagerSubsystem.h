@@ -66,11 +66,17 @@ private:
 	void OnDeathMessageReceived(FGameplayTag Channel, const FDrgActorDeathMessage& Message);
 	
 	// 상태 변경 처리
-	void HandleStateChange();
+	void HandleStateChange(EGameFlowState PreviousState);
 
 	// 각 상태별 처리 함수들
 	void OpenMainMenu();
 	void OpenInGameLevel();
-	void ShowPostGameResults();
 	void QuitGame();
+
+	EGameFlowState PrevStateBeforePause = EGameFlowState::None;
+public:
+	UFUNCTION(BlueprintCallable, Category = "Drg|State")
+	void PauseGame();
+	UFUNCTION(BlueprintCallable, Category = "Drg|State")
+	void ResumeGame();
 };

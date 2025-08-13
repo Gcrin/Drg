@@ -3,7 +3,6 @@
 #include "Drg/UI/GameOver/GameOverWidget.h"
 #include "Drg/UI/GameOver/GameResultData.h"
 #include "Drg/System/DrgGameplayTags.h"
-#include "Kismet/GameplayStatics.h"
 
 void ADrgHUD::BeginPlay()
 {
@@ -15,14 +14,14 @@ void ADrgHUD::BeginPlay()
 		this,
 		&ADrgHUD::OnGameStateChanged
 	);
-	
-	// 게임 시작 시 인게임 HUD 표시
-	ShowInGameHUD();
 }
 
 void ADrgHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	UGameplayMessageSubsystem::Get(GetWorld()).UnregisterListener(GameStateListenerHandle);
+	if (GameStateListenerHandle.IsValid())
+	{
+		UGameplayMessageSubsystem::Get(GetWorld()).UnregisterListener(GameStateListenerHandle);
+	}
 	Super::EndPlay(EndPlayReason);
 }
 
