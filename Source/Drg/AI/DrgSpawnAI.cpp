@@ -31,6 +31,11 @@ void ADrgSpawnAI::SetCurrentWaveNumber(int32 NewWaveNumber)
 	StartSpawnTimer();
 }
 
+void ADrgSpawnAI::SetNextWave()
+{
+	SetCurrentWaveNumber(CurrentWaveNumber + 1);
+}
+
 void ADrgSpawnAI::InitializePool()
 {
 	for (int32 i = 0; i < TotalSpawnCount; i++)
@@ -146,6 +151,7 @@ FDrgWaveTableRow* ADrgSpawnAI::GetCurrentWaveDataRow(int32 WaveNumber)
 	static const FString ContextString(TEXT("GetRandomAICharacterDataContext"));
 	WaveDataTable->GetAllRows(ContextString, AllRows);
 
+	if (AllRows.Num() > WaveNumber) return nullptr;
 	if (AllRows.Num() == 0) return nullptr;
 
 	FDrgWaveTableRow* CurrentRow = nullptr;
