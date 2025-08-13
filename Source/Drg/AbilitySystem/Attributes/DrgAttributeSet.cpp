@@ -4,6 +4,7 @@
 #include "DrgAttributeSet.h"
 
 #include "GameplayEffectExtension.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
 #include "Drg/Player/Data/DrgExperienceData.h"
 #include "Drg/System/DrgGameplayTags.h"
@@ -72,6 +73,38 @@ void UDrgAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMod
 	}
 }
 
+void UDrgAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
+{
+	Super::PostAttributeChange(Attribute, OldValue, NewValue);
+
+	if (OldValue == NewValue) return;
+	
+	if (Attribute == GetHealthAttribute())
+	{
+		BroadcastAttributeChange(EAttributeType::Health, NewValue);
+	}
+	else if (Attribute == GetMaxHealthAttribute())
+	{
+		BroadcastAttributeChange(EAttributeType::MaxHealth, NewValue);
+	}
+	else if (Attribute == GetExperienceAttribute())
+	{
+		BroadcastAttributeChange(EAttributeType::Experience, NewValue);
+	}
+	else if (Attribute == GetMaxExperienceAttribute())
+	{
+		BroadcastAttributeChange(EAttributeType::MaxExperience, NewValue);
+	}
+	else if (Attribute == GetCharacterLevelAttribute())
+	{
+		BroadcastAttributeChange(EAttributeType::Level, NewValue);
+	}
+	else if (Attribute == GetAttackDamageAttribute())
+	{
+		BroadcastAttributeChange(EAttributeType::AttackDamage, NewValue);
+	}
+}
+
 float UDrgAttributeSet::GetMaxExperienceForLevel(const UDataTable* DataTable, float CurrentLevel)
 {
 	check(DataTable != nullptr)
@@ -88,4 +121,16 @@ float UDrgAttributeSet::GetMaxExperienceForLevel(const UDataTable* DataTable, fl
 
 	UE_LOG(LogTemp, Warning, TEXT("DataTable Lv: %.0f의 행을 찾을 수 없습니다."), CurrentLevel);
 	return 100.0f;
+}
+
+void UDrgAttributeSet::BroadcastAttributeChange(EAttributeType AttributeType, float NewValue) const
+{
+	FDrgAttributeChangeMessage Message;
+	Message.AttributeType = AttributeType;
+	Message.NewValue = NewValue;
+
+	UGameplayMessageSubsystem::Get(GetOwningAbilitySystemComponent()->GetWorld()).BroadcastMessage(
+		DrgGameplayTags::Event_Broadcast_AttributeChanged,
+		Message
+	);
 }

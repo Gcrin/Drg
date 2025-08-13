@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
 #include "AbilitySystemComponent.h"
+#include "Drg/GameModes/DrgMessageTypes.h"
 #include "DrgAttributeSet.generated.h"
 
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
@@ -42,6 +43,8 @@ public:
 	 * @param Data 적용된 GameplayEffect에 대한 상세 정보 (원인, 변경된 어트리뷰트 등 포함).
 	 */
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
+
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
 	float GetMaxExperienceForLevel(const UDataTable* DataTable, float CurrentLevel);
 
@@ -103,4 +106,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Drg|Pickup")
 	FGameplayAttributeData Experience;
 	ATTRIBUTE_ACCESSORS(UDrgAttributeSet, Experience);
+
+private:
+	void BroadcastAttributeChange(EAttributeType AttributeType, float NewValue) const;
 };
