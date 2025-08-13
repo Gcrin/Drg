@@ -5,29 +5,11 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Drg/Items/Data/DropSystemTypes.h"
+#include "DrgMessageTypes.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "DrgGameStateManagerSubsystem.generated.h"
 
 class UDrgMapDataAsset;
-
-UENUM(BlueprintType)
-enum class EGameFlowState : uint8
-{
-	None,
-	MainMenu,
-	InGame,
-	PostGame,
-	Quitting
-};
-
-UENUM(BlueprintType)
-enum class EGameResult : uint8
-{
-	None,
-	Victory,
-	Defeat,
-	Draw
-};
 
 /**
  * 게임의 전체적인 흐름과 상태를 관리하는 서브시스템
