@@ -26,7 +26,7 @@ public:
 	FOnLevelUpChoicesReady OnLevelUpChoiceReady;
 
 	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
-	void PresentLevelUpChoices(int32 NumChoices = 3);
+	bool PresentLevelUpChoices(int32 NumChoices = 3);
 
 	// 소유 가능한 최대 어빌리티 종류의 수
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade", meta=(ClampMin = "1"))
