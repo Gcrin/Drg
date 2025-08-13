@@ -77,31 +77,34 @@ void UDrgAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, 
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
-	if (OldValue == NewValue) return;
+	if (GetOwningActor() && GetOwningActor()->IsA<ADrgPlayerCharacter>())
+	{
+		if (OldValue == NewValue) return;
 	
-	if (Attribute == GetHealthAttribute())
-	{
-		BroadcastAttributeChange(EAttributeType::Health, NewValue);
-	}
-	else if (Attribute == GetMaxHealthAttribute())
-	{
-		BroadcastAttributeChange(EAttributeType::MaxHealth, NewValue);
-	}
-	else if (Attribute == GetExperienceAttribute())
-	{
-		BroadcastAttributeChange(EAttributeType::Experience, NewValue);
-	}
-	else if (Attribute == GetMaxExperienceAttribute())
-	{
-		BroadcastAttributeChange(EAttributeType::MaxExperience, NewValue);
-	}
-	else if (Attribute == GetCharacterLevelAttribute())
-	{
-		BroadcastAttributeChange(EAttributeType::Level, NewValue);
-	}
-	else if (Attribute == GetAttackDamageAttribute())
-	{
-		BroadcastAttributeChange(EAttributeType::AttackDamage, NewValue);
+		if (Attribute == GetHealthAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::Health, NewValue);
+		}
+		else if (Attribute == GetMaxHealthAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::MaxHealth, NewValue);
+		}
+		else if (Attribute == GetExperienceAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::Experience, NewValue);
+		}
+		else if (Attribute == GetMaxExperienceAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::MaxExperience, NewValue);
+		}
+		else if (Attribute == GetCharacterLevelAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::Level, NewValue);
+		}
+		else if (Attribute == GetAttackDamageAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::AttackDamage, NewValue);
+		}
 	}
 }
 

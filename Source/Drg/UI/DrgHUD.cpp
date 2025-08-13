@@ -8,6 +8,8 @@ void ADrgHUD::BeginPlay()
 {
 	Super::BeginPlay();
 
+	ShowInGameHUD();
+
 	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 	GameStateListenerHandle = MessageSubsystem.RegisterListener(
 		DrgGameplayTags::Event_Broadcast_StateChanged,
@@ -33,10 +35,15 @@ void ADrgHUD::OnGameStateChanged(FGameplayTag Channel, const FDrgGameStateChange
 		CurrentWidget = nullptr;
 	}
 
+	if (InGameHUDWidget)
+	{
+		InGameHUDWidget->SetVisibility(ESlateVisibility::Hidden);
+	}
+
 	switch (Message.NewState)
 	{
 	case EGameFlowState::InGame:
-		ShowInGameHUD();
+		if(InGameHUDWidget)	InGameHUDWidget->SetVisibility(ESlateVisibility::Visible);
 		break;
 	case EGameFlowState::Pause:
 		ShowPauseMenu();
@@ -80,6 +87,11 @@ void ADrgHUD::ShowInGameHUD()
 {
 	if (!InGameHUDWidgetClass) return;
 
-	CurrentWidget = CreateWidget(GetOwningPlayerController(), InGameHUDWidgetClass);
-	if (CurrentWidget) CurrentWidget->AddToViewport();
+	if (!InGameHUDWidget) InGameHUDWidget = CreateWidget(GetOwningPlayerController(), InGameHUDWidgetClass);
+	
+	if (InGameHUDWidget)
+	{
+		InGameHUDWidget->AddToViewport();
+		InGameHUDWidget->SetVisibility(ESlateVisibility::Visible);
+	}
 }

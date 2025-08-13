@@ -43,5 +43,8 @@ private:
 	UPROPERTY()
 	TObjectPtr<UUserWidget> CurrentWidget;
 
+	UPROPERTY()
+	TObjectPtr<UUserWidget> InGameHUDWidget;
+
 	FGameplayMessageListenerHandle GameStateListenerHandle;
 };
