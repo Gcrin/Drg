@@ -2,6 +2,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Drg/UI/GameOver/GameOverWidget.h"
 #include "Drg/UI/GameOver/GameResultData.h"
+#include "Kismet/GameplayStatics.h"
 
 void ADrgHUD::BeginPlay()
 {
@@ -40,7 +41,7 @@ void ADrgHUD::ShowGameOverUI(bool bIsVictory)
 		SetUIInputMode(true);
 
 		// 게임 월드 일시정지
-		GetWorld()->GetFirstPlayerController()->SetPause(true);
+		UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.f);
 		
 		UE_LOG(LogTemp, Warning, TEXT("게임오버 UI 표시됨! Victory: %s"), bIsVictory ? TEXT("true") : TEXT("false"));
 	}
@@ -53,11 +54,10 @@ void ADrgHUD::HideGameOverUI()
 		CurrentGameOverWidget->RemoveFromParent();
 		CurrentGameOverWidget = nullptr;
 
-		// 게임 일시정지 해제
-		GetWorld()->GetFirstPlayerController()->SetPause(false);
-		
 		// 게임 입력 모드로 복원
 		SetUIInputMode(false);
+		// 게임 일시정지 해제
+		UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.f);
 	}
 }
 
@@ -80,7 +80,7 @@ void ADrgHUD::ShowPauseMenu()
 		SetUIInputMode(true);
 		
 		// 게임 일시정지
-		GetWorld()->GetFirstPlayerController()->SetPause(true);
+		UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.f);
 		
 		UE_LOG(LogTemp, Warning, TEXT("일시정지 메뉴 표시됨"));
 	}
@@ -94,8 +94,8 @@ void ADrgHUD::HidePauseMenu()
 		CurrentPauseMenuWidget = nullptr;
 		
 		// 게임 재개
-		GetWorld()->GetFirstPlayerController()->SetPause(false);
 		SetUIInputMode(false);
+		UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.f);
 	}
 }
 
