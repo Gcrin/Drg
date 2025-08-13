@@ -55,9 +55,10 @@ protected:
 private:
 	UFUNCTION()
 	void OnSkillSelected(int32 SkillIndex);
-
 	void CheckLevelUp();
+	void EndLevelUpSequence();
 
 	int32 UpgradeCount = 0;
 	FTimerHandle LevelUpTimerHandle;
+	bool bIsLevelUpSequence = false;
 };

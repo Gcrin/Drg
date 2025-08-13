@@ -20,17 +20,17 @@ UDrgUpgradeComponent::UDrgUpgradeComponent()
 	else UE_LOG(LogTemp, Error, TEXT("AbilityCollectionData: Failed to find"));
 }
 
-void UDrgUpgradeComponent::PresentLevelUpChoices(int32 NumChoices)
+bool UDrgUpgradeComponent::PresentLevelUpChoices(int32 NumChoices)
 {
 	TArray<FDrgUpgradeChoice> Choices = GetLevelUpChoices(NumChoices);
 	if (Choices.Num() > 0)
 	{
 		OnLevelUpChoiceReady.Broadcast(Choices);
+		return true;
 	}
-	else
-	{
-		UE_LOG(LogTemp, Display, TEXT("더 이상 어빌리티를 강화하거나, 획득할 수 없습니다."));
-	}
+
+	UE_LOG(LogTemp, Display, TEXT("더 이상 어빌리티를 강화하거나, 획득할 수 없습니다."));
+	return false;
 }
 
 void UDrgUpgradeComponent::BeginPlay()
@@ -170,7 +170,7 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 		// 새로운 업그레이드를 얻으려 하지만, 이미 최대 개수를 소유한 경우 후보에서 제외
 		const bool bIsNewAcquisition = (CurrentLevel == 0);
 		if (bIsNewAcquisition && NextLevelData.UpgradeType ==
-			EUpgradeType::Ability && CurrentOwnedAbilityCount >= MaxAcquirableAbilityCount - 1)
+			EUpgradeType::Ability && CurrentOwnedAbilityCount >= MaxAcquirableAbilityCount)
 		{
 			continue;
 		}
@@ -238,4 +238,60 @@ void UDrgUpgradeComponent::RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData
 		return;
 	}
 	UE_LOG(LogTemp, Warning, TEXT("삭제될 어빌리티가 존재하지 않습니다."));
+}
+
+TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::StartAbilityChoices(int32 NumChoices)
+{
+	TArray<FDrgUpgradeChoice> FinalChoices;
+
+    if (!ensure(AbilitySystemComponent)) { return FinalChoices; }
+    if (!ensureMsgf(AbilityCollectionData && AbilityCollectionData->UpgradeData.Num() > 0,
+                    TEXT("UpgradeComponent에 설정된 어빌리티가 없습니다."))) { return FinalChoices; }
+    
+    TArray<FDrgUpgradeChoice> CandidateChoices;
+    TArray<float> CandidateWeights;
+    float TotalWeight = 0.0f;
+
+    for (const auto& UpgradeData : AbilityCollectionData->UpgradeData)
+    {
+       if (!UpgradeData || UpgradeData->GetMaxLevel() <= 0) continue;
+       if (OwnedAbilityHandles.Contains(UpgradeData)) continue;
+
+       FDrgAbilityLevelData NextLevelData;
+       if (!UpgradeData->GetLevelData(1, NextLevelData)) continue;
+       if (NextLevelData.UpgradeType != EUpgradeType::Ability) continue;
+    	
+       FDrgUpgradeChoice Choice;
+       Choice.AbilityData = UpgradeData;
+       Choice.bIsUpgrade = false;
+       Choice.PreviousLevel = 0;
+       Choice.NextLevel = 1;
+
+       CandidateChoices.Add(Choice);
+       CandidateWeights.Add(UpgradeData->SelectionWeight);
+       TotalWeight += UpgradeData->SelectionWeight;
+    }
+    
+    for (int32 i = 0; i < NumChoices; ++i)
+    {
+       if (CandidateChoices.Num() == 0 || TotalWeight <= 0.0f) break;
+
+       float RandomValue = FMath::RandRange(0.0f, TotalWeight);
+       float WeightSum = 0.0f;
+
+       for (int32 j = CandidateChoices.Num() - 1; j >= 0; --j)
+       {
+          WeightSum += CandidateWeights[j];
+          if (WeightSum > RandomValue)
+          {
+             FinalChoices.Add(CandidateChoices[j]);
+             TotalWeight -= CandidateWeights[j];
+             CandidateChoices.RemoveAtSwap(j);
+             CandidateWeights.RemoveAtSwap(j);
+             break;
+          }
+       }
+    }
+
+    return FinalChoices;
 }
