@@ -11,6 +11,7 @@ enum class EGameFlowState : uint8
 	None,
 	MainMenu,
 	InGame,
+	Pause,
 	PostGame,
 	Quitting
 };
@@ -34,4 +35,7 @@ struct FDrgGameStateChangeMessage
 
 	UPROPERTY(BlueprintReadWrite, Category = "Drg|Message")
 	EGameFlowState NewState = EGameFlowState::None;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Drg|Message")
+	EGameResult GameResult = EGameResult::None;
 };

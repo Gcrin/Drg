@@ -133,6 +133,7 @@ void UDrgGameStateManagerSubsystem::HandleStateChange()
 
 	FDrgGameStateChangeMessage Message;
 	Message.NewState = CurrentState;
+	Message.GameResult = CurrentGameResult;
 	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 	MessageSubsystem.BroadcastMessage(DrgGameplayTags::Event_Broadcast_StateChanged, Message); 
 	UE_LOG(LogTemp, Log, TEXT("GameStateChanged: %d"), (int32)CurrentState);
@@ -166,39 +167,7 @@ void UDrgGameStateManagerSubsystem::OpenInGameLevel()
 
 void UDrgGameStateManagerSubsystem::ShowPostGameResults()
 {
-	// HUD를 통해 게임오버 UI 표시
-	if (UWorld* World = GetWorld())
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			if (ADrgHUD* HUD = PC->GetHUD<ADrgHUD>())
-			{
-				switch (CurrentGameResult)
-				{
-				case EGameResult::Victory:
-					UE_LOG(LogTemp, Log, TEXT("승리!"));
-					HUD->ShowGameOverUI(true);  // 승리
-					break;
-				case EGameResult::Defeat:
-					UE_LOG(LogTemp, Log, TEXT("패배..."));
-					HUD->ShowGameOverUI(false); // 패배
-					break;
-				case EGameResult::Draw:
-					UE_LOG(LogTemp, Log, TEXT("무승부"));
-					HUD->ShowGameOverUI(false); // 무승부
-					break;
-				default:
-					UE_LOG(LogTemp, Warning, TEXT("알 수 없는 게임 결과"));
-					HUD->ShowGameOverUI(false); // 기본값
-					break;
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("DrgHUD를 찾을 수 없습니다!"));
-			}
-		}
-	}
+	// GameplayMessageSystem 활용
 }
 
 void UDrgGameStateManagerSubsystem::QuitGame()
