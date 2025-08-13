@@ -51,8 +51,6 @@ void ADrgPlayerCharacter::HandleOnLevelUp(AActor* Actor)
 
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
-			FInputModeUIOnly InputMode;
-			PlayerController->SetInputMode(InputMode);
 			PlayerController->bShowMouseCursor = true;
 		}
 	}
@@ -99,6 +97,13 @@ void ADrgPlayerCharacter::BeginPlay()
 				// UI의 스킬 선택 완료 → 캐릭터 처리  
 				SkillSelectionWidget->OnSkillSelected.AddDynamic(
 					this, &ADrgPlayerCharacter::OnSkillSelected);
+
+				TArray<FDrgUpgradeChoice> InitialAbility = AbilityUpgradeComponent->StartAbilityChoices();
+				if (InitialAbility.Num() > 0)
+				{
+					SkillSelectionWidget->ShowUpgradeChoices(InitialAbility);
+					PC->bShowMouseCursor = true;
+				}
 			}
 			else
 			{
@@ -128,9 +133,8 @@ void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
 	// 마우스 커서 복원 (숨기기)
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
-		FInputModeGameOnly InputMode;
-		PlayerController->SetInputMode(InputMode);
 		PlayerController->bShowMouseCursor = false;
+		PlayerController->SetInputMode(FInputModeGameOnly());
 	}
 	
 	// UI에서 현재 선택지 가져오기
@@ -157,8 +161,6 @@ void ADrgPlayerCharacter::CheckLevelUp()
 	{
 		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
-			FInputModeUIOnly InputMode;
-			PlayerController->SetInputMode(InputMode);
 			PlayerController->bShowMouseCursor = true;
 		}
 		AbilityUpgradeComponent->PresentLevelUpChoices();

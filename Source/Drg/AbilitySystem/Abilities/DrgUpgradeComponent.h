@@ -66,4 +66,7 @@ public:
 	// @brief 플레이어가 소유한 어빌리티를 삭제하는 함수입니다. 
 	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
 	void RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData);
+
+	UFUNCTION(BlueprintCallable, Category = "Drg|Ability")
+	TArray<FDrgUpgradeChoice> StartAbilityChoices(int32 NumChoices = 3);
 };
