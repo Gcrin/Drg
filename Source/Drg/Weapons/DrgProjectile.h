@@ -8,8 +8,8 @@
 #include "GameFramework/Actor.h"
 #include "DrgProjectile.generated.h"
 
+class UDrgProjectileMovementComponent;
 class UPointLightComponent;
-class UProjectileMovementComponent;
 class USphereComponent;
 class UGameplayEffect;
 
@@ -224,14 +224,14 @@ protected:
 	// 여러 문제로 인해 블루프린트에서 생성하고 연결
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Components")
 	TObjectPtr<UNiagaraComponent> TrailComponent;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<UPointLightComponent> PointLightComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<USphereComponent> SphereComponent;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
-	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
+	TObjectPtr<UDrgProjectileMovementComponent> ProjectileMovementComponent;
 
 	FTransform StartTransform = FTransform();
 

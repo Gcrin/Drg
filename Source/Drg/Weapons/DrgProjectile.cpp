@@ -5,6 +5,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "DrgProjectileMovementComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
@@ -13,7 +14,6 @@
 #include "Drg/System/DrgGameplayStatics.h"
 #include "Drg/System/DrgGameplayTags.h"
 #include "Drg/System/ProjectileOrbitSubsystem.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -37,12 +37,12 @@ ADrgProjectile::ADrgProjectile()
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 외형은 충돌 계산 안함
 
 	// 발사체 움직임 컴포넌트 설정
-	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-	ProjectileMovement->InitialSpeed = 1500.f;
-	ProjectileMovement->MaxSpeed = 1500.f;
-	ProjectileMovement->ProjectileGravityScale = 0.f; // 중력 영향 안받음
+	ProjectileMovementComponent = CreateDefaultSubobject<UDrgProjectileMovementComponent>(TEXT("DrgProjectileMovement"));
+	ProjectileMovementComponent->InitialSpeed = 1500.f;
+	ProjectileMovementComponent->MaxSpeed = 1500.f;
+	ProjectileMovementComponent->ProjectileGravityScale = 0.f; // 중력 영향 안받음
 	// 투사체가 속도 방향을 따라 회전
-	ProjectileMovement->bRotationFollowsVelocity = true;
+	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 
 	// 포인트라이트 컴포넌트 설정
 	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLightComponent"));
@@ -157,7 +157,7 @@ void ADrgProjectile::BeginPlay()
 	switch (ProjectileParams.MovementType)
 	{
 	case EProjectileMovementType::Orbit:
-		ProjectileMovement->Deactivate();
+		ProjectileMovementComponent->Deactivate();
 		if (UWorld* World = GetWorld())
 		{
 			if (UProjectileOrbitSubsystem* OrbitSubsystem = World->GetSubsystem<UProjectileOrbitSubsystem>())
@@ -173,7 +173,7 @@ void ADrgProjectile::BeginPlay()
 		
 	case EProjectileMovementType::Straight:
 	default:
-		ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileMovement->InitialSpeed;
+		ProjectileMovementComponent->Velocity = GetActorForwardVector() * ProjectileMovementComponent->InitialSpeed;
 		break;
 	}
 
@@ -309,7 +309,7 @@ void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 void ADrgProjectile::StartProjectileArc()
 {
-	ProjectileMovement->ProjectileGravityScale = 1.0f;
+	ProjectileMovementComponent->ProjectileGravityScale = 1.0f;
 
 	FVector LaunchVelocity;
 	FVector Start = StartTransform.GetLocation();
@@ -330,9 +330,9 @@ void ADrgProjectile::StartProjectileArc()
 		       *Target.ToString());
 	}
 
-	if (bSuccess && ProjectileMovement)
+	if (bSuccess && ProjectileMovementComponent)
 	{
-		ProjectileMovement->Velocity = LaunchVelocity;
+		ProjectileMovementComponent->Velocity = LaunchVelocity;
 	}
 }
 
@@ -425,9 +425,9 @@ void ADrgProjectile::DetectTarget()
 		ProjectileState = EProjectileState::Homing;
 
 		// ProjectileMovementComponent을 유도 모드로 설정
-		ProjectileMovement->bIsHomingProjectile = true;
-		ProjectileMovement->HomingTargetComponent = HomingTarget->GetRootComponent();
-		ProjectileMovement->HomingAccelerationMagnitude = ProjectileParams.HomingAcceleration;
+		ProjectileMovementComponent->bIsHomingProjectile = true;
+		ProjectileMovementComponent->HomingTargetComponent = HomingTarget->GetRootComponent();
+		ProjectileMovementComponent->HomingAccelerationMagnitude = ProjectileParams.HomingAcceleration;
 
 		//타이머 종료
 		GetWorld()->GetTimerManager().ClearTimer(DetectTargetTimerHandle);
@@ -438,7 +438,7 @@ void ADrgProjectile::DestroyProjectile()
 {
 	GetWorld()->GetTimerManager().ClearTimer(DetectTargetTimerHandle);
 
-	ProjectileMovement->StopMovementImmediately();
+	ProjectileMovementComponent->StopMovementImmediately();
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	if (MeshComponent) MeshComponent->SetVisibility(false);
