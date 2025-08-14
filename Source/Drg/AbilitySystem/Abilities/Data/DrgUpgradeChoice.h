@@ -4,7 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgAbilityDataAsset.h"
+#include "Drg/AbilitySystem/Abilities/Data/DrgEvolutionData.h"
 #include "DrgUpgradeChoice.generated.h"
+
+UENUM(BlueprintType)
+enum class EChoiceType : uint8
+{
+	Upgrade,
+	Evolution
+};
 
 /**
  * @brief 레벨 업 선택지(UI, 로직)에 들어갈 데이터들의 구조체
@@ -26,4 +34,10 @@ struct FDrgUpgradeChoice
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
 	int32 NextLevel = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
+	EChoiceType ChoiceType = EChoiceType::Upgrade;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Ability")
+	FDrgEvolutionRecipe EvolutionRecipe;
 };

@@ -29,6 +29,9 @@ public:
 	virtual void DeactivateCharacter() override;
 	virtual void ActivateCharacter() override;
 
+	UFUNCTION(BlueprintCallable, Category = "Drg|Appearance")
+	void SetCharacterAppearance(USkeletalMesh* NewMesh, const TArray<UMaterialInterface*>& NewMaterials);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;

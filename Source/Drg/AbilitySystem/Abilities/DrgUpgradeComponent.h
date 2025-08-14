@@ -11,6 +11,8 @@
 
 class UAbilitySystemComponent;
 class UDrgUpgradeDataCollection;
+class UDrgEvolutionDataAsset;
+struct FDrgEvolutionRecipe;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelUpChoicesReady, const TArray<FDrgUpgradeChoice>&, Choices);
 
@@ -44,11 +46,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability")
 	TObjectPtr<UDrgUpgradeDataCollection> AbilityCollectionData;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Evolution")
+	TObjectPtr<UDrgEvolutionDataAsset> EvolutionData;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Ability")
 	TMap<TObjectPtr<UDrgAbilityDataAsset>, FGameplayAbilitySpecHandle> OwnedAbilityHandles;
 
 	UPROPERTY()
 	TMap<TObjectPtr<UDrgAbilityDataAsset>, FActiveGameplayEffectHandle> ActiveEffectHandles;
+
+private:
+	UPROPERTY()
+	TSet<TObjectPtr<UDrgAbilityDataAsset>> RemovedAbilities;
+	
+	void ExecuteEvolution(const FDrgEvolutionRecipe& Recipe);
+	TArray<FDrgEvolutionRecipe> GetPossibleEvolutions() const;
 
 public:
 	/**
