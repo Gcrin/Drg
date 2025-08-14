@@ -1,7 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "DrgGameStateManagerSubsystem.h"
+
+#include "DrgGameModeBase.h"
 #include "Drg/Maps/Data/DrgMapDataAsset.h"
+#include "Drg/UI/DrgHUD.h"
+#include "Drg/System/DrgGameplayTags.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -10,6 +14,14 @@ void UDrgGameStateManagerSubsystem::Initialize(FSubsystemCollectionBase& Collect
 {
 	Super::Initialize(Collection);
 
+	// 리스너 등록
+	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+	DeathMessageListenerHandle = MessageSubsystem.RegisterListener(
+		DrgGameplayTags::Event_Broadcast_ActorDied,
+		this,
+		&UDrgGameStateManagerSubsystem::OnDeathMessageReceived
+	);
+	
 	// 경로 유효성 검사
 	if (MapDataAssetPath.IsNull())
 	{
@@ -22,6 +34,17 @@ void UDrgGameStateManagerSubsystem::Initialize(FSubsystemCollectionBase& Collect
 	StreamableManager.RequestAsyncLoad(MapDataAssetPath.ToSoftObjectPath(),
 	                                   FStreamableDelegate::CreateUObject(
 		                                   this, &UDrgGameStateManagerSubsystem::OnMapDataLoaded));
+}
+
+void UDrgGameStateManagerSubsystem::Deinitialize()
+{
+	// 리스너 해제
+	if (DeathMessageListenerHandle.IsValid())
+	{
+		UGameplayMessageSubsystem::Get(GetWorld()).UnregisterListener(DeathMessageListenerHandle);
+	}
+	
+	Super::Deinitialize();
 }
 
 void UDrgGameStateManagerSubsystem::OnMapDataLoaded()
@@ -64,7 +87,7 @@ void UDrgGameStateManagerSubsystem::ChangeState(EGameFlowState NewState)
 
 	UE_LOG(LogTemp, Log, TEXT("상태 변경: %d → %d"), (int32)PreviousState, (int32)CurrentState);
 
-	HandleStateChange();
+	HandleStateChange(PreviousState);
 }
 
 void UDrgGameStateManagerSubsystem::ChangeStateWithResult(EGameFlowState NewState, EGameResult GameResult)
@@ -73,26 +96,44 @@ void UDrgGameStateManagerSubsystem::ChangeStateWithResult(EGameFlowState NewStat
 	ChangeState(NewState);
 }
 
-void UDrgGameStateManagerSubsystem::HandleStateChange()
+void UDrgGameStateManagerSubsystem::OnDeathMessageReceived(FGameplayTag Channel, const FDrgActorDeathMessage& Message)
 {
-	switch (CurrentState)
+	UE_LOG(LogTemp, Display, TEXT("UDrgGameStateManagerSubsystem::OnDeathMessageReceived"));
+	
+	if (ADrgGameModeBase* GameMode = GetWorld()->GetAuthGameMode<ADrgGameModeBase>())
 	{
-	case EGameFlowState::MainMenu:
-		OpenMainMenu();
-		break;
-	case EGameFlowState::InGame:
-		OpenInGameLevel();
-		break;
-	case EGameFlowState::PostGame:
-		ShowPostGameResults();
-		break;
-	case EGameFlowState::Quitting:
-		QuitGame();
-		break;
-	default:
-		UE_LOG(LogTemp, Warning, TEXT("처리되지 않은 상태: %d"), (int32)CurrentState);
-		break;
+		const EGameResult Result = GameMode->EvaluateGameEndCondition(Message.Victim);
+		if (Result != EGameResult::None)
+		{
+			ChangeStateWithResult(EGameFlowState::PostGame, Result);
+		}
 	}
+}
+
+void UDrgGameStateManagerSubsystem::HandleStateChange(EGameFlowState PreviousState)
+{
+	const bool bShouldBePaused = (CurrentState == EGameFlowState::Pause || CurrentState == EGameFlowState::PostGame);
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), bShouldBePaused ? 0.f : 1.f);
+	
+	if (CurrentState == EGameFlowState::InGame && PreviousState != EGameFlowState::Pause)
+	{
+		OpenInGameLevel();
+	}
+	else if (CurrentState == EGameFlowState::MainMenu)
+	{
+		OpenMainMenu();
+	}
+	else if (CurrentState == EGameFlowState::Quitting)
+	{
+		QuitGame();
+	}
+
+	FDrgGameStateChangeMessage Message;
+	Message.NewState = CurrentState;
+	Message.GameResult = CurrentGameResult;
+	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+	MessageSubsystem.BroadcastMessage(DrgGameplayTags::Event_Broadcast_StateChanged, Message); 
+	UE_LOG(LogTemp, Log, TEXT("GameStateChanged: %d"), (int32)CurrentState);
 }
 
 void UDrgGameStateManagerSubsystem::OpenMainMenu()
@@ -121,28 +162,6 @@ void UDrgGameStateManagerSubsystem::OpenInGameLevel()
 	}
 }
 
-void UDrgGameStateManagerSubsystem::ShowPostGameResults()
-{
-	switch (CurrentGameResult)
-	{
-	case EGameResult::Victory:
-		UE_LOG(LogTemp, Log, TEXT("승리!"));
-		// TODO: 승리 UI 표시
-		break;
-	case EGameResult::Defeat:
-		UE_LOG(LogTemp, Log, TEXT("패배..."));
-		// TODO: 패배 UI 표시
-		break;
-	case EGameResult::Draw:
-		UE_LOG(LogTemp, Log, TEXT("무승부"));
-		// TODO: 무승부 UI 표시
-		break;
-	default:
-		UE_LOG(LogTemp, Warning, TEXT("알 수 없는 게임 결과"));
-		break;
-	}
-}
-
 void UDrgGameStateManagerSubsystem::QuitGame()
 {
 	UE_LOG(LogTemp, Log, TEXT("게임 종료"));
@@ -151,4 +170,21 @@ void UDrgGameStateManagerSubsystem::QuitGame()
 	{
 		UKismetSystemLibrary::QuitGame(this, PC, EQuitPreference::Quit, true);
 	}
+}
+
+void UDrgGameStateManagerSubsystem::PauseGame()
+{
+	if (CurrentState == EGameFlowState::InGame)
+	{
+		PrevStateBeforePause = CurrentState;
+		ChangeState(EGameFlowState::Pause);
+	}
+}
+
+void UDrgGameStateManagerSubsystem::ResumeGame()
+{
+	if (CurrentState == EGameFlowState::Pause)
+	{
+		ChangeState(PrevStateBeforePause);
+	}	
 }

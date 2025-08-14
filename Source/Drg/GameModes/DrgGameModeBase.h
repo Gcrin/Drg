@@ -7,6 +7,7 @@
 #include "DrgGameStateManagerSubsystem.h"
 #include "DrgGameModeBase.generated.h"
 
+class ADrgHUD;
 
 UCLASS()
 class DRG_API ADrgGameModeBase : public AGameModeBase
@@ -14,6 +15,8 @@ class DRG_API ADrgGameModeBase : public AGameModeBase
 	GENERATED_BODY()
 	
 public:
+	ADrgGameModeBase();
+	
 	UFUNCTION(BlueprintPure, Category = "Drg|Rule")
 	EGameResult EvaluateGameEndCondition(AActor* DeadActor);
 };

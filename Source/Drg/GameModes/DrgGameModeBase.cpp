@@ -4,6 +4,14 @@
 #include "DrgGameModeBase.h"
 
 #include "Drg/Player/DrgPlayerCharacter.h"
+#include "Drg/UI/DrgHUD.h"
+#include "Engine/Engine.h"
+
+ADrgGameModeBase::ADrgGameModeBase()
+{
+	// HUD 클래스 설정
+	HUDClass = ADrgHUD::StaticClass();
+}
 
 EGameResult ADrgGameModeBase::EvaluateGameEndCondition(AActor* DeadActor)
 {

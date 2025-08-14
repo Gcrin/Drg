@@ -4,28 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Drg/Items/Data/DropSystemTypes.h"
+#include "DrgMessageTypes.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "DrgGameStateManagerSubsystem.generated.h"
 
 class UDrgMapDataAsset;
-
-UENUM(BlueprintType)
-enum class EGameFlowState : uint8
-{
-	None,
-	MainMenu,
-	InGame,
-	PostGame,
-	Quitting
-};
-
-UENUM(BlueprintType)
-enum class EGameResult : uint8
-{
-	None,
-	Victory,
-	Defeat,
-	Draw
-};
 
 /**
  * 게임의 전체적인 흐름과 상태를 관리하는 서브시스템
@@ -57,6 +41,7 @@ public:
 	EGameResult GetCurrentGameResult() const { return CurrentGameResult; }
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
 protected:
 	// 맵 정보가 담긴 데이터 에셋 경로 (DefaultGame.ini에서 설정)
@@ -75,12 +60,23 @@ private:
 	UPROPERTY()
 	TObjectPtr<const UDrgMapDataAsset> LoadedMapDataAsset;
 
+	// 메시지 리스너 핸들
+	FGameplayMessageListenerHandle DeathMessageListenerHandle;
+	// 메시지 수신 함수
+	void OnDeathMessageReceived(FGameplayTag Channel, const FDrgActorDeathMessage& Message);
+	
 	// 상태 변경 처리
-	void HandleStateChange();
+	void HandleStateChange(EGameFlowState PreviousState);
 
 	// 각 상태별 처리 함수들
 	void OpenMainMenu();
 	void OpenInGameLevel();
-	void ShowPostGameResults();
 	void QuitGame();
+
+	EGameFlowState PrevStateBeforePause = EGameFlowState::None;
+public:
+	UFUNCTION(BlueprintCallable, Category = "Drg|State")
+	void PauseGame();
+	UFUNCTION(BlueprintCallable, Category = "Drg|State")
+	void ResumeGame();
 };

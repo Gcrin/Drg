@@ -6,6 +6,8 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Drg/System/DrgGameplayTags.h"
+#include "Drg/GameModes/DrgGameStateManagerSubsystem.h"
 #include "Drg/AbilitySystem/Abilities/DrgGameplayAbility.h"
 
 ADrgPlayerController::ADrgPlayerController()
@@ -22,6 +24,45 @@ void ADrgPlayerController::BeginPlay()
 		check(DefaultMappingContext);
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
+
+	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+	GameStateListenerHandle = MessageSubsystem.RegisterListener(
+		DrgGameplayTags::Event_Broadcast_StateChanged,
+		this,
+		&ADrgPlayerController::OnGameStateChanged
+	);
+}
+
+void ADrgPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (GameStateListenerHandle.IsValid())
+	{
+		UGameplayMessageSubsystem::Get(GetWorld()).UnregisterListener(GameStateListenerHandle);
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+void ADrgPlayerController::OnGameStateChanged(FGameplayTag Channel, const FDrgGameStateChangeMessage& Message)
+{
+	switch (Message.NewState)
+	{
+	case EGameFlowState::MainMenu:
+		SetShowMouseCursor(true);
+		SetInputMode(FInputModeUIOnly());
+		break;
+	case EGameFlowState::PostGame:
+		SetShowMouseCursor(true);
+		SetInputMode(FInputModeUIOnly());
+		break;
+	case EGameFlowState::Pause:
+		SetShowMouseCursor(true);
+		SetInputMode(FInputModeUIOnly());
+		break;
+	case EGameFlowState::InGame:
+		SetShowMouseCursor(false);
+		SetInputMode(FInputModeGameOnly());
+		break;
+	}
 }
 
 void ADrgPlayerController::SetupInputComponent()
@@ -34,6 +75,12 @@ void ADrgPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADrgPlayerController::Move);
 		check(AttackAction);
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ADrgPlayerController::Attack);
+
+		// 일시정지 액션 바인딩 추가
+		if (PauseAction)
+		{
+			EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Started, this, &ADrgPlayerController::TogglePause);
+		}
 	}
 }
 
@@ -63,5 +110,20 @@ void ADrgPlayerController::Attack(const FInputActionValue& Value)
 	if (AttackInputTag.IsValid())
 	{
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetPawn(), AttackInputTag, FGameplayEventData());
+	}
+}
+
+void ADrgPlayerController::TogglePause(const FInputActionValue& Value)
+{
+	if (UDrgGameStateManagerSubsystem* Manager = GetGameInstance()->GetSubsystem<UDrgGameStateManagerSubsystem>())
+	{
+		if (Manager->GetCurrentState() == EGameFlowState::InGame)
+		{
+			Manager->PauseGame();
+		}
+		else if (Manager->GetCurrentState() == EGameFlowState::Pause)
+		{
+			Manager->ResumeGame();
+		}
 	}
 }
