@@ -59,10 +59,9 @@ private:
 	void OnButtonClicked();
 
 	// 비동기 아이콘 로딩 + 캐싱
-	void LoadSkillIconAsync();
-	void OnIconLoaded();
+	void LoadSkillIconAsync(const TSoftObjectPtr<UTexture2D>& IconToLoad);
+	void OnIconLoaded(TSoftObjectPtr<UTexture2D> LoadedIconPath);
 
-	FDrgUpgradeChoice UpgradeChoice;
 	int32 SkillIndex;
 
 	// 비동기 로딩 핸들
