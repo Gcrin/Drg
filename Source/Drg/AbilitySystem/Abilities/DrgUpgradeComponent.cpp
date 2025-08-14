@@ -305,6 +305,13 @@ void UDrgUpgradeComponent::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedC
 
 	if (SelectedChoice.ChoiceType == EChoiceType::Evolution)
 	{
+		if (ADrgPlayerCharacter* PlayerCharacter = Cast<ADrgPlayerCharacter>(GetOwner()))
+		{
+			PlayerCharacter->SetCharacterAppearance(
+				SelectedChoice.EvolutionRecipe.NewMesh,
+				SelectedChoice.EvolutionRecipe.NewMaterials
+			);
+		}
 		ExecuteEvolution(SelectedChoice.EvolutionRecipe);
 		return;
 	}

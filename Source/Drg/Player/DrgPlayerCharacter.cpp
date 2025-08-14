@@ -75,6 +75,19 @@ void ADrgPlayerCharacter::ActivateCharacter()
 	}
 }
 
+void ADrgPlayerCharacter::SetCharacterAppearance(USkeletalMesh* NewMesh, const TArray<UMaterialInterface*>& NewMaterials)
+{
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	if (CharacterMesh && NewMesh)
+	{
+		CharacterMesh->SetSkeletalMesh(NewMesh);
+		for (int32 i = 0; i < NewMaterials.Num(); i++)
+		{
+			if (NewMaterials[i]) { CharacterMesh->SetMaterial(i, NewMaterials[i]); }
+		}
+	}
+}
+
 void ADrgPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();

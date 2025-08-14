@@ -7,6 +7,8 @@
 #include "DrgEvolutionData.generated.h"
 
 class UDrgAbilityDataAsset;
+class USkeletalMesh;
+class UMaterialInterface;
 
 /*
  * @brief 어빌리티, 이펙트의 진화(조합) 재료의 데이터
@@ -37,6 +39,12 @@ struct FDrgEvolutionRecipe
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "진화(조합) 스킬"))
 	TObjectPtr<UDrgAbilityDataAsset> EvolvedAbilityAsset;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "메시"))
+	TObjectPtr<USkeletalMesh> NewMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "머티리얼/ 0 = Face, 1 = Matarial"))
+	TArray<TObjectPtr<UMaterialInterface>> NewMaterials;
 };
 
 /*
