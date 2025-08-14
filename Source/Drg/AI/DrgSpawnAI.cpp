@@ -1,8 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "DrgSpawnAI.h"
-
-#include "DrgAIController.h"
 #include "NavigationSystem.h"
 #include "DrgWaveTableRow.h"
 #include "Components/CapsuleComponent.h"
@@ -13,9 +11,6 @@
 // Sets default values
 ADrgSpawnAI::ADrgSpawnAI()
 {
-	SceneComp = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-	RootComponent = SceneComp;
-
 	MinDistance = 1000.f;
 	MaxDistance = 2000.f;
 	TotalSpawnCount = 200;
@@ -24,16 +19,26 @@ ADrgSpawnAI::ADrgSpawnAI()
 void ADrgSpawnAI::SetCurrentWaveNumber(int32 NewWaveNumber)
 {
 	CurrentWaveNumber = NewWaveNumber;
-	if (bIsSpawnTimerRunning)
-	{
-		StopSpawnTimer();
-	}
+	StopSpawnTimer();
 	StartSpawnTimer();
 }
 
 void ADrgSpawnAI::SetNextWave()
 {
 	SetCurrentWaveNumber(CurrentWaveNumber + 1);
+}
+
+void ADrgSpawnAI::BeginPlay()
+{
+	Super::BeginPlay();
+	InitializePool();
+	SetNextWave();
+}
+
+void ADrgSpawnAI::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+	Super::EndPlay(EndPlayReason);
 }
 
 void ADrgSpawnAI::InitializePool()
@@ -72,7 +77,7 @@ void ADrgSpawnAI::ReturnAIToPool(class ADrgAICharacter* DeadAI)
 void ADrgSpawnAI::StartSpawnTimer()
 {
 	CurrentSpawnCount = 0;
-	CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
+	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	if (!CurrentWaveRow) return;
 
 	GetWorldTimerManager().SetTimer(
@@ -85,13 +90,15 @@ void ADrgSpawnAI::StartSpawnTimer()
 	);
 	UE_LOG(LogTemp, Warning,
 	       TEXT("DrgSpawnAI:: %d 웨이브 시작"), CurrentWaveNumber);
-
-	bIsSpawnTimerRunning = true;
 }
 
 void ADrgSpawnAI::StopSpawnTimer()
 {
-	GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
+	if (SpawnTimerHandle.IsValid())
+	{
+		GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
+		SpawnTimerHandle.Invalidate();
+	}
 }
 
 bool ADrgSpawnAI::FindSafeRandomPointInNav(FVector& ResultLocation)
@@ -138,7 +145,6 @@ bool ADrgSpawnAI::FindSafeRandomPointInNav(FVector& ResultLocation)
 				return true;
 			}
 		}
-		return true;
 	}
 	return false;
 }
@@ -147,34 +153,23 @@ FDrgWaveTableRow* ADrgSpawnAI::GetCurrentWaveDataRow(int32 WaveNumber)
 {
 	if (!WaveDataTable) return nullptr;
 
-	TArray<FDrgWaveTableRow*> AllRows;
-	static const FString ContextString(TEXT("GetRandomAICharacterDataContext"));
-	WaveDataTable->GetAllRows(ContextString, AllRows);
+	// 행 이름을 웨이브 번호로 변환
+	const FName RowName = FName(*FString::FromInt(WaveNumber));
+	static const FString ContextString(TEXT("GetCurrentWaveDataRow"));
 
-	if (WaveNumber > AllRows.Num()) return nullptr;
-	if (AllRows.Num() == 0) return nullptr;
+	FDrgWaveTableRow* CurrentRow = WaveDataTable->FindRow<FDrgWaveTableRow>(RowName, ContextString);
 
-	FDrgWaveTableRow* CurrentRow = nullptr;
-	for (FDrgWaveTableRow* Row : AllRows)
-	{
-		if (Row && Row->WaveNumber == WaveNumber)
-		{
-			CurrentRow = Row;
-			break;
-		}
-	}
 	if (!CurrentRow)
 	{
 		UE_LOG(LogTemp, Error,
 		       TEXT("DrgSpawnAI::WaveNumber %d에 해당하는 열을 찾을 수 없습니다. [해결 방법: DT_Wave에 해당 웨이브 정보를 입력해주세요]"), WaveNumber);
-		check(CurrentRow!=nullptr);
-		return nullptr;
 	}
 	return CurrentRow;
 }
 
 TObjectPtr<UDrgCharacterData> ADrgSpawnAI::GetRandomAICharacterData()
 {
+	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	float TotalChance = 0;
 	for (auto& p : CurrentWaveRow->AIData)
 	{
@@ -195,7 +190,7 @@ TObjectPtr<UDrgCharacterData> ADrgSpawnAI::GetRandomAICharacterData()
 	return nullptr;
 }
 
-ADrgAICharacter* ADrgSpawnAI::SpawnAIFromPool()
+TObjectPtr<class ADrgAICharacter> ADrgSpawnAI::SpawnAIFromPool()
 {
 	FVector SpawnLocation;
 	if (FindSafeRandomPointInNav(SpawnLocation))
@@ -230,6 +225,8 @@ void ADrgSpawnAI::SpawnAILoop()
 		       TEXT("DrgSpawnAI::스폰된 AI가 TotalSpawnCount를 초과했습니다 %d. 더이상 스폰되지 않습니다."), ActiveAIPool.Num());
 		return;
 	}
+
+	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	for (int32 i = 0; i < CurrentWaveRow->SpawnCount; i++)
 	{
 		if (CurrentSpawnCount >= CurrentWaveRow->MaxSpawnCount)

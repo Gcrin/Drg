@@ -20,10 +20,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Drg|Spawning")
 	void SetNextWave();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
-	USceneComponent* SceneComp;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
-	UDataTable* WaveDataTable;
+	TObjectPtr<UDataTable> WaveDataTable;
 
 protected:
 	UPROPERTY(editAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
@@ -34,18 +32,21 @@ protected:
 	float MinDistance;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
 	float MaxDistance;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
 	TArray<class ADrgAICharacter*> ActiveAIPool;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
 	TArray<class ADrgAICharacter*> InActiveAIPool;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning", meta = (ClampMin = "10"))
 	int32 MaxTryCount = 30;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
-	int32 CurrentWaveNumber;
-
-	struct FDrgWaveTableRow* CurrentWaveRow;
-	FTimerHandle SpawnTimerHandle;
+	int32 CurrentWaveNumber = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
 	int32 CurrentSpawnCount = 0;
-	bool bIsSpawnTimerRunning = false;
+
+	FTimerHandle SpawnTimerHandle;
+
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// 레벨 시작 시 AI 캐릭터 미리 스폰해서 InActiveAIPool에 추가
 	// 이 이상 AI 캐릭터 스폰하지 않음
@@ -67,7 +68,7 @@ protected:
 	// 현재 웨이브에 해당하는 AI 데이터에셋 랜덤하게 반환
 	TObjectPtr<class UDrgCharacterData> GetRandomAICharacterData();
 	// 데이터에셋 적용하여 안전한 위치에 스폰
-	class ADrgAICharacter* SpawnAIFromPool();
+	TObjectPtr<class ADrgAICharacter> SpawnAIFromPool();
 	// 스폰 후 ActiveAIPool에 추가. 타이머에서 실행될 함수
 	void SpawnAILoop();
 };
