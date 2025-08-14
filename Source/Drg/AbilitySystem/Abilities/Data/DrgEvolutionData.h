@@ -39,12 +39,6 @@ struct FDrgEvolutionRecipe
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "진화(조합) 스킬"))
 	TObjectPtr<UDrgAbilityDataAsset> EvolvedAbilityAsset;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "메시"))
-	TObjectPtr<USkeletalMesh> NewMesh;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "머티리얼/ 0 = Face, 1 = Matarial"))
-	TArray<TObjectPtr<UMaterialInterface>> NewMaterials;
 };
 
 /*

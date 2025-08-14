@@ -28,6 +28,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade", meta = (DisplayName = "레벨 데이터 / 인덱스[0] = 1Lv"))
 	TArray<FDrgAbilityLevelData> AbilityLevelData;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "메시"))
+	TObjectPtr<USkeletalMesh> NewMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "머티리얼/ 0 = Face, 1 = Matarial"))
+	TArray<TObjectPtr<UMaterialInterface>> NewMaterials;
+
 public:
 	// 최대 레벨(배열의 원소 개수)을 반환하는 함수, Level = 1 + index
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Drg|Ability")

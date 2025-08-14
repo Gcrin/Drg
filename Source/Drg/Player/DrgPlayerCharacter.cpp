@@ -11,7 +11,6 @@
 // UI 관련 include 추가
 #include "Drg/UI/LevelUp/DrgSkillSelectionWidget.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
-#include "Kismet/GameplayStatics.h"
 
 ADrgPlayerCharacter::ADrgPlayerCharacter()
 {
@@ -80,7 +79,7 @@ void ADrgPlayerCharacter::SetCharacterAppearance(USkeletalMesh* NewMesh, const T
 	USkeletalMeshComponent* CharacterMesh = GetMesh();
 	if (CharacterMesh && NewMesh)
 	{
-		CharacterMesh->SetSkeletalMesh(NewMesh);
+		if (NewMesh) CharacterMesh->SetSkeletalMesh(NewMesh);
 		for (int32 i = 0; i < NewMaterials.Num(); i++)
 		{
 			if (NewMaterials[i]) { CharacterMesh->SetMaterial(i, NewMaterials[i]); }
