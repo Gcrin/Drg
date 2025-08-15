@@ -9,6 +9,8 @@
 class UProgressBar;
 class UTextBlock;
 class UImage;
+class UVerticalBox;
+class UDrgSkillWidget;
 
 /**
  * 인게임 HUD UI 위젯
@@ -45,12 +47,12 @@ public:
 	void OnMoveSpeedChanged(float MoveSpeed);
 	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
 	void OnPickupRadiusChanged(float PickupRadius);
-	
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
 	void OnUpdateKillCount(int32 NewKillCount);
 	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
 	void OnTimerUpdated(int32 Minutes, int32 Seconds);
-	
+
 protected:
 	// === 경험치바 관련 ===
 	UPROPERTY(meta = (BindWidget))
@@ -96,6 +98,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> TimerText;
 
+	// 어빌리티
+	UPROPERTY(EditDefaultsOnly, Category = "Drg|HUD")
+	TSubclassOf<UDrgSkillWidget> SkillWidgetClass;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UVerticalBox> SkillListBox;
+
 private:
 	// 타이머 관련
 	UFUNCTION()
@@ -107,6 +115,11 @@ private:
 	void HandleKillCountChanged(int32 NewKillCount);
 	FDelegateHandle KillCountChangedHandle;
 
+	// 어빌리티, 이펙트 관련
+	UFUNCTION()
+	void HandleEquippedSkillsChanged();
+	FDelegateHandle EquippedSkillsChangedHandle;
+
 	// 프로그레스 바 업데이트
 	void UpdateHealthBar(float Health, float MaxHealth);
 	void UpdateStaminaBar(float Stamina, float MaxStamina);
@@ -115,10 +128,10 @@ private:
 	// 메시지 시스템 관련
 	void OnAttributeChangedReceived(FGameplayTag Channel, const FDrgAttributeChangeMessage& Message);
 	FGameplayMessageListenerHandle AttributeChangeMessageListenerHandle;
-	
+
 	float CurrentHealth = 0.0f;
 	float CurrentMaxHealth = 0.0f;
-	
+
 	float CurrentStamina = 0.0f;
 	float CurrentMaxStamina = 0.0f;
 

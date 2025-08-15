@@ -45,7 +45,7 @@ void UDrgUpgradeComponent::BeginPlay()
 bool UDrgUpgradeComponent::PresentLevelUpChoices(int32 NumChoices)
 {
 	TArray<FDrgUpgradeChoice> Choices = GetLevelUpChoices(NumChoices);
-	if (Choices.Num() > 0) 
+	if (Choices.Num() > 0)
 	{
 		OnLevelUpChoiceReady.Broadcast(Choices);
 		return true;
@@ -83,6 +83,9 @@ void UDrgUpgradeComponent::UpgradeAbility(const FDrgUpgradeChoice& SelectedChoic
 	if (NewHandle.IsValid())
 	{
 		OwnedAbilityHandles.Add(SelectedChoice.AbilityData, NewHandle);
+
+		EquippedSkills.Add(SelectedChoice.AbilityData, SelectedChoice.NextLevel);
+		OnEquippedSkillsChanged.Broadcast();
 	}
 	else
 	{
@@ -111,6 +114,9 @@ void UDrgUpgradeComponent::UpgradeEffect(const FDrgUpgradeChoice& SelectedChoice
 	if (NewHandle.IsValid())
 	{
 		ActiveEffectHandles.Add(SelectedChoice.AbilityData, NewHandle);
+
+		EquippedSkills.Add(SelectedChoice.AbilityData, SelectedChoice.NextLevel);
+		OnEquippedSkillsChanged.Broadcast();
 	}
 	else
 	{
@@ -128,7 +134,7 @@ void UDrgUpgradeComponent::ExecuteEvolution(const FDrgEvolutionRecipe& Recipe)
 			RemoveAbilityByData(IngredientInfo.IngredientAsset);
 		}
 	}
-	
+
 	FDrgUpgradeChoice EvolvedChoice;
 	EvolvedChoice.AbilityData = Recipe.EvolvedAbilityAsset;
 	EvolvedChoice.bIsUpgrade = false;
@@ -139,7 +145,7 @@ void UDrgUpgradeComponent::ExecuteEvolution(const FDrgEvolutionRecipe& Recipe)
 	if (Recipe.EvolvedAbilityAsset && Recipe.EvolvedAbilityAsset->GetLevelData(1, LevelData))
 	{
 		if (LevelData.UpgradeType == EUpgradeType::Ability) { UpgradeAbility(EvolvedChoice); }
-		else if (LevelData.UpgradeType == EUpgradeType::Effect)	{ UpgradeEffect(EvolvedChoice); }
+		else if (LevelData.UpgradeType == EUpgradeType::Effect) { UpgradeEffect(EvolvedChoice); }
 	}
 }
 
@@ -147,12 +153,13 @@ TArray<FDrgEvolutionRecipe> UDrgUpgradeComponent::GetPossibleEvolutions() const
 {
 	TArray<FDrgEvolutionRecipe> PossibleEvolutions;
 	if (!EvolutionData || !AbilitySystemComponent) { return PossibleEvolutions; }
-	
+
 	for (const FDrgEvolutionRecipe& Recipe : EvolutionData->EvolutionRecipes)
 	{
 		if (Recipe.Ingredients.IsEmpty() || !Recipe.EvolvedAbilityAsset) continue;
 		if (OwnedAbilityHandles.Contains(Recipe.EvolvedAbilityAsset) ||
-				ActiveEffectHandles.Contains(Recipe.EvolvedAbilityAsset)) continue; 
+			ActiveEffectHandles.Contains(Recipe.EvolvedAbilityAsset))
+			continue;
 
 		bool bHasAllMaxLevelIngredients = true;
 		for (const FDrgIngredientInfo& IngredientInfo : Recipe.Ingredients)
@@ -162,30 +169,34 @@ TArray<FDrgEvolutionRecipe> UDrgUpgradeComponent::GetPossibleEvolutions() const
 				bHasAllMaxLevelIngredients = false;
 				break;
 			}
-			
+
 			int32 IngredientLevel = 0;
-			if (const FGameplayAbilitySpecHandle* FoundAbilitySpecHandle = OwnedAbilityHandles.Find(IngredientInfo.IngredientAsset))
+			if (const FGameplayAbilitySpecHandle* FoundAbilitySpecHandle = OwnedAbilityHandles.Find(
+				IngredientInfo.IngredientAsset))
 			{
-				if (const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundAbilitySpecHandle))
+				if (const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(
+					*FoundAbilitySpecHandle))
 				{
 					IngredientLevel = Spec->Level;
 				}
 			}
-			else if (const FActiveGameplayEffectHandle* FoundEffectHandle = ActiveEffectHandles.Find(IngredientInfo.IngredientAsset))
+			else if (const FActiveGameplayEffectHandle* FoundEffectHandle = ActiveEffectHandles.Find(
+				IngredientInfo.IngredientAsset))
 			{
-				if (const FActiveGameplayEffect* ActiveEffect = AbilitySystemComponent->GetActiveGameplayEffect(*FoundEffectHandle))
+				if (const FActiveGameplayEffect* ActiveEffect = AbilitySystemComponent->GetActiveGameplayEffect(
+					*FoundEffectHandle))
 				{
 					IngredientLevel = ActiveEffect->Spec.GetLevel();
 				}
 			}
-          
+
 			if (IngredientLevel < IngredientInfo.IngredientAsset->GetMaxLevel())
 			{
 				bHasAllMaxLevelIngredients = false;
 				break;
 			}
 		}
-		if (bHasAllMaxLevelIngredients)	{ PossibleEvolutions.Add(Recipe); }
+		if (bHasAllMaxLevelIngredients) { PossibleEvolutions.Add(Recipe); }
 	}
 	return PossibleEvolutions;
 }
@@ -218,7 +229,7 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 		EvolutionChoice.ChoiceType = EChoiceType::Evolution;
 		FinalChoices.Add(EvolutionChoice);
 	}
-	
+
 	int32 RemainingChoices = NumChoices - FinalChoices.Num();
 	if (RemainingChoices > 0)
 	{
@@ -236,30 +247,33 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 			int32 CurrentLevel = 0;
 			if (const FGameplayAbilitySpecHandle* FoundAbilitySpecHandle = OwnedAbilityHandles.Find(AbilityData))
 			{
-				if (const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*FoundAbilitySpecHandle))
+				if (const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(
+					*FoundAbilitySpecHandle))
 				{
 					CurrentLevel = Spec->Level;
 				}
 			}
 			else if (const FActiveGameplayEffectHandle* FoundEffectHandle = ActiveEffectHandles.Find(AbilityData))
 			{
-				if (const FActiveGameplayEffect* ActiveEffect = AbilitySystemComponent->GetActiveGameplayEffect(*FoundEffectHandle))
+				if (const FActiveGameplayEffect* ActiveEffect = AbilitySystemComponent->GetActiveGameplayEffect(
+					*FoundEffectHandle))
 				{
 					CurrentLevel = ActiveEffect->Spec.GetLevel();
 				}
 			}
 
 			// 이미 최대 레벨인 업그레이드는 후보에서 제외
-			if (CurrentLevel >= AbilityData->GetMaxLevel())	continue;
-			
+			if (CurrentLevel >= AbilityData->GetMaxLevel()) continue;
+
 			// 다음 레벨의 데이터를 가져와 업그레이드 타입을 확인
 			FDrgAbilityLevelData NextLevelData;
-			if (!AbilityData->GetLevelData(CurrentLevel + 1, NextLevelData))	continue;
-			
+			if (!AbilityData->GetLevelData(CurrentLevel + 1, NextLevelData)) continue;
+
 			// 새로운 업그레이드를 얻으려 하지만, 이미 최대 개수를 소유한 경우 후보에서 제외
 			const bool bIsNewAcquisition = (CurrentLevel == 0);
 			if (bIsNewAcquisition && NextLevelData.UpgradeType ==
-				EUpgradeType::Ability && CurrentOwnedAbilityCount >= MaxAcquirableAbilityCount)	continue;
+				EUpgradeType::Ability && CurrentOwnedAbilityCount >= MaxAcquirableAbilityCount)
+				continue;
 
 			FDrgUpgradeChoice Choice;
 			Choice.AbilityData = AbilityData;
@@ -338,6 +352,10 @@ void UDrgUpgradeComponent::RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData
 		AbilitySystemComponent->ClearAbility(*FoundHandle);
 		OwnedAbilityHandles.Remove(AbilityData);
 		RemovedAbilities.Add(AbilityData);
+
+		EquippedSkills.Remove(AbilityData);
+		OnEquippedSkillsChanged.Broadcast();
+
 		return;
 	}
 	UE_LOG(LogTemp, Warning, TEXT("삭제될 어빌리티가 존재하지 않습니다."));
@@ -347,54 +365,54 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::StartAbilityChoices(int32 NumCho
 {
 	TArray<FDrgUpgradeChoice> FinalChoices;
 
-    if (!ensure(AbilitySystemComponent)) { return FinalChoices; }
-    if (!ensureMsgf(AbilityCollectionData && AbilityCollectionData->UpgradeData.Num() > 0,
-                    TEXT("UpgradeComponent에 설정된 어빌리티가 없습니다."))) { return FinalChoices; }
-    
-    TArray<FDrgUpgradeChoice> CandidateChoices;
-    TArray<float> CandidateWeights;
-    float TotalWeight = 0.0f;
+	if (!ensure(AbilitySystemComponent)) { return FinalChoices; }
+	if (!ensureMsgf(AbilityCollectionData && AbilityCollectionData->UpgradeData.Num() > 0,
+	                TEXT("UpgradeComponent에 설정된 어빌리티가 없습니다."))) { return FinalChoices; }
 
-    for (const auto& UpgradeData : AbilityCollectionData->UpgradeData)
-    {
-       if (!UpgradeData || UpgradeData->GetMaxLevel() <= 0) continue;
-       if (OwnedAbilityHandles.Contains(UpgradeData)) continue;
+	TArray<FDrgUpgradeChoice> CandidateChoices;
+	TArray<float> CandidateWeights;
+	float TotalWeight = 0.0f;
 
-       FDrgAbilityLevelData NextLevelData;
-       if (!UpgradeData->GetLevelData(1, NextLevelData)) continue;
-       if (NextLevelData.UpgradeType != EUpgradeType::Ability) continue;
-    	
-       FDrgUpgradeChoice Choice;
-       Choice.AbilityData = UpgradeData;
-       Choice.bIsUpgrade = false;
-       Choice.PreviousLevel = 0;
-       Choice.NextLevel = 1;
+	for (const auto& UpgradeData : AbilityCollectionData->UpgradeData)
+	{
+		if (!UpgradeData || UpgradeData->GetMaxLevel() <= 0) continue;
+		if (OwnedAbilityHandles.Contains(UpgradeData)) continue;
 
-       CandidateChoices.Add(Choice);
-       CandidateWeights.Add(UpgradeData->SelectionWeight);
-       TotalWeight += UpgradeData->SelectionWeight;
-    }
-    
-    for (int32 i = 0; i < NumChoices; ++i)
-    {
-       if (CandidateChoices.Num() == 0 || TotalWeight <= 0.0f) break;
+		FDrgAbilityLevelData NextLevelData;
+		if (!UpgradeData->GetLevelData(1, NextLevelData)) continue;
+		if (NextLevelData.UpgradeType != EUpgradeType::Ability) continue;
 
-       float RandomValue = FMath::RandRange(0.0f, TotalWeight);
-       float WeightSum = 0.0f;
+		FDrgUpgradeChoice Choice;
+		Choice.AbilityData = UpgradeData;
+		Choice.bIsUpgrade = false;
+		Choice.PreviousLevel = 0;
+		Choice.NextLevel = 1;
 
-       for (int32 j = CandidateChoices.Num() - 1; j >= 0; --j)
-       {
-          WeightSum += CandidateWeights[j];
-          if (WeightSum > RandomValue)
-          {
-             FinalChoices.Add(CandidateChoices[j]);
-             TotalWeight -= CandidateWeights[j];
-             CandidateChoices.RemoveAtSwap(j);
-             CandidateWeights.RemoveAtSwap(j);
-             break;
-          }
-       }
-    }
+		CandidateChoices.Add(Choice);
+		CandidateWeights.Add(UpgradeData->SelectionWeight);
+		TotalWeight += UpgradeData->SelectionWeight;
+	}
 
-    return FinalChoices;
+	for (int32 i = 0; i < NumChoices; ++i)
+	{
+		if (CandidateChoices.Num() == 0 || TotalWeight <= 0.0f) break;
+
+		float RandomValue = FMath::RandRange(0.0f, TotalWeight);
+		float WeightSum = 0.0f;
+
+		for (int32 j = CandidateChoices.Num() - 1; j >= 0; --j)
+		{
+			WeightSum += CandidateWeights[j];
+			if (WeightSum > RandomValue)
+			{
+				FinalChoices.Add(CandidateChoices[j]);
+				TotalWeight -= CandidateWeights[j];
+				CandidateChoices.RemoveAtSwap(j);
+				CandidateWeights.RemoveAtSwap(j);
+				break;
+			}
+		}
+	}
+
+	return FinalChoices;
 }

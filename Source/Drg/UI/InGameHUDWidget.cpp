@@ -1,7 +1,10 @@
 #include "InGameHUDWidget.h"
 #include "Components/ProgressBar.h"
+#include "Components/VerticalBox.h"
+#include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
 #include "Drg/System/DrgGameplayTags.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
+#include "Drg/UI/LevelUp/DrgSkillWidget.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "Drg/GameModes/DrgPlayerState.h"
 
@@ -11,18 +14,29 @@ void UInGameHUDWidget::NativeConstruct()
 
 	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 	AttributeChangeMessageListenerHandle = MessageSubsystem.RegisterListener(
-	   DrgGameplayTags::Event_Broadcast_AttributeChanged,
-	   this,
-	   &UInGameHUDWidget::OnAttributeChangedReceived
+		DrgGameplayTags::Event_Broadcast_AttributeChanged,
+		this,
+		&UInGameHUDWidget::OnAttributeChangedReceived
 	);
 
 	if (ADrgPlayerState* DrgPlayerState = GetOwningPlayerState<ADrgPlayerState>())
 	{
 		HandleKillCountChanged(DrgPlayerState->GetKillCount());
-		KillCountChangedHandle = DrgPlayerState->OnKillCountChanged.AddUObject(this, &UInGameHUDWidget::HandleKillCountChanged);
+		KillCountChangedHandle = DrgPlayerState->OnKillCountChanged.AddUObject(
+			this, &UInGameHUDWidget::HandleKillCountChanged);
 
 		HandleTimeUpdated(DrgPlayerState->GetSurvivalTime());
 		TimeUpdatedHandle = DrgPlayerState->OnTimeUpdated.AddUObject(this, &UInGameHUDWidget::HandleTimeUpdated);
+	}
+
+	if (ADrgPlayerCharacter* PlayerCharacter = GetOwningPlayerPawn<ADrgPlayerCharacter>())
+	{
+		if (UDrgUpgradeComponent* UpgradeComponent = PlayerCharacter->FindComponentByClass<UDrgUpgradeComponent>())
+		{
+			HandleEquippedSkillsChanged();
+			EquippedSkillsChangedHandle = UpgradeComponent->OnEquippedSkillsChanged.AddUObject(
+				this, &UInGameHUDWidget::HandleEquippedSkillsChanged);
+		}
 	}
 
 	if (APlayerController* PlayerController = GetOwningPlayer())
@@ -80,7 +94,14 @@ void UInGameHUDWidget::NativeDestruct()
 		DrgPlayerState->OnKillCountChanged.Remove(KillCountChangedHandle);
 		DrgPlayerState->OnTimeUpdated.Remove(TimeUpdatedHandle);
 	}
-	
+	if (ADrgPlayerCharacter* PlayerCharacter = GetOwningPlayerPawn<ADrgPlayerCharacter>())
+	{
+		if (UDrgUpgradeComponent* UpgradeComponent = PlayerCharacter->FindComponentByClass<UDrgUpgradeComponent>())
+		{
+			UpgradeComponent->OnEquippedSkillsChanged.Remove(EquippedSkillsChangedHandle);
+		}
+	}
+
 	Super::NativeDestruct();
 }
 
@@ -168,6 +189,28 @@ void UInGameHUDWidget::HandleKillCountChanged(int32 NewKillCount)
 {
 	OnUpdateKillCount(NewKillCount);
 }
+
+void UInGameHUDWidget::HandleEquippedSkillsChanged()
+{
+	if (!SkillListBox || !SkillWidgetClass) return;
+	SkillListBox->ClearChildren();
+
+	ADrgPlayerCharacter* PlayerCharacter = GetOwningPlayerPawn<ADrgPlayerCharacter>();
+	if (!PlayerCharacter) return;
+	UDrgUpgradeComponent* UpgradeComponent = PlayerCharacter->FindComponentByClass<UDrgUpgradeComponent>();
+	if (!UpgradeComponent) return;
+
+	const TMap<TObjectPtr<UDrgAbilityDataAsset>, int32>& EquippedSkills = UpgradeComponent->GetEquippedSkills();
+	for (const auto EquippedSkill : EquippedSkills)
+	{
+		if (UDrgSkillWidget* NewIconWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+		{
+			NewIconWidget->SetAbilityInfo(EquippedSkill.Key, EquippedSkill.Value);
+			SkillListBox->AddChildToVerticalBox(NewIconWidget);
+		}
+	}
+}
+
 void UInGameHUDWidget::HandleTimeUpdated(float SurvivalTimeSeconds)
 {
 	const int32 Minutes = FMath::FloorToInt(SurvivalTimeSeconds) / 60;
@@ -182,10 +225,10 @@ void UInGameHUDWidget::UpdateHealthBar(float Health, float MaxHealth)
 
 void UInGameHUDWidget::UpdateStaminaBar(float Stamina, float MaxStamina)
 {
-	if (StaminaBar && MaxStamina > 0.0f)	StaminaBar->SetPercent(Stamina / MaxStamina);
+	if (StaminaBar && MaxStamina > 0.0f) StaminaBar->SetPercent(Stamina / MaxStamina);
 }
 
 void UInGameHUDWidget::UpdateExperienceBar(float Exp, float MaxExp)
 {
-	if (ExperienceBar && MaxExp > 0.0f)	ExperienceBar->SetPercent(Exp / MaxExp);
+	if (ExperienceBar && MaxExp > 0.0f) ExperienceBar->SetPercent(Exp / MaxExp);
 }
