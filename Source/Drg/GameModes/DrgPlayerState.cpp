@@ -20,6 +20,18 @@ void ADrgPlayerState::BeginPlay()
 			&ADrgPlayerState::OnActorDeath
 		);
 	}
+
+	if (GetWorld())
+	{
+		GameStartTime = GetWorld()->GetTimeSeconds();
+		GetWorld()->GetTimerManager().SetTimer(
+		SurvivalTimerHandle,
+		this,
+		&ADrgPlayerState::UpdateSurvivalTime,
+		1.0f,
+		true
+		);
+	}
 }
 
 void ADrgPlayerState::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -29,6 +41,9 @@ void ADrgPlayerState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 		MessageSubsystem.UnregisterListener(ActorDeathMessageListenerHandle);
 	}
+	
+	GetWorld()->GetTimerManager().ClearTimer(SurvivalTimerHandle);
+	
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -36,6 +51,7 @@ FGameResultData ADrgPlayerState::GetGameResultData() const
 {
 	FGameResultData GameResultData;
 	GameResultData.KillCount = KillCount;
+	GameResultData.SetSurvivalTimeSeconds(SurvivalTimeSeconds);
 	
 	if (ADrgPlayerCharacter* PlayerCharacter = GetPawn<ADrgPlayerCharacter>())
 	{
@@ -59,7 +75,7 @@ FGameResultData ADrgPlayerState::GetGameResultData() const
 			// 최종 웨이브 정보
 		}
 	}
-	
+	GameResultData.CalculateTime();	
 	return GameResultData;
 }
 
@@ -73,4 +89,13 @@ void ADrgPlayerState::OnActorDeath(FGameplayTag Channel, const FDrgActorDeathMes
 {
 	if (!Message.Victim) return;
 	if (Message.Victim != GetPawn()) UpdateKillCount();
+}
+
+void ADrgPlayerState::UpdateSurvivalTime()
+{
+	if (GetWorld())
+	{
+		SurvivalTimeSeconds = GetWorld()->GetTimeSeconds() - GameStartTime;
+		OnTimeUpdated.Broadcast(SurvivalTimeSeconds);
+	}
 }

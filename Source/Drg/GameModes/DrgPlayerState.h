@@ -12,6 +12,7 @@
 struct FDrgActorDeathMessage;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnKillCountChanged, int32);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnTimeUpdated, float);
 
 UCLASS()
 class DRG_API ADrgPlayerState : public APlayerState
@@ -22,14 +23,21 @@ public:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	UFUNCTION(BlueprintPure, Category = "Drg|PlayerStats")
+	// UI 데이터 제공
+	UFUNCTION(BlueprintPure, Category = "Drg|PlayerState")
 	FGameResultData GetGameResultData() const;
 
-	// 킬 카운트 브로드캐스트
-	void UpdateKillCount();
+	// 델리게이트
 	FOnKillCountChanged OnKillCountChanged;
+	FOnTimeUpdated OnTimeUpdated;
 
+	// 킬 카운트
+	void UpdateKillCount();
 	int32 GetKillCount() const { return KillCount; }
+
+	// 생존 시간
+	UFUNCTION(BlueprintPure, Category = "Drg|PlayerState")
+	float GetSurvivalTime() const { return SurvivalTimeSeconds; }
 	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|PlayerState")
@@ -38,4 +46,10 @@ protected:
 private:
 	void OnActorDeath(FGameplayTag Channel, const FDrgActorDeathMessage& Message);
 	FGameplayMessageListenerHandle ActorDeathMessageListenerHandle;
+
+	// 생존 시간
+	FTimerHandle SurvivalTimerHandle;
+	float GameStartTime = 0.0f;
+	float SurvivalTimeSeconds = 0.0f;
+	void UpdateSurvivalTime();
 };

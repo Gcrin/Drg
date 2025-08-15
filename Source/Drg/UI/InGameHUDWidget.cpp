@@ -20,16 +20,16 @@ void UInGameHUDWidget::NativeConstruct()
 	{
 		HandleKillCountChanged(DrgPlayerState->GetKillCount());
 		KillCountChangedHandle = DrgPlayerState->OnKillCountChanged.AddUObject(this, &UInGameHUDWidget::HandleKillCountChanged);
+
+		HandleTimeUpdated(DrgPlayerState->GetSurvivalTime());
+		TimeUpdatedHandle = DrgPlayerState->OnTimeUpdated.AddUObject(this, &UInGameHUDWidget::HandleTimeUpdated);
 	}
-	
-	APlayerController* PlayerController = GetOwningPlayer();
-	if (PlayerController)
+
+	if (APlayerController* PlayerController = GetOwningPlayer())
 	{
-		ADrgPlayerCharacter* PlayerCharacter = Cast<ADrgPlayerCharacter>(PlayerController->GetPawn());
-		if (PlayerCharacter)
+		if (ADrgPlayerCharacter* PlayerCharacter = Cast<ADrgPlayerCharacter>(PlayerController->GetPawn()))
 		{
-			const UDrgAttributeSet* Attributes = PlayerCharacter->GetAttributeSet();
-			if (Attributes)
+			if (const UDrgAttributeSet* Attributes = PlayerCharacter->GetAttributeSet())
 			{
 				// 현재 값들을 AttributeSet에서 직접 가져와 캐시 변수에 저장
 				CurrentHealth = Attributes->GetHealth();
@@ -66,20 +66,10 @@ void UInGameHUDWidget::NativeConstruct()
 			}
 		}
 	}
-	
-	GameStartTime = GetWorld()->GetTimeSeconds();
-	GetWorld()->GetTimerManager().SetTimer(
-		TimerDisplayHandle,
-		this,
-		&UInGameHUDWidget::UpdateTimerDisplay,
-		1.0f,
-		true
-		);
 }
 
 void UInGameHUDWidget::NativeDestruct()
 {
-	GetWorld()->GetTimerManager().ClearTimer(TimerDisplayHandle);
 	if (AttributeChangeMessageListenerHandle.IsValid())
 	{
 		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
@@ -88,6 +78,7 @@ void UInGameHUDWidget::NativeDestruct()
 	if (ADrgPlayerState* DrgPlayerState = GetOwningPlayerState<ADrgPlayerState>())
 	{
 		DrgPlayerState->OnKillCountChanged.Remove(KillCountChangedHandle);
+		DrgPlayerState->OnTimeUpdated.Remove(TimeUpdatedHandle);
 	}
 	
 	Super::NativeDestruct();
@@ -177,6 +168,12 @@ void UInGameHUDWidget::HandleKillCountChanged(int32 NewKillCount)
 {
 	OnUpdateKillCount(NewKillCount);
 }
+void UInGameHUDWidget::HandleTimeUpdated(float SurvivalTimeSeconds)
+{
+	const int32 Minutes = FMath::FloorToInt(SurvivalTimeSeconds) / 60;
+	const int32 Seconds = FMath::FloorToInt(SurvivalTimeSeconds) % 60;
+	OnTimerUpdated(Minutes, Seconds);
+}
 
 void UInGameHUDWidget::UpdateHealthBar(float Health, float MaxHealth)
 {
@@ -191,17 +188,4 @@ void UInGameHUDWidget::UpdateStaminaBar(float Stamina, float MaxStamina)
 void UInGameHUDWidget::UpdateExperienceBar(float Exp, float MaxExp)
 {
 	if (ExperienceBar && MaxExp > 0.0f)	ExperienceBar->SetPercent(Exp / MaxExp);
-}
-
-void UInGameHUDWidget::UpdateTimerDisplay()
-{
-	if (TimerText)
-	{
-		const float CurrentTime = GetWorld()->GetTimeSeconds() - GameStartTime;
-		SurvivalTimeSeconds = FMath::FloorToInt(CurrentTime);
-		const int32 Minutes = SurvivalTimeSeconds / 60;
-		const int32 Seconds = SurvivalTimeSeconds % 60;
-	
-		OnTimerUpdated(Minutes, Seconds);
-	}
 }
