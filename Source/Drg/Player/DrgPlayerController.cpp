@@ -31,6 +31,14 @@ void ADrgPlayerController::BeginPlay()
 		this,
 		&ADrgPlayerController::OnGameStateChanged
 	);
+	
+	if (UDrgGameStateManagerSubsystem* StateManager = GetGameInstance()->GetSubsystem<UDrgGameStateManagerSubsystem>())
+	{
+		FDrgGameStateChangeMessage InitialStateMessage;
+		InitialStateMessage.NewState = StateManager->GetCurrentState();
+		InitialStateMessage.GameResult = StateManager->GetCurrentGameResult();
+		OnGameStateChanged(DrgGameplayTags::Event_Broadcast_StateChanged, InitialStateMessage);
+	}
 }
 
 void ADrgPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -47,17 +55,15 @@ void ADrgPlayerController::OnGameStateChanged(FGameplayTag Channel, const FDrgGa
 	switch (Message.NewState)
 	{
 	case EGameFlowState::MainMenu:
-		SetShowMouseCursor(true);
-		SetInputMode(FInputModeUIOnly());
-		break;
-	case EGameFlowState::PostGame:
-		SetShowMouseCursor(true);
-		SetInputMode(FInputModeUIOnly());
-		break;
 	case EGameFlowState::Pause:
-		SetShowMouseCursor(true);
-		SetInputMode(FInputModeUIOnly());
-		break;
+	case EGameFlowState::PostGame:
+		{
+			FInputModeGameAndUI InputMode;
+			SetShowMouseCursor(true);
+			InputMode.SetHideCursorDuringCapture(false);
+			SetInputMode(InputMode);
+			break;
+		}
 	case EGameFlowState::InGame:
 		SetShowMouseCursor(false);
 		SetInputMode(FInputModeGameOnly());
