@@ -98,10 +98,9 @@ protected:
 
 private:
 	// 타이머 관련
-	void UpdateTimerDisplay();
-	FTimerHandle TimerDisplayHandle;
-	float GameStartTime = 0.0f;
-	int32 SurvivalTimeSeconds = 0;
+	UFUNCTION()
+	void HandleTimeUpdated(float SurvivalTimeSeconds);
+	FDelegateHandle TimeUpdatedHandle;
 
 	// 킬 카운트 관련
 	UFUNCTION()

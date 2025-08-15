@@ -2,6 +2,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Drg/UI/GameOver/GameOverWidget.h"
 #include "Drg/UI/GameOver/GameResultData.h"
+#include "Drg/GameModes/DrgPlayerState.h"
 #include "Drg/System/DrgGameplayTags.h"
 
 void ADrgHUD::BeginPlay()
@@ -67,9 +68,11 @@ void ADrgHUD::ShowGameOverUI(bool bIsVictory)
 	UGameOverWidget* GameOverWidget = CreateWidget<UGameOverWidget>(GetOwningPlayerController(), GameOverWidgetClass);
 	if (GameOverWidget)
 	{
-		FGameResultData ResultData;
-		GameOverWidget->SetGameResult(ResultData, bIsVictory);
-        
+		if (ADrgPlayerState* PlayerState = GetOwningPlayerController()->GetPlayerState<ADrgPlayerState>())
+		{
+			const FGameResultData ResultData = PlayerState->GetGameResultData();
+			GameOverWidget->SetGameResult(ResultData, bIsVictory);
+		}
 		GameOverWidget->AddToViewport();
 		CurrentWidget = GameOverWidget;
 	}
