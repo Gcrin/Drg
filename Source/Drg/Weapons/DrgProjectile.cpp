@@ -152,7 +152,7 @@ bool ADrgProjectile::AdjustTransformToSurface(float MaxWalkableSlopeAngle)
 	const FVector CurrentLocation = GetActorLocation();
 
 	const FVector TraceStart = CurrentLocation + FVector(0.f, 0.f, 1000.f);
-	const FVector TraceEnd = CurrentLocation;
+	const FVector TraceEnd = CurrentLocation - FVector(0.f, 0.f, SphereRadius * 0.1f);
 
 	TArray<FHitResult> OutHits;
 	UKismetSystemLibrary::SphereTraceMulti(
