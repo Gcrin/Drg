@@ -25,6 +25,8 @@ ADrgBaseCharacter::ADrgBaseCharacter()
 
 	AbilitySystemComponent = CreateDefaultSubobject<UDrgAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AttributeSet = CreateDefaultSubobject<UDrgAttributeSet>(TEXT("AttributeSet"));
+
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 bool ADrgBaseCharacter::IsDead() const

@@ -48,13 +48,26 @@ void ADrgSpawnAI::InitializePool()
 		FVector SpawnLocation;
 		if (FindSafeRandomPointInNav(SpawnLocation))
 		{
+			// SpawnLocation 로그 출력
+			UE_LOG(LogTemp, Warning, TEXT("DrgSpawnAI:: 스폰 위치: %s"), *SpawnLocation.ToString());
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
 			ADrgAICharacter* SpawnedAI = GetWorld()->SpawnActor<ADrgAICharacter>(
 				AICharacterClass,
 				SpawnLocation,
-				FRotator::ZeroRotator
+				FRotator::ZeroRotator,
+				SpawnParams
 			);
-			InActiveAIPool.Add(SpawnedAI);
-			SpawnedAI->OnAIDied.AddDynamic(this, &ADrgSpawnAI::ReturnAIToPool);
+			if (SpawnedAI)
+			{
+				InActiveAIPool.Add(SpawnedAI);
+				SpawnedAI->OnAIDied.AddDynamic(this, &ADrgSpawnAI::ReturnAIToPool);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("SpawnedAI is NULL!"));
+			}
 		}
 	}
 }
