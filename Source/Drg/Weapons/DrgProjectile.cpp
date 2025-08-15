@@ -154,7 +154,7 @@ bool ADrgProjectile::AdjustTransformToSurface(float MaxWalkableSlopeAngle)
 	// 1. 트레이스 시작/종료 지점 설정
 	// 말씀하신 대로, 현재 위치보다 '한참 위'에서 시작해서 '현재 위치'까지 트레이스를 쏩니다.
 	const FVector TraceStart = CurrentLocation + FVector(0.f, 0.f, 1000.f); // 10미터 상공
-	const FVector TraceEnd = CurrentLocation + FVector(0.f, 0.f, SphereRadius * 3.0f);
+	const FVector TraceEnd = CurrentLocation - FVector(0.f, 0.f, SphereRadius * 3.0f);
 
 	// 2. 멀티 스피어 트레이스 실행
 	// 경로상의 '모든' 충돌을 감지합니다.
@@ -487,41 +487,6 @@ void ADrgProjectile::DetectTarget()
 		{
 			ClosestTargetDistance = Distance;
 			ClosestTarget = TargetCandidate;
-
-			// 1. 잡힌 녀석의 이름을 출력합니다.
-			FString ActorName = IsValid(TargetCandidate) ? TargetCandidate->GetName() : TEXT("Invalid Actor");
-			UE_LOG(LogTemp, Error, TEXT("======= DETECTED ACTOR: %s ======="), *ActorName);
-
-			// 2. 잡힌 녀석이 가진 모든 충돌 컴포넌트의 상태를 검사합니다.
-			if (IsValid(TargetCandidate))
-			{
-				TArray<UPrimitiveComponent*> CollisionComponents;
-				TargetCandidate->GetComponents<UPrimitiveComponent>(CollisionComponents);
-
-				if (CollisionComponents.Num() == 0)
-				{
-					UE_LOG(LogTemp, Error, TEXT("...This actor has NO collision components."));
-				}
-				else
-				{
-					for (UPrimitiveComponent* Comp : CollisionComponents)
-					{
-						if (Comp->GetCollisionEnabled() != ECollisionEnabled::NoCollision)
-						{
-							// "충돌이 켜져있는" 컴포넌트만 출력합니다.
-							FString CompName = Comp->GetName();
-							FString EnabledState = UEnum::GetValueAsString(Comp->GetCollisionEnabled());
-							FString ObjectType = UEnum::GetValueAsString(Comp->GetCollisionObjectType());
-
-							UE_LOG(LogTemp, Error, TEXT("...Component '%s' HAS COLLISION: EnabledState=%s, ObjectType=%s"), *CompName, *EnabledState, *ObjectType);
-						}
-					}
-				}
-			}
-    
-			UE_LOG(LogTemp, Error, TEXT("========================================="));
-
-			// --- 여기까지 디버깅 코드 ---
 		}
 	}
 
