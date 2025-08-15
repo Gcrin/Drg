@@ -268,4 +268,6 @@ private:
 	TSet<TObjectPtr<AActor>> DamagedTargetsForSingleHit;
 	// 반복 피해가 활성화되었을 때 대상별 다음 피해 가능 시간을 기록
 	TMap<TObjectPtr<AActor>, float> DamagedTargetsForRepeatableHit;
+
+	bool bIsDestroy = false;
 };

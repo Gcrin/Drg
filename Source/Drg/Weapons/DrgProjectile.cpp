@@ -151,13 +151,9 @@ bool ADrgProjectile::AdjustTransformToSurface(float MaxWalkableSlopeAngle)
 	const float SphereRadius = SphereComponent->GetScaledSphereRadius();
 	const FVector CurrentLocation = GetActorLocation();
 
-	// 1. 트레이스 시작/종료 지점 설정
-	// 말씀하신 대로, 현재 위치보다 '한참 위'에서 시작해서 '현재 위치'까지 트레이스를 쏩니다.
-	const FVector TraceStart = CurrentLocation + FVector(0.f, 0.f, 1000.f); // 10미터 상공
-	const FVector TraceEnd = CurrentLocation - FVector(0.f, 0.f, SphereRadius * 3.0f);
+	const FVector TraceStart = CurrentLocation + FVector(0.f, 0.f, 1000.f);
+	const FVector TraceEnd = CurrentLocation;
 
-	// 2. 멀티 스피어 트레이스 실행
-	// 경로상의 '모든' 충돌을 감지합니다.
 	TArray<FHitResult> OutHits;
 	UKismetSystemLibrary::SphereTraceMulti(
 		this,
@@ -172,35 +168,55 @@ bool ADrgProjectile::AdjustTransformToSurface(float MaxWalkableSlopeAngle)
 		true
 	);
 
-	// 3. 충돌 결과 필터링
-	// 감지된 모든 충돌 중에서, 우리가 찾는 '진짜 땅'을 찾습니다.
+	// 가장 먼저 감지된(가장 높은) 유효한 땅을 찾기
+	FHitResult BestGroundHit;
+	bool bFoundValidGround = false;
+
 	for (const FHitResult& Hit : OutHits)
 	{
 		if (IsValid(Hit.GetActor()) && Hit.GetActor()->ActorHasTag(FName("Ground")))
 		{
-			// 'Ground' 태그를 가진 첫 번째 대상을 찾았다!
-			// 이 HitResult를 사용해 위치를 보정하고 함수를 종료합니다.
-
-			// 경사각 체크는 여전히 유용합니다.
+			// 경사각 체크
 			const float SlopeDotProduct = FVector::DotProduct(FVector::UpVector, Hit.ImpactNormal);
 			const float WalkableSlopeCosine = FMath::Cos(FMath::DegreesToRadians(MaxWalkableSlopeAngle));
 			if (SlopeDotProduct < WalkableSlopeCosine)
 			{
+				// 너무 가파른 땅은 벽으로 간주하고 파괴
 				ProcessImpact(Hit, true);
 				DestroyProjectile();
+				return false;
 			}
 
-			// 최종 위치 및 회전 계산
-			const FVector FinalLocation = Hit.ImpactPoint + Hit.ImpactNormal * (SphereRadius * 3.0f);
-			const FQuat FinalRotation = FQuat::FindBetweenNormals(FVector::UpVector, Hit.ImpactNormal) * GetActorQuat();
-
-			SetActorLocationAndRotation(FinalLocation, FinalRotation, false, nullptr, ETeleportType::TeleportPhysics);
-
-			return true; // 성공적으로 바닥을 찾고 위치를 보정했음
+			BestGroundHit = Hit;
+			bFoundValidGround = true;
+			break;
 		}
 	}
 
-	// 루프가 끝날 때까지 'Ground' 태그를 가진 유효한 바닥을 찾지 못했으면 실패 처리합니다.
+	// 유효한 땅을 찾았을 경우 위치/회전 보정
+	if (bFoundValidGround)
+	{
+		const float HoverDistance = SphereRadius * 3.0f;
+		const FVector FinalLocation = BestGroundHit.ImpactPoint + BestGroundHit.ImpactNormal * HoverDistance;
+
+		// 앞 방향은 현재 속도 방향을 사용
+		FVector ForwardDirection = ProjectileMovementComponent->Velocity.GetSafeNormal();
+		if (ForwardDirection.IsNearlyZero())
+		{
+			ForwardDirection = GetActorForwardVector(); // 멈춰있을 경우를 대비한 예외 처리
+		}
+
+		// 윗 방향은 바닥의 경사를 사용
+		const FVector UpDirection = BestGroundHit.ImpactNormal;
+
+		// 이 두 방향을 기준으로 회전값을 새로 만듬
+		const FRotator FinalRotator = FRotationMatrix::MakeFromXZ(ForwardDirection, UpDirection).Rotator();
+
+		SetActorLocationAndRotation(FinalLocation, FinalRotator, false, nullptr, ETeleportType::TeleportPhysics);
+
+		return true;
+	}
+
 	return false;
 }
 
@@ -508,6 +524,11 @@ void ADrgProjectile::DetectTarget()
 
 void ADrgProjectile::DestroyProjectile()
 {
+	if (bIsDestroy)
+	{
+		return;
+	}
+	bIsDestroy = true;
 	GetWorld()->GetTimerManager().ClearTimer(DetectTargetTimerHandle);
 
 	ProjectileMovementComponent->StopMovementImmediately();
@@ -521,6 +542,10 @@ void ADrgProjectile::DestroyProjectile()
 
 void ADrgProjectile::ProcessImpact(const FHitResult& HitResult, bool bFromSweep)
 {
+	if (bIsDestroy)
+	{
+		return;
+	}
 	FVector ImpactLocation;
 	FRotator ImpactRotation;
 	FVector SurfaceNormal;
