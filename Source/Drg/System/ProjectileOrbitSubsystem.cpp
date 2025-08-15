@@ -78,6 +78,8 @@ void UProjectileOrbitSubsystem::Tick(float DeltaTime)
 		const FRotator NewRotation = TangentDirection.Rotation();
 
 		Data.Projectile->SetActorLocationAndRotation(NewLocation, NewRotation);
+
+		Data.Projectile->AdjustTransformToSurface();
 	}
 }
 

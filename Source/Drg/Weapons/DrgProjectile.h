@@ -207,6 +207,16 @@ public:
 
 	void SetProjectileParams(const FDrgProjectileParams& InProjectileParams) { ProjectileParams = InProjectileParams; };
 
+	virtual void Tick(float DeltaSeconds) override;
+
+	/**
+	 * 현재 위치를 기준으로 바닥을 감지하고, 지면의 굴곡에 맞춰 자신의 위치와 회전을 보정합니다.
+	 * @param MaxWalkableSlopeAngle 바닥으로 인식할 최대 경사각(도)입니다.
+	 * @return 바닥을 성공적으로 찾고 위치를 보정했다면 true, 아니면 false를 반환합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Drg|Movement")
+	bool AdjustTransformToSurface(float MaxWalkableSlopeAngle = 50.f);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

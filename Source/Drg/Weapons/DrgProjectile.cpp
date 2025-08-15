@@ -6,6 +6,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "DrgProjectileMovementComponent.h"
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
@@ -19,7 +20,7 @@
 // Sets default values
 ADrgProjectile::ADrgProjectile()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	// 충돌체인 SphereComponent 설정
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
@@ -37,7 +38,8 @@ ADrgProjectile::ADrgProjectile()
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 외형은 충돌 계산 안함
 
 	// 발사체 움직임 컴포넌트 설정
-	ProjectileMovementComponent = CreateDefaultSubobject<UDrgProjectileMovementComponent>(TEXT("DrgProjectileMovement"));
+	ProjectileMovementComponent = CreateDefaultSubobject<
+		UDrgProjectileMovementComponent>(TEXT("DrgProjectileMovement"));
 	ProjectileMovementComponent->InitialSpeed = 1500.f;
 	ProjectileMovementComponent->MaxSpeed = 1500.f;
 	ProjectileMovementComponent->ProjectileGravityScale = 0.f; // 중력 영향 안받음
@@ -132,6 +134,76 @@ void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactCenter)
 	}
 }
 
+void ADrgProjectile::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (ProjectileParams.MovementType == EProjectileMovementType::Straight)
+	{
+		AdjustTransformToSurface();
+	}
+}
+
+bool ADrgProjectile::AdjustTransformToSurface(float MaxWalkableSlopeAngle)
+{
+	if (!SphereComponent) return false;
+
+	const float SphereRadius = SphereComponent->GetScaledSphereRadius();
+	const FVector CurrentLocation = GetActorLocation();
+
+	// 1. 트레이스 시작/종료 지점 설정
+	// 말씀하신 대로, 현재 위치보다 '한참 위'에서 시작해서 '현재 위치'까지 트레이스를 쏩니다.
+	const FVector TraceStart = CurrentLocation + FVector(0.f, 0.f, 1000.f); // 10미터 상공
+	const FVector TraceEnd = CurrentLocation + FVector(0.f, 0.f, SphereRadius * 3.0f);
+
+	// 2. 멀티 스피어 트레이스 실행
+	// 경로상의 '모든' 충돌을 감지합니다.
+	TArray<FHitResult> OutHits;
+	UKismetSystemLibrary::SphereTraceMulti(
+		this,
+		TraceStart,
+		TraceEnd,
+		SphereRadius,
+		UEngineTypes::ConvertToTraceType(ECC_WorldStatic),
+		false,
+		{},
+		EDrawDebugTrace::None,
+		OutHits,
+		true
+	);
+
+	// 3. 충돌 결과 필터링
+	// 감지된 모든 충돌 중에서, 우리가 찾는 '진짜 땅'을 찾습니다.
+	for (const FHitResult& Hit : OutHits)
+	{
+		if (IsValid(Hit.GetActor()) && Hit.GetActor()->ActorHasTag(FName("Ground")))
+		{
+			// 'Ground' 태그를 가진 첫 번째 대상을 찾았다!
+			// 이 HitResult를 사용해 위치를 보정하고 함수를 종료합니다.
+
+			// 경사각 체크는 여전히 유용합니다.
+			const float SlopeDotProduct = FVector::DotProduct(FVector::UpVector, Hit.ImpactNormal);
+			const float WalkableSlopeCosine = FMath::Cos(FMath::DegreesToRadians(MaxWalkableSlopeAngle));
+			if (SlopeDotProduct < WalkableSlopeCosine)
+			{
+				ProcessImpact(Hit, true);
+				DestroyProjectile();
+			}
+
+			// 최종 위치 및 회전 계산
+			const FVector FinalLocation = Hit.ImpactPoint + Hit.ImpactNormal * (SphereRadius * 3.0f);
+			const FQuat FinalRotation = FQuat::FindBetweenNormals(FVector::UpVector, Hit.ImpactNormal) * GetActorQuat();
+
+			SetActorLocationAndRotation(FinalLocation, FinalRotation, false, nullptr, ETeleportType::TeleportPhysics);
+
+			return true; // 성공적으로 바닥을 찾고 위치를 보정했음
+		}
+	}
+
+	// 루프가 끝날 때까지 'Ground' 태그를 가진 유효한 바닥을 찾지 못했으면 실패 처리합니다.
+	return false;
+}
+
 void ADrgProjectile::BeginPlay()
 {
 	Super::BeginPlay();
@@ -170,7 +242,7 @@ void ADrgProjectile::BeginPlay()
 	case EProjectileMovementType::Arc:
 		StartProjectileArc();
 		break;
-		
+
 	case EProjectileMovementType::Straight:
 	default:
 		ProjectileMovementComponent->Velocity = GetActorForwardVector() * ProjectileMovementComponent->InitialSpeed;
@@ -415,6 +487,41 @@ void ADrgProjectile::DetectTarget()
 		{
 			ClosestTargetDistance = Distance;
 			ClosestTarget = TargetCandidate;
+
+			// 1. 잡힌 녀석의 이름을 출력합니다.
+			FString ActorName = IsValid(TargetCandidate) ? TargetCandidate->GetName() : TEXT("Invalid Actor");
+			UE_LOG(LogTemp, Error, TEXT("======= DETECTED ACTOR: %s ======="), *ActorName);
+
+			// 2. 잡힌 녀석이 가진 모든 충돌 컴포넌트의 상태를 검사합니다.
+			if (IsValid(TargetCandidate))
+			{
+				TArray<UPrimitiveComponent*> CollisionComponents;
+				TargetCandidate->GetComponents<UPrimitiveComponent>(CollisionComponents);
+
+				if (CollisionComponents.Num() == 0)
+				{
+					UE_LOG(LogTemp, Error, TEXT("...This actor has NO collision components."));
+				}
+				else
+				{
+					for (UPrimitiveComponent* Comp : CollisionComponents)
+					{
+						if (Comp->GetCollisionEnabled() != ECollisionEnabled::NoCollision)
+						{
+							// "충돌이 켜져있는" 컴포넌트만 출력합니다.
+							FString CompName = Comp->GetName();
+							FString EnabledState = UEnum::GetValueAsString(Comp->GetCollisionEnabled());
+							FString ObjectType = UEnum::GetValueAsString(Comp->GetCollisionObjectType());
+
+							UE_LOG(LogTemp, Error, TEXT("...Component '%s' HAS COLLISION: EnabledState=%s, ObjectType=%s"), *CompName, *EnabledState, *ObjectType);
+						}
+					}
+				}
+			}
+    
+			UE_LOG(LogTemp, Error, TEXT("========================================="));
+
+			// --- 여기까지 디버깅 코드 ---
 		}
 	}
 
@@ -443,7 +550,7 @@ void ADrgProjectile::DestroyProjectile()
 
 	if (MeshComponent) MeshComponent->SetVisibility(false);
 	if (PointLightComponent) PointLightComponent->SetVisibility(false);
-
+	if (TrailComponent) TrailComponent->Deactivate();
 	SetLifeSpan(0.2f);
 }
 
