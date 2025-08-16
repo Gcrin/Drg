@@ -5,9 +5,11 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgAbilityDataAsset.h"
+#include "PaperSprite.h"
+
 
 // 정적 캐시 초기화
-TMap<TSoftObjectPtr<UTexture2D>, TWeakObjectPtr<UTexture2D>> UDrgSkillCardWidget::IconCache;
+TMap<TSoftObjectPtr<UPaperSprite>, TWeakObjectPtr<UPaperSprite>> UDrgSkillCardWidget::IconCache;
 
 void UDrgSkillCardWidget::NativeConstruct()
 {
@@ -33,6 +35,13 @@ void UDrgSkillCardWidget::BeginDestroy()
 		IconLoadHandle.Reset();
 	}
 
+	// 현재 로드된 아이콘 경로가 유효하면 캐시에서 제거
+	if (!CurrentLoadedIconPath.IsNull())
+	{
+		IconCache.Remove(CurrentLoadedIconPath);
+	}
+	
+
 	Super::BeginDestroy();
 }
 
@@ -40,7 +49,7 @@ void UDrgSkillCardWidget::SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeCho
 {
 	SkillIndex = InSkillIndex;
 	bIsClickable = true;
-	
+
 	if (!SkillNameText)
 	{
 		ensureAlwaysMsgf(false, TEXT("UDrgSkillCardWidget: SkillNameText가 바인딩되지 않았습니다!"));
@@ -63,7 +72,7 @@ void UDrgSkillCardWidget::SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeCho
 	}
 
 	FText Name, Description, TypeText, LevelText;
-	TSoftObjectPtr<UTexture2D> Icon;
+	TSoftObjectPtr<UPaperSprite> Icon;
 
 	if (InUpgradeChoice.ChoiceType == EChoiceType::Evolution)
 	{
@@ -121,19 +130,31 @@ void UDrgSkillCardWidget::SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeCho
 	LoadSkillIconAsync(Icon);
 }
 
-void UDrgSkillCardWidget::LoadSkillIconAsync(const TSoftObjectPtr<UTexture2D>& IconToLoad)
+void UDrgSkillCardWidget::LoadSkillIconAsync(const TSoftObjectPtr<UPaperSprite>& IconToLoad)
 {
 	// 디폴트 아이콘
-	if (SkillIcon && DefaultSkillIcon) SkillIcon->SetBrushFromTexture(DefaultSkillIcon);
+	if (SkillIcon && DefaultSkillIcon)
+	{
+		FSlateBrush DefaultBrush;
+		DefaultBrush.SetResourceObject(DefaultSkillIcon);
+		DefaultBrush.SetImageSize(IconSize);
+		SkillIcon->SetBrush(DefaultBrush);
+	}
 	// 로드할 아이콘이 유효하지 않으면 여기서 함수를 종료합니다.
-	if (IconToLoad.IsNull()) return;
+	if (IconToLoad.IsNull())
+		return;
 
 	// 캐시에서 먼저 확인합니다.
-	if (TWeakObjectPtr<UTexture2D>* CachedIcon = IconCache.Find(IconToLoad))
+	if (TWeakObjectPtr<UPaperSprite>* CachedIcon = IconCache.Find(IconToLoad))
 	{
 		if (CachedIcon->IsValid())
 		{
-			SkillIcon->SetBrushFromTexture(CachedIcon->Get());
+			FSlateBrush NewBrush;
+			NewBrush.SetResourceObject(CachedIcon->Get());
+			NewBrush.SetImageSize(IconSize);
+			SkillIcon->SetBrush(NewBrush);
+			
+			CurrentLoadedIconPath = IconToLoad; 
 			return;
 		}
 		IconCache.Remove(IconToLoad);
@@ -148,19 +169,30 @@ void UDrgSkillCardWidget::LoadSkillIconAsync(const TSoftObjectPtr<UTexture2D>& I
 
 	// 비동기 로딩을 시작합니다.
 	IconLoadHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(
-	   IconToLoad.ToSoftObjectPath(),
-	   FStreamableDelegate::CreateUObject(this, &UDrgSkillCardWidget::OnIconLoaded, IconToLoad)
+		IconToLoad.ToSoftObjectPath(),
+		FStreamableDelegate::CreateUObject(this, &UDrgSkillCardWidget::OnIconLoaded, IconToLoad)
 	);
 }
 
-void UDrgSkillCardWidget::OnIconLoaded(TSoftObjectPtr<UTexture2D> LoadedIconPath)
+void UDrgSkillCardWidget::OnIconLoaded(TSoftObjectPtr<UPaperSprite> LoadedIconPath)
 {
-	if (!IconLoadHandle->GetLoadedAsset() || !IconLoadHandle.IsValid()) return;
-	
-	if (UTexture2D* LoadedTexture = Cast<UTexture2D>(IconLoadHandle->GetLoadedAsset()))
+	if (!IconLoadHandle.IsValid() || !IconLoadHandle->GetLoadedAsset())
+		return;
+
+	if (UPaperSprite* LoadedSprite = Cast<UPaperSprite>(IconLoadHandle->GetLoadedAsset()))
 	{
-		if (SkillIcon) SkillIcon->SetBrushFromTexture(LoadedTexture);
-		IconCache.Add(LoadedIconPath, LoadedTexture);
+		if (SkillIcon)
+		{
+			FSlateBrush NewBrush;
+			NewBrush.SetResourceObject(LoadedSprite);
+			// 여기에 원하는 고정된 크기 값을 설정
+			NewBrush.SetImageSize(IconSize); // 예시: 100x100 픽셀로 고정
+   //     
+			// NewBrush.SetImageSize(FVector2D(LoadedSprite->GetSourceSize()));
+			SkillIcon->SetBrush(NewBrush);
+		}
+		// IconCache.Add(LoadedIconPath, LoadedSprite);
+		IconCache.Emplace(LoadedIconPath, LoadedSprite);
 	}
 
 	// 핸들 정리

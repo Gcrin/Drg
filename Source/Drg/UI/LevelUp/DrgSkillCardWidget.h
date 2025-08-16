@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Styling/SlateBrush.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
 #include "DrgSkillCardWidget.generated.h"
 
@@ -10,6 +11,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCardClicked, int32, SkillIndex);
 class UButton;
 class UTextBlock;
 class UImage;
+class UTexture2D;
+class UPaperSprite;
 struct FStreamableHandle;
 
 UCLASS()
@@ -21,7 +24,7 @@ public:
 	// 업그레이드 선택지 데이터 설정
 	UFUNCTION(BlueprintCallable, Category = "Skill Card")
 	void SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeChoice, int32 InSkillIndex);
-	
+
 	// 카드 클릭 시 호출될 델리게이트
 	UPROPERTY(BlueprintAssignable, Category = "Skill Card")
 	FOnCardClicked OnCardClicked;
@@ -52,15 +55,17 @@ protected:
 
 	// 디폴트 스킬 아이콘 (에디터에서 설정)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	TObjectPtr<UTexture2D> DefaultSkillIcon;
+	TObjectPtr<UPaperSprite> DefaultSkillIcon;
 
+	UPROPERTY()
+	TSoftObjectPtr<UPaperSprite> CurrentLoadedIconPath;
 private:
 	UFUNCTION()
 	void OnButtonClicked();
 
 	// 비동기 아이콘 로딩 + 캐싱
-	void LoadSkillIconAsync(const TSoftObjectPtr<UTexture2D>& IconToLoad);
-	void OnIconLoaded(TSoftObjectPtr<UTexture2D> LoadedIconPath);
+	void LoadSkillIconAsync(const TSoftObjectPtr<UPaperSprite>& IconToLoad);
+	void OnIconLoaded(TSoftObjectPtr<UPaperSprite> LoadedIconPath);
 
 	int32 SkillIndex;
 
@@ -68,8 +73,11 @@ private:
 	TSharedPtr<FStreamableHandle> IconLoadHandle;
 
 	// 아이콘 캐시 (정적 - 모든 위젯이 공유)
-	static TMap<TSoftObjectPtr<UTexture2D>, TWeakObjectPtr<UTexture2D>> IconCache;
+	static TMap<TSoftObjectPtr<UPaperSprite>, TWeakObjectPtr<UPaperSprite>> IconCache;
 
 	// 멀티 클릭 방지
 	bool bIsClickable = true;
+
+	//스킬아이콘 사이즈
+	FVector2D IconSize = FVector2D(32.f,32.f);
 };
