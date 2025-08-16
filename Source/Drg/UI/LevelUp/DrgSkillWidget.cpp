@@ -24,7 +24,16 @@ void UDrgSkillWidget::SetAbilityInfo(const UDrgAbilityDataAsset* SkillData, int3
 	FDrgAbilityLevelData LevelData;
 	if (SkillData->GetLevelData(Level, LevelData))
 	{
-		UTexture2D* LoadedIcon = LevelData.AbilityIcon.LoadSynchronous();
-		if (SkillIcon && LoadedIcon) SkillIcon->SetBrushFromTexture(LoadedIcon);
+		UPaperSprite* LoadedIcon = LevelData.AbilityIcon.LoadSynchronous();
+		//UPaperSprite를 불러올수있도록 수정
+		if (SkillIcon && LoadedIcon)
+		{
+			//SkillIcon->SetBrushFromTexture(LoadedIcon);
+			FSlateBrush NewBrush;
+			NewBrush.SetResourceObject(LoadedIcon);
+			//이미지 사이즈 안해주면 스프라이트 크기를 따라가서 강제로 fix
+			NewBrush.SetImageSize(FVector2D(32.f, 32.f));
+			SkillIcon->SetBrush(NewBrush);
+		}
 	}
 }
