@@ -80,7 +80,7 @@ void UDrgAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, 
 	if (GetOwningActor() && GetOwningActor()->IsA<ADrgPlayerCharacter>())
 	{
 		if (OldValue == NewValue) return;
-	
+
 		if (Attribute == GetHealthAttribute())
 		{
 			BroadcastAttributeChange(EAttributeType::Health, NewValue);
@@ -144,18 +144,20 @@ float UDrgAttributeSet::GetMaxExperienceForLevel(const UDataTable* DataTable, fl
 {
 	check(DataTable != nullptr)
 
-	const FName RowName = FName(*FString::FromInt(CurrentLevel));
-	const FString ContextString(TEXT("GetExperienceForLevel"));
-
-	FDrgExperienceData* RowData = DataTable->FindRow<FDrgExperienceData>(RowName, ContextString);
-
-	if (RowData != nullptr)
+	const TArray<FName> RowNames = DataTable->GetRowNames();
+	if (RowNames.IsEmpty())
 	{
-		return RowData->MaxExperience;
+		UE_LOG(LogTemp, Warning, TEXT("레벨 데이터 테이블이 비었습니다."));
+		return 100.f;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("DataTable Lv: %.0f의 행을 찾을 수 없습니다."), CurrentLevel);
-	return 100.0f;
+	FName RowName = FName(*FString::FromInt(CurrentLevel));
+	const FString ContextString(TEXT("GetExperienceForLevel"));
+
+	if (!RowNames.Contains(RowName)) RowName = RowNames.Last(); // 더 이상 행이 없을 경우, 마지막 행으로 대체
+	const FDrgExperienceData* RowData = DataTable->FindRow<FDrgExperienceData>(RowName, ContextString);
+
+	return RowData->MaxExperience;
 }
 
 void UDrgAttributeSet::BroadcastAttributeChange(EAttributeType AttributeType, float NewValue) const
