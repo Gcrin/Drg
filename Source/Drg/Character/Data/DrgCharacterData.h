@@ -66,6 +66,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Mesh")
 	TArray<TSoftObjectPtr<UMaterialInterface>> MaterialOverrides;
 
+	// 스켈레탈 메시 스케일 최소값
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Mesh|Scale")
+	float MeshScaleMin = 1.0f;
+
+	// 스켈레탈 메시 스케일 최대값
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Mesh|Scale")
+	float MeshScaleMax = 1.0f;
+
+	// 캡슐 컴포넌트 HalfHeight(메시 스케일 1.0 기준)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Mesh|Scale")
+	float CapsuleHalfHeight = 88.0f;
+
+	// 캡슐 컴포넌트 Radius(메시 스케일 1.0 기준, 캡슐 컴포넌트 HalfHeight보다 작거나 같아야함)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Mesh|Scale")
+	float CapsuleRadius = 34.0f;
+
 	// 캐릭터가 사용할 애니메이션 블루프린트
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Animation")
 	TSubclassOf<UAnimInstance> AnimClass;

@@ -102,6 +102,51 @@ void ADrgBaseCharacter::ApplyCharacterData()
 			{
 				MeshComponent->SetSkeletalMesh(CharacterData->SkeletalMesh);
 
+				// 1. 메시 스케일, 캡슐 크기 조정
+				float MinScale = CharacterData->MeshScaleMin;
+				float MaxScale = CharacterData->MeshScaleMax;
+				if (MinScale > MaxScale)
+				{
+					// 최소값이 최대값보다 큰 경우 수정 요청 로그 출력하고 
+					UE_LOG(LogTemp, Warning, TEXT(
+						       "ADrgBaseCharacter: '%s' 데이터 애셋의 메시 스케일의 최소값(%f)이 최대값(%f)보다 큽니다. 값을 서로 교체합니다."
+					       ), *CharacterData->GetName(), MinScale, MaxScale);
+					float TempScale = MinScale;
+					MinScale = MaxScale;
+					MaxScale = TempScale;
+				}
+				float RadnomScale = FMath::FRandRange(MinScale, MaxScale);
+				
+				if (GetCapsuleComponent())
+				{
+					float NewCapsuleRadius = RadnomScale * CharacterData->CapsuleRadius;
+					float NewCapsuleHalfHeight = RadnomScale * CharacterData->CapsuleHalfHeight;
+					// 캡슐 컴포넌트 크기 조정
+					GetCapsuleComponent()->SetCapsuleSize(NewCapsuleRadius, NewCapsuleHalfHeight);
+					
+				}
+				else
+				{
+					// 캡슐 크기 조정 실패 로그 출력 
+					UE_LOG(LogTemp, Warning, TEXT(
+						       "ADrgBaseCharacter: '%s' 의 캡슐 컴포넌트를 가져오는데 실패했습니다. 크기를 조정하지 않습니다."
+					       ), *CharacterData->GetName());
+				}
+				if (GetMesh())
+				{
+					// 메시 스케일 조정
+					GetMesh()->SetRelativeScale3D(FVector(RadnomScale, RadnomScale, RadnomScale));
+					// 메시 위치 조정
+					GetMesh()->SetRelativeLocation(FVector(0, 0, -GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
+				}
+				else
+				{
+					// 메시 스케일 조정 실패 로그 출력 
+					UE_LOG(LogTemp, Warning, TEXT(
+							   "ADrgBaseCharacter: '%s' 의 메시를 가져오지 못했습니다. 스케일을 변경하지 않습니다."
+						   ), *CharacterData->GetName());
+				}
+
 				// 2. 데이터 애셋의 머티리얼 오버라이드 배열을 순회하며 하나씩 적용
 				for (int32 i = 0; i < CharacterData->MaterialOverrides.Num(); ++i)
 				{
