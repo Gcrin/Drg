@@ -25,6 +25,9 @@ ADrgBaseCharacter::ADrgBaseCharacter()
 
 	AbilitySystemComponent = CreateDefaultSubobject<UDrgAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AttributeSet = CreateDefaultSubobject<UDrgAttributeSet>(TEXT("AttributeSet"));
+
+	// 캐릭터 메시의 모든 충돌을 비활성화
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 bool ADrgBaseCharacter::IsDead() const
@@ -180,11 +183,6 @@ void ADrgBaseCharacter::ApplyCharacterData()
 void ADrgBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetMesh())
-	{
-		// 캐릭터 메시의 모든 충돌을 비활성화
-		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
 }
 
 void ADrgBaseCharacter::PossessedBy(AController* NewController)
