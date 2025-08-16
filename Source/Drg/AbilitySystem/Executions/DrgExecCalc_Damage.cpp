@@ -15,11 +15,14 @@ struct FDamageStatics
 {
 	// 공격력 (AttackDamage) 어트리뷰트 정의
 	DECLARE_ATTRIBUTE_CAPTUREDEF(AttackDamage);
+	// 방어력 (Defense) 어트리뷰트 정의
+	DECLARE_ATTRIBUTE_CAPTUREDEF(Defense);
 
 	FDamageStatics()
 	{
 		// UDrgAttributeSet에서 Source의 AttackDamage를 Snapshot 모드로 캡처
 		DEFINE_ATTRIBUTE_CAPTUREDEF(UDrgAttributeSet, AttackDamage, Source, true);
+		DEFINE_ATTRIBUTE_CAPTUREDEF(UDrgAttributeSet, Defense, Target, true);
 	}
 };
 
@@ -40,6 +43,7 @@ UDrgExecCalc_Damage::UDrgExecCalc_Damage()
 {
 	// 데미지 계산 시 사용할 Attribute를 시스템에 등록
 	RelevantAttributesToCapture.Add(DamageStatics().AttackDamageDef);
+	RelevantAttributesToCapture.Add(DamageStatics().DefenseDef);
 }
 
 void UDrgExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams,
@@ -58,15 +62,21 @@ void UDrgExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExec
 	float AttackDamage = 0.f;
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().AttackDamageDef,
 	                                                           FAggregatorEvaluateParameters(), AttackDamage);
+	float Defense = 0.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().DefenseDef,
+	                                                           FAggregatorEvaluateParameters(), Defense);
+
 
 	const float DamageMultiplier = Spec.GetSetByCallerMagnitude(
 		FGameplayTag::RequestGameplayTag(TEXT("Ability.Multiplier")), false, 1.0f);
 
 	// 최종 데미지 계산
-	const float FinalDamage = AttackDamage * DamageMultiplier;
+	float FinalDamage = (AttackDamage * DamageMultiplier) - Defense;
 
-	UE_LOG(LogTemp, Warning, TEXT("FinalDamage : %.1f (AttackDamage: %.1f * Multiplier: %.1f)"),
-	       FinalDamage, AttackDamage, DamageMultiplier);
+	FinalDamage = FMath::Max(0.1f, FinalDamage);
+
+	UE_LOG(LogTemp, Warning, TEXT("FinalDamage: %.1f (Attack: %.1f * Multiplier: %.1f - Defense: %.1f)"),
+		   FinalDamage, AttackDamage, DamageMultiplier, Defense);
 
 	if (FinalDamage > 0.f)
 	{
