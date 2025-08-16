@@ -8,6 +8,7 @@
 #include "Data/DrgUpgradeDataCollection.h"
 #include "Data/DrgEvolutionData.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
+#include "Drg/UI/DrgSkillInformation.h"
 
 UDrgUpgradeComponent::UDrgUpgradeComponent()
 {
@@ -83,9 +84,6 @@ void UDrgUpgradeComponent::UpgradeAbility(const FDrgUpgradeChoice& SelectedChoic
 	if (NewHandle.IsValid())
 	{
 		OwnedAbilityHandles.Add(SelectedChoice.AbilityData, NewHandle);
-
-		EquippedSkills.Add(SelectedChoice.AbilityData, SelectedChoice.NextLevel);
-		OnEquippedSkillsChanged.Broadcast();
 	}
 	else
 	{
@@ -114,15 +112,44 @@ void UDrgUpgradeComponent::UpgradeEffect(const FDrgUpgradeChoice& SelectedChoice
 	if (NewHandle.IsValid())
 	{
 		ActiveEffectHandles.Add(SelectedChoice.AbilityData, NewHandle);
-
-		EquippedSkills.Add(SelectedChoice.AbilityData, SelectedChoice.NextLevel);
-		OnEquippedSkillsChanged.Broadcast();
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("새 이펙트 '%s' (Lv.%d) 부여에 실패했습니다."),
 		       *SelectedChoice.AbilityData->GetName(), SelectedChoice.NextLevel);
 	}
+}
+
+void UDrgUpgradeComponent::UpdateEquippedSkills()
+{
+	EquippedSkills.Empty();
+
+	for (const auto& Ability : OwnedAbilityHandles)
+	{
+		if (Ability.Key && Ability.Value.IsValid())
+		{
+			if (const FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(Ability.Value))
+			{
+				FDrgSkillInformation SkillInfo;
+				SkillInfo.SkillData = Ability.Key;
+				SkillInfo.Level = Spec->Level;
+				SkillInfo.bIsEvolution = EvolvedSkills.Contains(Ability.Key);
+				EquippedSkills.Add(SkillInfo);
+			}
+		}
+	}
+	for (const auto& Effect : ActiveEffectHandles)
+	{
+		if (const FActiveGameplayEffect* ActiveEffect = AbilitySystemComponent->GetActiveGameplayEffect(Effect.Value))
+		{
+			FDrgSkillInformation SkillInfo;
+			SkillInfo.SkillData = Effect.Key;
+			SkillInfo.Level = ActiveEffect->Spec.GetLevel();
+			SkillInfo.bIsEvolution = EvolvedSkills.Contains(Effect.Key);
+			EquippedSkills.Add(SkillInfo);
+		}
+	}
+	OnEquippedSkillsChanged.Broadcast();
 }
 
 void UDrgUpgradeComponent::ExecuteEvolution(const FDrgEvolutionRecipe& Recipe)
@@ -328,14 +355,18 @@ void UDrgUpgradeComponent::ApplyUpgradeChoice(const FDrgUpgradeChoice& SelectedC
 	if (SelectedChoice.ChoiceType == EChoiceType::Evolution)
 	{
 		ExecuteEvolution(SelectedChoice.EvolutionRecipe);
-		return;
+		EvolvedSkills.Add(SelectedChoice.AbilityData);
+	}
+	else
+	{
+		FDrgAbilityLevelData NextLevelData;
+		if (!SelectedChoice.AbilityData->GetLevelData(SelectedChoice.NextLevel, NextLevelData)) return;
+
+		if (NextLevelData.UpgradeType == EUpgradeType::Ability) UpgradeAbility(SelectedChoice);
+		else if (NextLevelData.UpgradeType == EUpgradeType::Effect) UpgradeEffect(SelectedChoice);
 	}
 
-	FDrgAbilityLevelData NextLevelData;
-	if (!SelectedChoice.AbilityData->GetLevelData(SelectedChoice.NextLevel, NextLevelData)) return;
-
-	if (NextLevelData.UpgradeType == EUpgradeType::Ability) UpgradeAbility(SelectedChoice);
-	else if (NextLevelData.UpgradeType == EUpgradeType::Effect) UpgradeEffect(SelectedChoice);
+	UpdateEquippedSkills();
 }
 
 void UDrgUpgradeComponent::RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData)
@@ -353,9 +384,7 @@ void UDrgUpgradeComponent::RemoveAbilityByData(UDrgAbilityDataAsset* AbilityData
 		OwnedAbilityHandles.Remove(AbilityData);
 		RemovedAbilities.Add(AbilityData);
 
-		EquippedSkills.Remove(AbilityData);
-		OnEquippedSkillsChanged.Broadcast();
-
+		UpdateEquippedSkills();
 		return;
 	}
 	UE_LOG(LogTemp, Warning, TEXT("삭제될 어빌리티가 존재하지 않습니다."));

@@ -8,7 +8,6 @@
 
 class UProgressBar;
 class UTextBlock;
-class UImage;
 class UVerticalBox;
 class UDrgSkillWidget;
 
@@ -102,7 +101,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|HUD")
 	TSubclassOf<UDrgSkillWidget> SkillWidgetClass;
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UVerticalBox> SkillListBox;
+	TObjectPtr<UVerticalBox> AbilityListBox;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UVerticalBox> EffectListBox;
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UWidget> AbilityTitle;
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UWidget> EffectTitle;
 
 private:
 	// 타이머 관련

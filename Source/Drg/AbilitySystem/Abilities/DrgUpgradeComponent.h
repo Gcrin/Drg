@@ -13,6 +13,7 @@ class UAbilitySystemComponent;
 class UDrgUpgradeDataCollection;
 class UDrgEvolutionDataAsset;
 struct FDrgEvolutionRecipe;
+struct FDrgSkillInformation;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelUpChoicesReady, const TArray<FDrgUpgradeChoice>&, Choices);
 DECLARE_MULTICAST_DELEGATE(FOnEquippedSkillsChanged);
@@ -37,7 +38,7 @@ public:
 
 	// UI에 출력될 스킬 델리게이트
 	FOnEquippedSkillsChanged OnEquippedSkillsChanged;
-	const TMap<TObjectPtr<UDrgAbilityDataAsset>, int32>& GetEquippedSkills() const { return EquippedSkills; }
+	const TArray<FDrgSkillInformation>& GetEquippedSkills() const { return EquippedSkills; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -60,10 +61,14 @@ protected:
 	UPROPERTY()
 	TMap<TObjectPtr<UDrgAbilityDataAsset>, FActiveGameplayEffectHandle> ActiveEffectHandles;
 
-	UPROPERTY()
-	TMap<TObjectPtr<UDrgAbilityDataAsset>, int32> EquippedSkills;
-
 private:
+	// UI 출력 관련
+	UPROPERTY()
+	TArray<FDrgSkillInformation> EquippedSkills;
+	UPROPERTY()
+	TSet<TObjectPtr<UDrgAbilityDataAsset>> EvolvedSkills;
+	void UpdateEquippedSkills();
+	
 	UPROPERTY()
 	TSet<TObjectPtr<UDrgAbilityDataAsset>> RemovedAbilities;
 

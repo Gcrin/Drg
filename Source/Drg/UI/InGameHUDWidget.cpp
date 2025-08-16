@@ -5,6 +5,7 @@
 #include "Drg/System/DrgGameplayTags.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
 #include "Drg/UI/LevelUp/DrgSkillWidget.h"
+#include "Drg/UI/DrgSkillInformation.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "Drg/GameModes/DrgPlayerState.h"
 
@@ -33,9 +34,9 @@ void UInGameHUDWidget::NativeConstruct()
 	{
 		if (UDrgUpgradeComponent* UpgradeComponent = PlayerCharacter->FindComponentByClass<UDrgUpgradeComponent>())
 		{
-			HandleEquippedSkillsChanged();
 			EquippedSkillsChangedHandle = UpgradeComponent->OnEquippedSkillsChanged.AddUObject(
 				this, &UInGameHUDWidget::HandleEquippedSkillsChanged);
+			HandleEquippedSkillsChanged();
 		}
 	}
 
@@ -192,21 +193,77 @@ void UInGameHUDWidget::HandleKillCountChanged(int32 NewKillCount)
 
 void UInGameHUDWidget::HandleEquippedSkillsChanged()
 {
-	if (!SkillListBox || !SkillWidgetClass) return;
-	SkillListBox->ClearChildren();
+	if (!AbilityListBox || !EffectListBox || !SkillWidgetClass) return;
 
 	ADrgPlayerCharacter* PlayerCharacter = GetOwningPlayerPawn<ADrgPlayerCharacter>();
 	if (!PlayerCharacter) return;
 	UDrgUpgradeComponent* UpgradeComponent = PlayerCharacter->FindComponentByClass<UDrgUpgradeComponent>();
 	if (!UpgradeComponent) return;
 
-	const TMap<TObjectPtr<UDrgAbilityDataAsset>, int32>& EquippedSkills = UpgradeComponent->GetEquippedSkills();
-	for (const auto EquippedSkill : EquippedSkills)
+	const TArray<FDrgSkillInformation> EquippedSkills = UpgradeComponent->GetEquippedSkills();
+
+	AbilityListBox->ClearChildren();
+	EffectListBox->ClearChildren();
+
+	TArray<FDrgSkillInformation> AbilityList;
+	TArray<FDrgSkillInformation> EffectList;
+
+	for (const auto& Skill : EquippedSkills)
 	{
-		if (UDrgSkillWidget* NewIconWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+		if (!Skill.SkillData) continue;
+		FDrgAbilityLevelData LevelData;
+		if (Skill.SkillData->GetLevelData(Skill.Level, LevelData))
 		{
-			NewIconWidget->SetAbilityInfo(EquippedSkill.Key, EquippedSkill.Value);
-			SkillListBox->AddChildToVerticalBox(NewIconWidget);
+			if (LevelData.UpgradeType == EUpgradeType::Ability) AbilityList.Add(Skill);
+			else if (LevelData.UpgradeType == EUpgradeType::Effect) EffectList.Add(Skill);
+		}
+	}
+
+	AbilityListBox->AddChildToVerticalBox(AbilityTitle);
+	for (const auto& Ability : AbilityList)
+	{
+		if (Ability.bIsEvolution)
+		{
+			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+			{
+				NewSkillWidget->SetAbilityInfo(Ability.SkillData, Ability.Level, Ability.bIsEvolution);
+				AbilityListBox->AddChildToVerticalBox(NewSkillWidget);
+			}
+		}
+	}
+	for (const auto& Ability : AbilityList)
+	{
+		if (!Ability.bIsEvolution)
+		{
+			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+			{
+				NewSkillWidget->SetAbilityInfo(Ability.SkillData, Ability.Level, Ability.bIsEvolution);
+				AbilityListBox->AddChildToVerticalBox(NewSkillWidget);
+			}
+		}
+	}
+
+	EffectListBox->AddChildToVerticalBox(EffectTitle);
+	for (const auto& Effect : EffectList)
+	{
+		if (Effect.bIsEvolution)
+		{
+			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+			{
+				NewSkillWidget->SetAbilityInfo(Effect.SkillData, Effect.Level, Effect.bIsEvolution);
+				EffectListBox->AddChildToVerticalBox(NewSkillWidget);
+			}
+		}
+	}
+	for (const auto& Effect : EffectList)
+	{
+		if (!Effect.bIsEvolution)
+		{
+			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+			{
+				NewSkillWidget->SetAbilityInfo(Effect.SkillData, Effect.Level, Effect.bIsEvolution);
+				EffectListBox->AddChildToVerticalBox(NewSkillWidget);
+			}
 		}
 	}
 }
