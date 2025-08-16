@@ -4,16 +4,21 @@
 #include "DrgSkillWidget.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Components/Border.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgAbilityDataAsset.h"
 
 void UDrgSkillWidget::SetAbilityInfo(const UDrgAbilityDataAsset* SkillData, int32 Level, bool bIsEvolution)
 {
 	if (!SkillData) return;
 
-	if (NameText) NameText->SetText(SkillData->AbilityName);
 	if (LevelText && !bIsEvolution)
 	{
 		LevelText->SetText(FText::FromString(FString::Printf(TEXT("Lv. %d"), Level)));
+	}
+	
+	if (EvolutionBorder && !bIsEvolution)
+	{
+		EvolutionBorder->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	FDrgAbilityLevelData LevelData;

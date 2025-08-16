@@ -8,6 +8,7 @@
 
 class UImage;
 class UTextBlock;
+class UBorder;
 class UDrgAbilityDataAsset;
 
 /**
@@ -27,5 +28,5 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> LevelText;
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> NameText;
+	TObjectPtr<UBorder> EvolutionBorder;
 };

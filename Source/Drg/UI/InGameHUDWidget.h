@@ -8,7 +8,7 @@
 
 class UProgressBar;
 class UTextBlock;
-class UVerticalBox;
+class UHorizontalBox;
 class UDrgSkillWidget;
 
 /**
@@ -101,9 +101,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|HUD")
 	TSubclassOf<UDrgSkillWidget> SkillWidgetClass;
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UVerticalBox> AbilityListBox;
+	TObjectPtr<UHorizontalBox> AbilityListBox;
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UVerticalBox> EffectListBox;
+	TObjectPtr<UHorizontalBox> EffectListBox;
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UWidget> AbilityTitle;
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
