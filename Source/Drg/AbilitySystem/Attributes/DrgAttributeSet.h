@@ -43,7 +43,7 @@ public:
 	 * @param Data 적용된 GameplayEffect에 대한 상세 정보 (원인, 변경된 어트리뷰트 등 포함).
 	 */
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
-
+	virtual void PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const override;
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
 	float GetMaxExperienceForLevel(const UDataTable* DataTable, float CurrentLevel);
