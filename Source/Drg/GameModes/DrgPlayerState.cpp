@@ -25,11 +25,11 @@ void ADrgPlayerState::BeginPlay()
 	{
 		GameStartTime = GetWorld()->GetTimeSeconds();
 		GetWorld()->GetTimerManager().SetTimer(
-		SurvivalTimerHandle,
-		this,
-		&ADrgPlayerState::UpdateSurvivalTime,
-		1.0f,
-		true
+			SurvivalTimerHandle,
+			this,
+			&ADrgPlayerState::UpdateSurvivalTime,
+			1.0f,
+			true
 		);
 	}
 }
@@ -41,9 +41,9 @@ void ADrgPlayerState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 		MessageSubsystem.UnregisterListener(ActorDeathMessageListenerHandle);
 	}
-	
+
 	GetWorld()->GetTimerManager().ClearTimer(SurvivalTimerHandle);
-	
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -52,7 +52,7 @@ FGameResultData ADrgPlayerState::GetGameResultData() const
 	FGameResultData GameResultData;
 	GameResultData.KillCount = KillCount;
 	GameResultData.SetSurvivalTimeSeconds(SurvivalTimeSeconds);
-	
+
 	if (ADrgPlayerCharacter* PlayerCharacter = GetPawn<ADrgPlayerCharacter>())
 	{
 		if (const UDrgAttributeSet* AttributeSet = PlayerCharacter->GetAttributeSet())
@@ -71,11 +71,10 @@ FGameResultData ADrgPlayerState::GetGameResultData() const
 			GameResultData.MaxExperience = AttributeSet->GetMaxExperience();
 			GameResultData.CharacterLevel = AttributeSet->GetCharacterLevel();
 			GameResultData.PickupRadius = AttributeSet->GetPickupRadius();
-			// 생존 시간
-			// 최종 웨이브 정보
 		}
 	}
-	GameResultData.CalculateTime();	
+	GameResultData.FinalWave = CurrentWaveNumber;
+	GameResultData.CalculateTime();
 	return GameResultData;
 }
 
@@ -83,6 +82,15 @@ void ADrgPlayerState::UpdateKillCount()
 {
 	KillCount++;
 	OnKillCountChanged.Broadcast(KillCount);
+}
+
+void ADrgPlayerState::SetCurrentWaveNumber(int32 NewWaveNumber)
+{
+	if (CurrentWaveNumber != NewWaveNumber)
+	{
+		CurrentWaveNumber = NewWaveNumber;
+		OnKillCountChanged.Broadcast(CurrentWaveNumber);
+	}
 }
 
 void ADrgPlayerState::OnActorDeath(FGameplayTag Channel, const FDrgActorDeathMessage& Message)

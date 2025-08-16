@@ -13,6 +13,7 @@ struct FDrgActorDeathMessage;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnKillCountChanged, int32);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnTimeUpdated, float);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnWaveNumberChanged, int32);
 
 UCLASS()
 class DRG_API ADrgPlayerState : public APlayerState
@@ -30,6 +31,7 @@ public:
 	// 델리게이트
 	FOnKillCountChanged OnKillCountChanged;
 	FOnTimeUpdated OnTimeUpdated;
+	FOnWaveNumberChanged OnWaveNumberChanged;
 
 	// 킬 카운트
 	void UpdateKillCount();
@@ -38,10 +40,18 @@ public:
 	// 생존 시간
 	UFUNCTION(BlueprintPure, Category = "Drg|PlayerState")
 	float GetSurvivalTime() const { return SurvivalTimeSeconds; }
+
+	// 현재 웨이브
+	UFUNCTION(BlueprintPure, Category = "Drg|PlayerState")
+	int32 GetCurrentWaveNumber() const { return CurrentWaveNumber; }
+	void SetCurrentWaveNumber(int32 NewWaveNumber);
 	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|PlayerState")
 	int32 KillCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|PlayerState")
+	int32 CurrentWaveNumber = 0;
 
 private:
 	void OnActorDeath(FGameplayTag Channel, const FDrgActorDeathMessage& Message);

@@ -17,7 +17,7 @@ struct DRG_API FGameResultData
 public:
 	// === 인게임 정보 ===
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
-	int32 FinalLevel = 0; // 최종 웨이브 정보
+	int32 FinalWave = 0; // 최종 웨이브 정보
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
 	int32 SurvivalMinutes = 0; // 생존 시간 분
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")

@@ -6,6 +6,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Drg/AI/DrgAICharacter.h"
 #include "Drg/Character/Data/DrgCharacterData.h"
+#include "Drg/GameModes/DrgPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -19,6 +20,14 @@ ADrgSpawnAI::ADrgSpawnAI()
 void ADrgSpawnAI::SetCurrentWaveNumber(int32 NewWaveNumber)
 {
 	CurrentWaveNumber = NewWaveNumber;
+
+	if (APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+	{
+		if (ADrgPlayerState* PlayerState = PlayerController->GetPlayerState<ADrgPlayerState>())
+		{
+			PlayerState->SetCurrentWaveNumber(CurrentWaveNumber);
+		}
+	}
 	StopSpawnTimer();
 	StartSpawnTimer();
 }

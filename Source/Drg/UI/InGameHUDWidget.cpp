@@ -28,6 +28,10 @@ void UInGameHUDWidget::NativeConstruct()
 
 		HandleTimeUpdated(DrgPlayerState->GetSurvivalTime());
 		TimeUpdatedHandle = DrgPlayerState->OnTimeUpdated.AddUObject(this, &UInGameHUDWidget::HandleTimeUpdated);
+
+		HandleWaveNumberChanged(DrgPlayerState->GetCurrentWaveNumber());
+		WaveNumberChangedHandle = DrgPlayerState->OnWaveNumberChanged.AddUObject(
+			this, &UInGameHUDWidget::HandleWaveNumberChanged);
 	}
 
 	if (ADrgPlayerCharacter* PlayerCharacter = GetOwningPlayerPawn<ADrgPlayerCharacter>())
@@ -94,6 +98,7 @@ void UInGameHUDWidget::NativeDestruct()
 	{
 		DrgPlayerState->OnKillCountChanged.Remove(KillCountChangedHandle);
 		DrgPlayerState->OnTimeUpdated.Remove(TimeUpdatedHandle);
+		DrgPlayerState->OnWaveNumberChanged.Remove(WaveNumberChangedHandle);
 	}
 	if (ADrgPlayerCharacter* PlayerCharacter = GetOwningPlayerPawn<ADrgPlayerCharacter>())
 	{
@@ -189,6 +194,11 @@ void UInGameHUDWidget::OnAttributeChangedReceived(FGameplayTag Channel, const FD
 void UInGameHUDWidget::HandleKillCountChanged(int32 NewKillCount)
 {
 	OnUpdateKillCount(NewKillCount);
+}
+
+void UInGameHUDWidget::HandleWaveNumberChanged(int32 NewWaveNumber)
+{
+	OnWaveNumberChanged(NewWaveNumber);
 }
 
 void UInGameHUDWidget::HandleEquippedSkillsChanged()
