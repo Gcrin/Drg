@@ -1,9 +1,13 @@
 #include "InGameHUDWidget.h"
 #include "Components/ProgressBar.h"
-#include "Components/TextBlock.h"
+#include "Components/HorizontalBox.h"
+#include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
 #include "Drg/System/DrgGameplayTags.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
+#include "Drg/UI/LevelUp/DrgSkillWidget.h"
+#include "Drg/UI/DrgSkillInformation.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
+#include "Drg/GameModes/DrgPlayerState.h"
 
 void UInGameHUDWidget::NativeConstruct()
 {
@@ -11,44 +15,95 @@ void UInGameHUDWidget::NativeConstruct()
 
 	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 	AttributeChangeMessageListenerHandle = MessageSubsystem.RegisterListener(
-	   DrgGameplayTags::Event_Broadcast_AttributeChanged,
-	   this,
-	   &UInGameHUDWidget::OnAttributeChangedReceived
+		DrgGameplayTags::Event_Broadcast_AttributeChanged,
+		this,
+		&UInGameHUDWidget::OnAttributeChangedReceived
 	);
-	
-	APlayerController* PlayerController = GetOwningPlayer();
-	if (PlayerController)
+
+	if (ADrgPlayerState* DrgPlayerState = GetOwningPlayerState<ADrgPlayerState>())
 	{
-		ADrgPlayerCharacter* PlayerCharacter = Cast<ADrgPlayerCharacter>(PlayerController->GetPawn());
-		if (PlayerCharacter)
+		HandleKillCountChanged(DrgPlayerState->GetKillCount());
+		KillCountChangedHandle = DrgPlayerState->OnKillCountChanged.AddUObject(
+			this, &UInGameHUDWidget::HandleKillCountChanged);
+
+		HandleTimeUpdated(DrgPlayerState->GetSurvivalTime());
+		TimeUpdatedHandle = DrgPlayerState->OnTimeUpdated.AddUObject(this, &UInGameHUDWidget::HandleTimeUpdated);
+	}
+
+	if (ADrgPlayerCharacter* PlayerCharacter = GetOwningPlayerPawn<ADrgPlayerCharacter>())
+	{
+		if (UDrgUpgradeComponent* UpgradeComponent = PlayerCharacter->FindComponentByClass<UDrgUpgradeComponent>())
 		{
-			const UDrgAttributeSet* Attributes = PlayerCharacter->GetAttributeSet();
-			if (Attributes)
+			EquippedSkillsChangedHandle = UpgradeComponent->OnEquippedSkillsChanged.AddUObject(
+				this, &UInGameHUDWidget::HandleEquippedSkillsChanged);
+			HandleEquippedSkillsChanged();
+		}
+	}
+
+	if (APlayerController* PlayerController = GetOwningPlayer())
+	{
+		if (ADrgPlayerCharacter* PlayerCharacter = Cast<ADrgPlayerCharacter>(PlayerController->GetPawn()))
+		{
+			if (const UDrgAttributeSet* Attributes = PlayerCharacter->GetAttributeSet())
 			{
 				// 현재 값들을 AttributeSet에서 직접 가져와 캐시 변수에 저장
 				CurrentHealth = Attributes->GetHealth();
-				CurrentHealth = Attributes->GetMaxHealth();
+				CurrentMaxHealth = Attributes->GetMaxHealth();
+				CurrentStamina = Attributes->GetStamina();
+				CurrentMaxStamina = Attributes->GetMaxStamina();
 				CurrentExperience = Attributes->GetExperience();
 				CurrentMaxExperience = Attributes->GetMaxExperience();
-				CurrentLevel = Attributes->GetCharacterLevel();
+				CurrentCharacterLevel = Attributes->GetCharacterLevel();
+				CurrentHealthRegen = Attributes->GetHealthRegen();
+				CurrentStaminaRegen = Attributes->GetStaminaRegen();
 				CurrentAttackDamage = Attributes->GetAttackDamage();
+				CurrentDefense = Attributes->GetDefense();
+				CurrentAttackSpeed = Attributes->GetAttackSpeed();
+				CurrentMoveSpeed = Attributes->GetMoveSpeed();
+				CurrentPickupRadius = Attributes->GetPickupRadius();
 
 				// 저장된 값으로 UI 업데이트 함수를 즉시 호출
 				OnHealthChanged(CurrentHealth, CurrentMaxHealth);
-				OnExperienceChanged(CurrentExperience, CurrentMaxExperience, CurrentLevel);
+				OnStaminaChanged(CurrentStamina, CurrentMaxStamina);
+				OnExperienceChanged(CurrentExperience, CurrentMaxExperience);
+				OnCharacterLevelChanged(CurrentCharacterLevel);
+				OnHealthRegenChanged(CurrentHealthRegen);
+				OnStaminaRegenChanged(CurrentStaminaRegen);
 				OnAttackDamageChanged(CurrentAttackDamage);
+				OnDefenseChanged(CurrentDefense);
+				OnAttackSpeedChanged(CurrentAttackSpeed);
+				OnMoveSpeedChanged(CurrentMoveSpeed);
+				OnPickupRadiusChanged(CurrentPickupRadius);
+
+				UpdateHealthBar(CurrentHealth, CurrentMaxHealth);
+				UpdateStaminaBar(CurrentStamina, CurrentMaxStamina);
+				UpdateExperienceBar(CurrentExperience, CurrentMaxExperience);
 			}
 		}
 	}
-	
-	GameStartTime = GetWorld()->GetTimeSeconds();
-	GetWorld()->GetTimerManager().SetTimer(
-		TimerDisplayHandle,
-		this,
-		&UInGameHUDWidget::UpdateTimerDisplay,
-		1.0f,
-		true
-		);
+}
+
+void UInGameHUDWidget::NativeDestruct()
+{
+	if (AttributeChangeMessageListenerHandle.IsValid())
+	{
+		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+		MessageSubsystem.UnregisterListener(AttributeChangeMessageListenerHandle);
+	}
+	if (ADrgPlayerState* DrgPlayerState = GetOwningPlayerState<ADrgPlayerState>())
+	{
+		DrgPlayerState->OnKillCountChanged.Remove(KillCountChangedHandle);
+		DrgPlayerState->OnTimeUpdated.Remove(TimeUpdatedHandle);
+	}
+	if (ADrgPlayerCharacter* PlayerCharacter = GetOwningPlayerPawn<ADrgPlayerCharacter>())
+	{
+		if (UDrgUpgradeComponent* UpgradeComponent = PlayerCharacter->FindComponentByClass<UDrgUpgradeComponent>())
+		{
+			UpgradeComponent->OnEquippedSkillsChanged.Remove(EquippedSkillsChangedHandle);
+		}
+	}
+
+	Super::NativeDestruct();
 }
 
 void UInGameHUDWidget::OnAttributeChangedReceived(FGameplayTag Channel, const FDrgAttributeChangeMessage& Message)
@@ -57,101 +112,180 @@ void UInGameHUDWidget::OnAttributeChangedReceived(FGameplayTag Channel, const FD
 	{
 		CurrentHealth = Message.NewValue;
 		OnHealthChanged(CurrentHealth, CurrentMaxHealth);
+		UpdateHealthBar(CurrentHealth, CurrentMaxHealth);
 	}
 	else if (Message.AttributeType == EAttributeType::MaxHealth)
 	{
 		CurrentMaxHealth = Message.NewValue;
 		OnHealthChanged(CurrentHealth, CurrentMaxHealth);
+		UpdateHealthBar(CurrentHealth, CurrentMaxHealth);
+	}
+	else if (Message.AttributeType == EAttributeType::Stamina)
+	{
+		CurrentStamina = Message.NewValue;
+		OnStaminaChanged(CurrentStamina, CurrentMaxStamina);
+		UpdateStaminaBar(CurrentStamina, CurrentMaxStamina);
+	}
+	else if (Message.AttributeType == EAttributeType::MaxStamina)
+	{
+		CurrentMaxStamina = Message.NewValue;
+		OnStaminaChanged(CurrentStamina, CurrentMaxStamina);
+		UpdateStaminaBar(CurrentStamina, CurrentMaxStamina);
 	}
 	else if (Message.AttributeType == EAttributeType::Experience)
 	{
 		CurrentExperience = Message.NewValue;
-		OnExperienceChanged(CurrentExperience, CurrentMaxExperience, CurrentLevel);
+		OnExperienceChanged(CurrentExperience, CurrentMaxExperience);
+		UpdateExperienceBar(CurrentExperience, CurrentMaxExperience);
 	}
 	else if (Message.AttributeType == EAttributeType::MaxExperience)
 	{
 		CurrentMaxExperience = Message.NewValue;
-		OnExperienceChanged(CurrentExperience, CurrentMaxExperience, CurrentLevel);
+		OnExperienceChanged(CurrentExperience, CurrentMaxExperience);
+		UpdateExperienceBar(CurrentExperience, CurrentMaxExperience);
 	}
-	else if (Message.AttributeType == EAttributeType::Level)
+	else if (Message.AttributeType == EAttributeType::CharacterLevel)
 	{
-		CurrentLevel = Message.NewValue;
-		OnExperienceChanged(CurrentExperience, CurrentMaxExperience, CurrentLevel);
+		CurrentCharacterLevel = Message.NewValue;
+		OnCharacterLevelChanged(CurrentCharacterLevel);
+	}
+	else if (Message.AttributeType == EAttributeType::HealthRegen)
+	{
+		CurrentHealthRegen = Message.NewValue;
+		OnHealthRegenChanged(CurrentHealthRegen);
+	}
+	else if (Message.AttributeType == EAttributeType::StaminaRegen)
+	{
+		CurrentStaminaRegen = Message.NewValue;
+		OnStaminaRegenChanged(CurrentStaminaRegen);
 	}
 	else if (Message.AttributeType == EAttributeType::AttackDamage)
 	{
 		CurrentAttackDamage = Message.NewValue;
 		OnAttackDamageChanged(CurrentAttackDamage);
 	}
-}
-
-void UInGameHUDWidget::NativeDestruct()
-{
-	GetWorld()->GetTimerManager().ClearTimer(TimerDisplayHandle);
-	if (AttributeChangeMessageListenerHandle.IsValid())
+	else if (Message.AttributeType == EAttributeType::Defense)
 	{
-		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
-		MessageSubsystem.UnregisterListener(AttributeChangeMessageListenerHandle);
+		CurrentDefense = Message.NewValue;
+		OnDefenseChanged(CurrentDefense);
 	}
-	Super::NativeDestruct();
-}
-
-void UInGameHUDWidget::OnHealthChanged(float Health, float MaxHealth)
-{
-	if (HealthBar && MaxHealth > 0.0f)
+	else if (Message.AttributeType == EAttributeType::AttackSpeed)
 	{
-		float HealthPercent = Health / MaxHealth;
-		HealthBar->SetPercent(HealthPercent);
+		CurrentAttackSpeed = Message.NewValue;
+		OnAttackSpeedChanged(CurrentAttackSpeed);
 	}
-	
-	if (HealthText)
+	else if (Message.AttributeType == EAttributeType::MoveSpeed)
 	{
-		FString HealthString = FString::Printf(TEXT("%.0f / %.0f"), CurrentHealth, MaxHealth);
-		HealthText->SetText(FText::FromString(HealthString));
+		CurrentMoveSpeed = Message.NewValue;
+		OnMoveSpeedChanged(CurrentMoveSpeed);
+	}
+	else if (Message.AttributeType == EAttributeType::PickupRadius)
+	{
+		CurrentPickupRadius = Message.NewValue;
+		OnPickupRadiusChanged(CurrentPickupRadius);
 	}
 }
 
-void UInGameHUDWidget::OnExperienceChanged(float Exp, float MaxExp, float Level)
+void UInGameHUDWidget::HandleKillCountChanged(int32 NewKillCount)
 {
-	if (ExperienceBar && MaxExp > 0.0f)
+	OnUpdateKillCount(NewKillCount);
+}
+
+void UInGameHUDWidget::HandleEquippedSkillsChanged()
+{
+	if (!AbilityListBox || !EffectListBox || !SkillWidgetClass) return;
+
+	ADrgPlayerCharacter* PlayerCharacter = GetOwningPlayerPawn<ADrgPlayerCharacter>();
+	if (!PlayerCharacter) return;
+	UDrgUpgradeComponent* UpgradeComponent = PlayerCharacter->FindComponentByClass<UDrgUpgradeComponent>();
+	if (!UpgradeComponent) return;
+
+	const TArray<FDrgSkillInformation> EquippedSkills = UpgradeComponent->GetEquippedSkills();
+
+	AbilityListBox->ClearChildren();
+	EffectListBox->ClearChildren();
+
+	TArray<FDrgSkillInformation> AbilityList;
+	TArray<FDrgSkillInformation> EffectList;
+
+	for (const auto& Skill : EquippedSkills)
 	{
-		float ExpPercent = Exp / MaxExp;
-		ExperienceBar->SetPercent(ExpPercent);
+		if (!Skill.SkillData) continue;
+		FDrgAbilityLevelData LevelData;
+		if (Skill.SkillData->GetLevelData(Skill.Level, LevelData))
+		{
+			if (LevelData.UpgradeType == EUpgradeType::Ability) AbilityList.Add(Skill);
+			else if (LevelData.UpgradeType == EUpgradeType::Effect) EffectList.Add(Skill);
+		}
 	}
 
-	if (ExperienceText)
+	AbilityListBox->AddChildToHorizontalBox(AbilityTitle);
+	for (const auto& Ability : AbilityList)
 	{
-		FString ExperienceString = FString::Printf(TEXT("%.0f/%.0f"), Exp, MaxExp);
-		ExperienceText->SetText(FText::FromString(ExperienceString));
+		if (Ability.bIsEvolution)
+		{
+			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+			{
+				NewSkillWidget->SetAbilityInfo(Ability.SkillData, Ability.Level, Ability.bIsEvolution);
+				AbilityListBox->AddChildToHorizontalBox(NewSkillWidget);
+			}
+		}
 	}
-	
-	if (LevelText)
+	for (const auto& Ability : AbilityList)
 	{
-		FString LevelString = FString::Printf(TEXT("Lv %.0f"), Level);
-		LevelText->SetText(FText::FromString(LevelString));
+		if (!Ability.bIsEvolution)
+		{
+			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+			{
+				NewSkillWidget->SetAbilityInfo(Ability.SkillData, Ability.Level, Ability.bIsEvolution);
+				AbilityListBox->AddChildToHorizontalBox(NewSkillWidget);
+			}
+		}
+	}
+
+	EffectListBox->AddChildToHorizontalBox(EffectTitle);
+	for (const auto& Effect : EffectList)
+	{
+		if (Effect.bIsEvolution)
+		{
+			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+			{
+				NewSkillWidget->SetAbilityInfo(Effect.SkillData, Effect.Level, Effect.bIsEvolution);
+				EffectListBox->AddChildToHorizontalBox(NewSkillWidget);
+			}
+		}
+	}
+	for (const auto& Effect : EffectList)
+	{
+		if (!Effect.bIsEvolution)
+		{
+			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
+			{
+				NewSkillWidget->SetAbilityInfo(Effect.SkillData, Effect.Level, Effect.bIsEvolution);
+				EffectListBox->AddChildToHorizontalBox(NewSkillWidget);
+			}
+		}
 	}
 }
 
-void UInGameHUDWidget::OnAttackDamageChanged(float AttackDamage)
+void UInGameHUDWidget::HandleTimeUpdated(float SurvivalTimeSeconds)
 {
-	if (AttackDamageText)
-	{
-		FString AttackDamageString = FString::Printf(TEXT("공격력: %.0f"), AttackDamage);
-		AttackDamageText->SetText(FText::FromString(AttackDamageString));
-	}
+	const int32 Minutes = FMath::FloorToInt(SurvivalTimeSeconds) / 60;
+	const int32 Seconds = FMath::FloorToInt(SurvivalTimeSeconds) % 60;
+	OnTimerUpdated(Minutes, Seconds);
 }
 
-void UInGameHUDWidget::UpdateTimerDisplay()
+void UInGameHUDWidget::UpdateHealthBar(float Health, float MaxHealth)
 {
-	if (TimerText)
-	{
-		const float CurrentTime = GetWorld()->GetTimeSeconds() - GameStartTime;
-		const int32 TotalSeconds = FMath::FloorToInt(CurrentTime);
-		const int32 Minutes = TotalSeconds / 60;
-		const int32 Seconds = TotalSeconds % 60;
-	
-		const FString TimerString = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
-        
-		TimerText->SetText(FText::FromString(TimerString));
-	}
+	if (HealthBar && MaxHealth > 0.0f) HealthBar->SetPercent(Health / MaxHealth);
+}
+
+void UInGameHUDWidget::UpdateStaminaBar(float Stamina, float MaxStamina)
+{
+	if (StaminaBar && MaxStamina > 0.0f) StaminaBar->SetPercent(Stamina / MaxStamina);
+}
+
+void UInGameHUDWidget::UpdateExperienceBar(float Exp, float MaxExp)
+{
+	if (ExperienceBar && MaxExp > 0.0f) ExperienceBar->SetPercent(Exp / MaxExp);
 }

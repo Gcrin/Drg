@@ -89,6 +89,38 @@ void UDrgAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, 
 		{
 			BroadcastAttributeChange(EAttributeType::MaxHealth, NewValue);
 		}
+		else if (Attribute == GetHealthRegenAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::HealthRegen, NewValue);
+		}
+		else if (Attribute == GetStaminaAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::Stamina, NewValue);
+		}
+		else if (Attribute == GetMaxStaminaAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::MaxStamina, NewValue);
+		}
+		else if (Attribute == GetStaminaRegenAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::StaminaRegen, NewValue);
+		}
+		else if (Attribute == GetAttackDamageAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::AttackDamage, NewValue);
+		}
+		else if (Attribute == GetDefenseAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::Defense, NewValue);
+		}
+		else if (Attribute == GetAttackSpeedAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::AttackSpeed, NewValue);
+		}
+		else if (Attribute == GetMoveSpeedAttribute())
+		{
+			BroadcastAttributeChange(EAttributeType::MoveSpeed, NewValue);
+		}
 		else if (Attribute == GetExperienceAttribute())
 		{
 			BroadcastAttributeChange(EAttributeType::Experience, NewValue);
@@ -99,11 +131,11 @@ void UDrgAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, 
 		}
 		else if (Attribute == GetCharacterLevelAttribute())
 		{
-			BroadcastAttributeChange(EAttributeType::Level, NewValue);
+			BroadcastAttributeChange(EAttributeType::CharacterLevel, NewValue);
 		}
-		else if (Attribute == GetAttackDamageAttribute())
+		else if (Attribute == GetPickupRadiusAttribute())
 		{
-			BroadcastAttributeChange(EAttributeType::AttackDamage, NewValue);
+			BroadcastAttributeChange(EAttributeType::PickupRadius, NewValue);
 		}
 	}
 }

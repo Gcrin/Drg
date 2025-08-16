@@ -11,7 +11,8 @@ UENUM(BlueprintType)
 enum class EChoiceType : uint8
 {
 	Upgrade,
-	Evolution
+	Evolution,
+	Extra
 };
 
 /**

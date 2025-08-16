@@ -15,35 +15,55 @@ struct DRG_API FGameResultData
 	GENERATED_BODY()
 
 public:
-	FGameResultData()
+	// === 인게임 정보 ===
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	int32 FinalLevel = 0; // 최종 웨이브 정보
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	int32 SurvivalMinutes = 0; // 생존 시간 분
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	int32 SurvivalSeconds = 0; // 생존 시간 초
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	int32 KillCount = 0; // 킬 카운트
+
+	// === 캐릭터 스탯 ===
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float Health = 0.0f; // 체력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float MaxHealth = 0.0f; // 최대 체력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float Stamina = 0.0f; // 스태미나
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float MaxStamina = 0.0f; // 최대 스태미나
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float Experience = 0.0f; // 경험치
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float MaxExperience = 0.0f; // 최대 경험치
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float CharacterLevel = 0.f; // 최대 레벨
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float HealthRegen = 0.0f; // 체력 리젠
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float StaminaRegen = 0.0f; // 스태미나 리젠
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float AttackDamage = 0.0f; // 공격력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float Defense = 0.0f; // 방어력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float AttackSpeed = 0.0f; // 공격속도
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float MoveSpeed = 0.0f; // 이동 속도
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|InGameData")
+	float PickupRadius = 0.0f; // 아이템 획득 범위
+
+private:
+	float SurvivalTimeSeconds = 0.0f; // 생존 시간
+
+public:
+	void SetSurvivalTimeSeconds(float NewTime) { SurvivalTimeSeconds = NewTime; }
+	void CalculateTime()
 	{
-		MonstersKilled = 0;
-		GoldEarned = 0;
-		SurvivalTimeSeconds = 0.0f;
-		FinalLevel = 1;
-	}
-
-	// 처치한 몬스터 수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game Result")
-	int32 MonstersKilled;
-
-	// 획득한 골드
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game Result")
-	int32 GoldEarned;
-
-	// 생존 시간 (초)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game Result")
-	float SurvivalTimeSeconds;
-
-	// 최종 레벨 또는 웨이브
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game Result")
-	int32 FinalLevel;
-
-	// 생존 시간을 MM:SS 형식으로 변환하는 함수
-	FString GetFormattedSurvivalTime() const
-	{
-		int32 Minutes = FMath::FloorToInt(SurvivalTimeSeconds / 60.0f);
-		int32 Seconds = FMath::FloorToInt(SurvivalTimeSeconds) % 60;
-		return FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
+		const float SafeSeconds = FMath::Max(0.0f, SurvivalTimeSeconds); // 음수 방지
+		SurvivalMinutes = FMath::FloorToInt(SafeSeconds / 60.0f);
+		SurvivalSeconds = FMath::FloorToInt(SafeSeconds) % 60;
 	}
 };

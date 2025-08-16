@@ -12,9 +12,12 @@
 class UAbilitySystemComponent;
 class UDrgUpgradeDataCollection;
 class UDrgEvolutionDataAsset;
+class UDrgExtraEffects;
 struct FDrgEvolutionRecipe;
+struct FDrgSkillInformation;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelUpChoicesReady, const TArray<FDrgUpgradeChoice>&, Choices);
+DECLARE_MULTICAST_DELEGATE(FOnEquippedSkillsChanged);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class DRG_API UDrgUpgradeComponent : public UActorComponent
@@ -34,6 +37,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Upgrade", meta=(ClampMin = "1"))
 	int32 MaxAcquirableAbilityCount = 6;
 
+	// UI에 출력될 스킬 델리게이트
+	FOnEquippedSkillsChanged OnEquippedSkillsChanged;
+	const TArray<FDrgSkillInformation>& GetEquippedSkills() const { return EquippedSkills; }
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -49,6 +56,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Evolution")
 	TObjectPtr<UDrgEvolutionDataAsset> EvolutionData;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|ExtraEffect")
+	TObjectPtr<UDrgExtraEffects> ExtraEffectsData;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Ability")
 	TMap<TObjectPtr<UDrgAbilityDataAsset>, FGameplayAbilitySpecHandle> OwnedAbilityHandles;
 
@@ -56,9 +66,16 @@ protected:
 	TMap<TObjectPtr<UDrgAbilityDataAsset>, FActiveGameplayEffectHandle> ActiveEffectHandles;
 
 private:
+	// UI 출력 관련
+	UPROPERTY()
+	TArray<FDrgSkillInformation> EquippedSkills;
+	UPROPERTY()
+	TSet<TObjectPtr<UDrgAbilityDataAsset>> EvolvedSkills;
+	void UpdateEquippedSkills();
+	
 	UPROPERTY()
 	TSet<TObjectPtr<UDrgAbilityDataAsset>> RemovedAbilities;
-	
+
 	void ExecuteEvolution(const FDrgEvolutionRecipe& Recipe);
 	TArray<FDrgEvolutionRecipe> GetPossibleEvolutions() const;
 

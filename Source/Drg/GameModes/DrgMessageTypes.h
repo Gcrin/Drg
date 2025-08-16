@@ -31,10 +31,18 @@ enum class EAttributeType : uint8
 	None,
 	Health,
 	MaxHealth,
+	HealthRegen,
+	Stamina,
+	MaxStamina,
+	StaminaRegen,
 	AttackDamage,
+	Defense,
+	AttackSpeed,
+	MoveSpeed,
 	Experience,
 	MaxExperience,
-	Level
+	CharacterLevel,
+	PickupRadius
 };
 
 /**
