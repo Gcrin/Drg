@@ -1,12 +1,10 @@
 #include "DrgSkillCardWidget.h"
 #include "Components/Button.h"
-#include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgAbilityDataAsset.h"
 #include "PaperSprite.h"
-
 
 // 정적 캐시 초기화
 TMap<TSoftObjectPtr<UPaperSprite>, TWeakObjectPtr<UPaperSprite>> UDrgSkillCardWidget::IconCache;
@@ -40,7 +38,6 @@ void UDrgSkillCardWidget::BeginDestroy()
 	{
 		IconCache.Remove(CurrentLoadedIconPath);
 	}
-	
 
 	Super::BeginDestroy();
 }
@@ -71,63 +68,27 @@ void UDrgSkillCardWidget::SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeCho
 		return;
 	}
 
-	FText Name, Description, TypeText, LevelText;
+	FDrgSkillCardUIData UIData;
 	TSoftObjectPtr<UPaperSprite> Icon;
 
-	if (InUpgradeChoice.ChoiceType == EChoiceType::Evolution)
-	{
-		const auto& Recipe = InUpgradeChoice.EvolutionRecipe;
-		if (!Recipe.EvolvedAbilityAsset)
-		{
-			ensureAlwaysMsgf(false, TEXT("UDrgSkillCardWidget: EvolutionRecipe의 EvolvedAbilityAsset이 유효하지 않습니다!"));
-			return;
-		}
+	UIData.ChoiceType = InUpgradeChoice.ChoiceType;
 
-		Name = Recipe.EvolvedAbilityAsset->AbilityName;
-		FDrgAbilityLevelData Level1Data;
-		if (Recipe.EvolvedAbilityAsset->GetLevelData(1, Level1Data))
-		{
-			Description = Level1Data.AbilityDescription;
-			Icon = Level1Data.AbilityIcon;
-		}
-		TypeText = FText::FromString(TEXT("조합 스킬"));
-		LevelText = FText::FromString(TEXT("EVOLUTION!"));
-	}
-	else // EChoiceType::Upgrade
+	if (InUpgradeChoice.AbilityData)
 	{
-		if (!InUpgradeChoice.AbilityData)
-		{
-			ensureAlwaysMsgf(false, TEXT("UDrgSkillCardWidget: AbilityData가 nullptr입니다!"));
-			return;
-		}
+		UIData.Name = InUpgradeChoice.AbilityData->AbilityName;
+		UIData.bIsUpgrade = InUpgradeChoice.bIsUpgrade;
+		UIData.PreviousLevel = InUpgradeChoice.PreviousLevel;
+		UIData.NextLevel = InUpgradeChoice.NextLevel;
 
-		Name = InUpgradeChoice.AbilityData->AbilityName;
 		FDrgAbilityLevelData LevelData;
 		if (InUpgradeChoice.AbilityData->GetLevelData(InUpgradeChoice.NextLevel, LevelData))
 		{
-			Description = LevelData.AbilityDescription;
+			UIData.Description = LevelData.AbilityDescription;
 			Icon = LevelData.AbilityIcon;
 		}
-
-		if (InUpgradeChoice.bIsUpgrade)
-		{
-			TypeText = FText::Format(FText::FromString(TEXT("강화 (Lv.{0} → Lv.{1})")), InUpgradeChoice.PreviousLevel,
-			                         InUpgradeChoice.NextLevel);
-			if (SkillLevelText) LevelText = FText::Format(FText::FromString(TEXT("Lv.{0}")), InUpgradeChoice.NextLevel);
-		}
-		else
-		{
-			TypeText = FText::FromString(TEXT("신규 스킬"));
-			if (SkillLevelText) LevelText = FText::FromString(TEXT("NEW!"));
-		}
 	}
-
-	SkillNameText->SetText(Name);
-	SkillDescriptionText->SetText(Description);
-	SkillTypeText->SetText(TypeText);
-	if (SkillLevelText) SkillLevelText->SetText(LevelText);
-
 	LoadSkillIconAsync(Icon);
+	OnUpdateSkillCardDisplay(UIData);
 }
 
 void UDrgSkillCardWidget::LoadSkillIconAsync(const TSoftObjectPtr<UPaperSprite>& IconToLoad)
@@ -153,8 +114,8 @@ void UDrgSkillCardWidget::LoadSkillIconAsync(const TSoftObjectPtr<UPaperSprite>&
 			NewBrush.SetResourceObject(CachedIcon->Get());
 			NewBrush.SetImageSize(IconSize);
 			SkillIcon->SetBrush(NewBrush);
-			
-			CurrentLoadedIconPath = IconToLoad; 
+
+			CurrentLoadedIconPath = IconToLoad;
 			return;
 		}
 		IconCache.Remove(IconToLoad);
@@ -187,7 +148,7 @@ void UDrgSkillCardWidget::OnIconLoaded(TSoftObjectPtr<UPaperSprite> LoadedIconPa
 			NewBrush.SetResourceObject(LoadedSprite);
 			// 여기에 원하는 고정된 크기 값을 설정
 			NewBrush.SetImageSize(IconSize); // 예시: 100x100 픽셀로 고정
-   //     
+			//     
 			// NewBrush.SetImageSize(FVector2D(LoadedSprite->GetSourceSize()));
 			SkillIcon->SetBrush(NewBrush);
 		}
