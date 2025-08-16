@@ -19,7 +19,7 @@ class DRG_API UDrgSkillWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void SetAbilityInfo(const UDrgAbilityDataAsset* SkillData, int32 Level);
+	void SetAbilityInfo(const UDrgAbilityDataAsset* SkillData, int32 Level, bool bIsEvolution);
 
 protected:
 	UPROPERTY(meta = (BindWidget))

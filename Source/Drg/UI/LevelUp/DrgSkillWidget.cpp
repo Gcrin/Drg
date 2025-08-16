@@ -6,12 +6,15 @@
 #include "Components/TextBlock.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgAbilityDataAsset.h"
 
-void UDrgSkillWidget::SetAbilityInfo(const UDrgAbilityDataAsset* SkillData, int32 Level)
+void UDrgSkillWidget::SetAbilityInfo(const UDrgAbilityDataAsset* SkillData, int32 Level, bool bIsEvolution)
 {
 	if (!SkillData) return;
 
 	if (NameText) NameText->SetText(SkillData->AbilityName);
-	if (LevelText) LevelText->SetText(FText::FromString(FString::Printf(TEXT("Lv. %d"), Level)));
+	if (LevelText && !bIsEvolution)
+	{
+		LevelText->SetText(FText::FromString(FString::Printf(TEXT("Lv. %d"), Level)));
+	}
 
 	FDrgAbilityLevelData LevelData;
 	if (SkillData->GetLevelData(Level, LevelData))
