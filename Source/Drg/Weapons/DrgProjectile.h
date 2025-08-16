@@ -239,8 +239,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<USphereComponent> SphereComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
-	TObjectPtr<UStaticMeshComponent> MeshComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
 	TObjectPtr<UDrgProjectileMovementComponent> ProjectileMovementComponent;
 
 	FTransform StartTransform = FTransform();

@@ -32,11 +32,6 @@ ADrgProjectile::ADrgProjectile()
 	SphereComponent->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap); // 벽과도 충돌
 	SphereComponent->SetSphereRadius(10.f);
 
-	//MeshComponent 설정
-	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	MeshComponent->SetupAttachment(SphereComponent);
-	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 외형은 충돌 계산 안함
-
 	// 발사체 움직임 컴포넌트 설정
 	ProjectileMovementComponent = CreateDefaultSubobject<
 		UDrgProjectileMovementComponent>(TEXT("DrgProjectileMovement"));
@@ -534,7 +529,6 @@ void ADrgProjectile::DestroyProjectile()
 	ProjectileMovementComponent->StopMovementImmediately();
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	if (MeshComponent) MeshComponent->SetVisibility(false);
 	if (PointLightComponent) PointLightComponent->SetVisibility(false);
 	if (TrailComponent) TrailComponent->Deactivate();
 	SetLifeSpan(0.2f);
