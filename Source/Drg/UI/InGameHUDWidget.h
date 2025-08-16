@@ -51,6 +51,8 @@ public:
 	void OnUpdateKillCount(int32 NewKillCount);
 	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
 	void OnTimerUpdated(int32 Minutes, int32 Seconds);
+	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
+	void OnWaveNumberChanged(int32 NewWaveNumber);
 
 protected:
 	// === 경험치바 관련 ===
@@ -97,6 +99,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> TimerText;
 
+	// === 웨이브 ===
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UTextBlock> CurrentWaveText;
+
 	// 어빌리티
 	UPROPERTY(EditDefaultsOnly, Category = "Drg|HUD")
 	TSubclassOf<UDrgSkillWidget> SkillWidgetClass;
@@ -119,6 +125,11 @@ private:
 	UFUNCTION()
 	void HandleKillCountChanged(int32 NewKillCount);
 	FDelegateHandle KillCountChangedHandle;
+
+	// 웨이브 관련
+	UFUNCTION()
+	void HandleWaveNumberChanged(int32 NewWaveNumber);
+	FDelegateHandle WaveNumberChangedHandle;
 
 	// 어빌리티, 이펙트 관련
 	UFUNCTION()
