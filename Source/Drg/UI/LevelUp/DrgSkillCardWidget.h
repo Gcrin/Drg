@@ -15,6 +15,25 @@ class UTexture2D;
 class UPaperSprite;
 struct FStreamableHandle;
 
+USTRUCT(BlueprintType)
+struct FDrgSkillCardUIData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|SkillCardData")
+	FText Name;
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|SkillCardData")
+	FText Description;
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|SkillCardData")
+	bool bIsUpgrade = false;
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|SkillCardData")
+	int32 PreviousLevel = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|SkillCardData")
+	int32 NextLevel = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "Drg|SkillCardData")
+	EChoiceType ChoiceType;
+};
+
 UCLASS()
 class DRG_API UDrgSkillCardWidget : public UUserWidget
 {
@@ -33,6 +52,9 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void BeginDestroy() override;
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Skill Card")
+	void OnUpdateSkillCardDisplay(const FDrgSkillCardUIData& UIData);
+
 	// 블루프린트에서 바인딩할 UI 컴포넌트들
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> SkillButton;
@@ -40,17 +62,17 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> SkillIcon;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> SkillNameText;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> SkillDescriptionText;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> SkillTypeText;
 
 	// 스킬 레벨 표시 (임시/선택사항)
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> SkillLevelText;
 
 	// 디폴트 스킬 아이콘 (에디터에서 설정)
@@ -59,6 +81,7 @@ protected:
 
 	UPROPERTY()
 	TSoftObjectPtr<UPaperSprite> CurrentLoadedIconPath;
+
 private:
 	UFUNCTION()
 	void OnButtonClicked();
@@ -79,5 +102,5 @@ private:
 	bool bIsClickable = true;
 
 	//스킬아이콘 사이즈
-	FVector2D IconSize = FVector2D(32.f,32.f);
+	FVector2D IconSize = FVector2D(32.f, 32.f);
 };
