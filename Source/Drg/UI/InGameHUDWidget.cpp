@@ -1,6 +1,6 @@
 #include "InGameHUDWidget.h"
 #include "Components/ProgressBar.h"
-#include "Components/VerticalBox.h"
+#include "Components/HorizontalBox.h"
 #include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
 #include "Drg/System/DrgGameplayTags.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
@@ -219,7 +219,7 @@ void UInGameHUDWidget::HandleEquippedSkillsChanged()
 		}
 	}
 
-	AbilityListBox->AddChildToVerticalBox(AbilityTitle);
+	AbilityListBox->AddChildToHorizontalBox(AbilityTitle);
 	for (const auto& Ability : AbilityList)
 	{
 		if (Ability.bIsEvolution)
@@ -227,7 +227,7 @@ void UInGameHUDWidget::HandleEquippedSkillsChanged()
 			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
 			{
 				NewSkillWidget->SetAbilityInfo(Ability.SkillData, Ability.Level, Ability.bIsEvolution);
-				AbilityListBox->AddChildToVerticalBox(NewSkillWidget);
+				AbilityListBox->AddChildToHorizontalBox(NewSkillWidget);
 			}
 		}
 	}
@@ -238,12 +238,12 @@ void UInGameHUDWidget::HandleEquippedSkillsChanged()
 			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
 			{
 				NewSkillWidget->SetAbilityInfo(Ability.SkillData, Ability.Level, Ability.bIsEvolution);
-				AbilityListBox->AddChildToVerticalBox(NewSkillWidget);
+				AbilityListBox->AddChildToHorizontalBox(NewSkillWidget);
 			}
 		}
 	}
 
-	EffectListBox->AddChildToVerticalBox(EffectTitle);
+	EffectListBox->AddChildToHorizontalBox(EffectTitle);
 	for (const auto& Effect : EffectList)
 	{
 		if (Effect.bIsEvolution)
@@ -251,7 +251,7 @@ void UInGameHUDWidget::HandleEquippedSkillsChanged()
 			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
 			{
 				NewSkillWidget->SetAbilityInfo(Effect.SkillData, Effect.Level, Effect.bIsEvolution);
-				EffectListBox->AddChildToVerticalBox(NewSkillWidget);
+				EffectListBox->AddChildToHorizontalBox(NewSkillWidget);
 			}
 		}
 	}
@@ -262,7 +262,7 @@ void UInGameHUDWidget::HandleEquippedSkillsChanged()
 			if (UDrgSkillWidget* NewSkillWidget = CreateWidget<UDrgSkillWidget>(this, SkillWidgetClass))
 			{
 				NewSkillWidget->SetAbilityInfo(Effect.SkillData, Effect.Level, Effect.bIsEvolution);
-				EffectListBox->AddChildToVerticalBox(NewSkillWidget);
+				EffectListBox->AddChildToHorizontalBox(NewSkillWidget);
 			}
 		}
 	}

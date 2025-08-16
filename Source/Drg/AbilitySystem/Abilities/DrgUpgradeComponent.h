@@ -12,6 +12,7 @@
 class UAbilitySystemComponent;
 class UDrgUpgradeDataCollection;
 class UDrgEvolutionDataAsset;
+class UDrgExtraEffects;
 struct FDrgEvolutionRecipe;
 struct FDrgSkillInformation;
 
@@ -54,6 +55,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Evolution")
 	TObjectPtr<UDrgEvolutionDataAsset> EvolutionData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|ExtraEffect")
+	TObjectPtr<UDrgExtraEffects> ExtraEffectsData;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Ability")
 	TMap<TObjectPtr<UDrgAbilityDataAsset>, FGameplayAbilitySpecHandle> OwnedAbilityHandles;

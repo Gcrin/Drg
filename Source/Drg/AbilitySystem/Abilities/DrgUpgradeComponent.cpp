@@ -7,6 +7,7 @@
 #include "AbilitySystemInterface.h"
 #include "Data/DrgUpgradeDataCollection.h"
 #include "Data/DrgEvolutionData.h"
+#include "Data/DrgExtraEffects.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
 #include "Drg/UI/DrgSkillInformation.h"
 
@@ -21,6 +22,11 @@ UDrgUpgradeComponent::UDrgUpgradeComponent()
 		TEXT("/Script/Drg.DrgEvolutionDataAsset'/Game/Core/Data/DA_Drg_EvolutionData.DA_Drg_EvolutionData'"));
 	if (EvolutionDataFinder.Succeeded()) EvolutionData = EvolutionDataFinder.Object;
 	else UE_LOG(LogTemp, Error, TEXT("EvolutionData: Failed to find"));
+
+	static ConstructorHelpers::FObjectFinder<UDrgExtraEffects> ExtraEffectsDataFinder(
+		TEXT("/Script/Drg.DrgExtraEffects'/Game/Core/Data/DA_Drg_ExtraEffects.DA_Drg_ExtraEffects'"));
+	if (ExtraEffectsDataFinder.Succeeded()) ExtraEffectsData = ExtraEffectsDataFinder.Object;
+	else UE_LOG(LogTemp, Error, TEXT("ExtraEffects: Failed to find"));
 }
 
 void UDrgUpgradeComponent::BeginPlay()
@@ -329,6 +335,52 @@ TArray<FDrgUpgradeChoice> UDrgUpgradeComponent::GetLevelUpChoices(int32 NumChoic
 					FinalChoices.Add(CandidateChoices[j]);
 					TotalWeight -= CandidateWeights[j];
 					CandidateChoices.RemoveAtSwap(j);
+					CandidateWeights.RemoveAtSwap(j);
+					break;
+				}
+			}
+		}
+	}
+
+	// 추가 이펙트 뽑기
+	const int32 ExtraNum = NumChoices - FinalChoices.Num();
+	if (ExtraNum > 0 && ExtraEffectsData)
+	{
+		TArray<UDrgAbilityDataAsset*> ExtraCandidates = ExtraEffectsData->ExtraEffects;
+		TArray<float> CandidateWeights;
+		float TotalWeight = 0.0f;
+
+		for (const auto& ExtraEffect : ExtraCandidates)
+		{
+			if (ExtraEffect)
+			{
+				CandidateWeights.Add(ExtraEffect->SelectionWeight);
+				TotalWeight += ExtraEffect->SelectionWeight;
+			}
+		}
+
+		for (int32 i = 0; i < ExtraNum; ++i)
+		{
+			if (ExtraCandidates.Num() == 0 || TotalWeight <= 0.0f) break;
+			float RandomValue = FMath::RandRange(0.0f, TotalWeight);
+			float WeightSum = 0.0f;
+
+			for (int32 j = ExtraCandidates.Num() - 1; j >= 0; --j)
+			{
+				WeightSum += CandidateWeights[j];
+				if (WeightSum > RandomValue)
+				{
+					UDrgAbilityDataAsset* ExtraCandidate = ExtraCandidates[j];
+					FDrgUpgradeChoice Choice;
+					Choice.AbilityData = ExtraCandidate;
+					Choice.bIsUpgrade = false;
+					Choice.PreviousLevel = 0;
+					Choice.NextLevel = 1;
+					Choice.ChoiceType = EChoiceType::Extra;
+
+					FinalChoices.Add(Choice);
+					TotalWeight -= CandidateWeights[j];
+					ExtraCandidates.RemoveAtSwap(j);
 					CandidateWeights.RemoveAtSwap(j);
 					break;
 				}
