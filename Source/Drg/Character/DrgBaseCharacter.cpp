@@ -25,8 +25,6 @@ ADrgBaseCharacter::ADrgBaseCharacter()
 
 	AbilitySystemComponent = CreateDefaultSubobject<UDrgAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AttributeSet = CreateDefaultSubobject<UDrgAttributeSet>(TEXT("AttributeSet"));
-
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 bool ADrgBaseCharacter::IsDead() const
@@ -116,14 +114,13 @@ void ADrgBaseCharacter::ApplyCharacterData()
 					MaxScale = TempScale;
 				}
 				float RadnomScale = FMath::FRandRange(MinScale, MaxScale);
-				
+
 				if (GetCapsuleComponent())
 				{
 					float NewCapsuleRadius = RadnomScale * CharacterData->CapsuleRadius;
 					float NewCapsuleHalfHeight = RadnomScale * CharacterData->CapsuleHalfHeight;
 					// 캡슐 컴포넌트 크기 조정
 					GetCapsuleComponent()->SetCapsuleSize(NewCapsuleRadius, NewCapsuleHalfHeight);
-					
 				}
 				else
 				{
@@ -143,8 +140,8 @@ void ADrgBaseCharacter::ApplyCharacterData()
 				{
 					// 메시 스케일 조정 실패 로그 출력 
 					UE_LOG(LogTemp, Warning, TEXT(
-							   "ADrgBaseCharacter: '%s' 의 메시를 가져오지 못했습니다. 스케일을 변경하지 않습니다."
-						   ), *CharacterData->GetName());
+						       "ADrgBaseCharacter: '%s' 의 메시를 가져오지 못했습니다. 스케일을 변경하지 않습니다."
+					       ), *CharacterData->GetName());
 				}
 
 				// 2. 데이터 애셋의 머티리얼 오버라이드 배열을 순회하며 하나씩 적용
