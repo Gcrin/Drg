@@ -21,6 +21,8 @@ public class Drg : ModuleRules
 			"UMG",
 			"ModularGameplay",
 			"NavigationSystem",
+			"Paper2D",
+			"SlateCore",
 			"GameplayMessageRuntime"
 		});
 

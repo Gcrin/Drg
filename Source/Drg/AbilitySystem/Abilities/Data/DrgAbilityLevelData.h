@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "Paper2D/Classes/PaperSprite.h"
 #include "DrgAbilityLevelData.generated.h"
 
 UENUM(BlueprintType)
@@ -29,7 +30,7 @@ struct FDrgAbilityLevelData
 	FText AbilityDescription;
 	// 업그레이드 아이콘
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability|Display", meta = (DisplayName = "아이콘"))
-	TSoftObjectPtr<UTexture2D> AbilityIcon;
+	TSoftObjectPtr<UPaperSprite> AbilityIcon;
 	// 어빌리티 클래스
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Ability", meta = (DisplayName = "어빌리티 클래스",
 		EditCondition = "UpgradeType == EUpgradeType::Ability", EditConditionHides))
