@@ -193,7 +193,7 @@ bool ADrgProjectile::AdjustTransformToSurface(float MaxWalkableSlopeAngle)
 	// 유효한 땅을 찾았을 경우 위치/회전 보정
 	if (bFoundValidGround)
 	{
-		const float HoverDistance = SphereRadius * 1.5f;
+		const float HoverDistance = SphereRadius * 0.5f;
 		const FVector FinalLocation = BestGroundHit.ImpactPoint + BestGroundHit.ImpactNormal * HoverDistance;
 
 		// 앞 방향은 현재 속도 방향을 사용
