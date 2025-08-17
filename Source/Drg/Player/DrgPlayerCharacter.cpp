@@ -8,8 +8,7 @@
 #include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "DrgMagnetManager.h"
-#include "MovieSceneTracksComponentTypes.h"
+#include "DrgPickupInteractionComponent.h"
 #include "Drg/UI/LevelUp/DrgSkillSelectionWidget.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
 #include "Drg/System/DrgGameplayTags.h"
@@ -32,6 +31,8 @@ ADrgPlayerCharacter::ADrgPlayerCharacter()
 	CameraComponent->bUsePawnControlRotation = false;
 
 	AbilityUpgradeComponent = CreateDefaultSubobject<UDrgUpgradeComponent>(TEXT("AbilityUpgradeComponent"));
+	PickupInteractionComponent = CreateDefaultSubobject<UDrgPickupInteractionComponent>(
+		TEXT("PickupInteractionComponent"));
 
 	bIsAIControlled = false;
 }
@@ -95,6 +96,8 @@ void ADrgPlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 	ActivateCharacter();
 
+	UpdatePickupRadius();
+
 	// UI 위젯 생성 및 델리게이트 바인딩
 	if (SkillSelectionWidgetClass && AbilityUpgradeComponent)
 	{
@@ -131,21 +134,6 @@ void ADrgPlayerCharacter::BeginPlay()
 		ensureAlwaysMsgf(false, TEXT("ADrgPlayerCharacter: SkillSelectionWidgetClass가 설정되지 않았습니다! 블루프린트에서 설정하세요!"));
 	}
 
-	if (GetWorld() && MagnetManagerClass)
-	{
-		FActorSpawnParameters SpawnParameters;
-		SpawnParameters.Owner = this;
-		MagnetManager = GetWorld()->SpawnActor<ADrgMagnetManager>(
-			MagnetManagerClass, GetActorLocation(), GetActorRotation(), SpawnParameters);
-		if (MagnetManager)
-		{
-			MagnetManager->AttachToComponent(
-				RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-
-			UpdateMagnetRadius();
-		}
-	}
-
 	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 	AttributeChangedListenerHandle = MessageSubsystem.RegisterListener(
 		DrgGameplayTags::Event_Broadcast_AttributeChanged,
@@ -160,7 +148,7 @@ void ADrgPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	{
 		UGameplayMessageSubsystem::Get(GetWorld()).UnregisterListener(AttributeChangedListenerHandle);
 	}
-	
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -255,12 +243,12 @@ void ADrgPlayerCharacter::InitializeAttributes()
 	}
 }
 
-void ADrgPlayerCharacter::UpdateMagnetRadius()
+void ADrgPlayerCharacter::UpdatePickupRadius()
 {
-	if (MagnetManager && AttributeSet)
+	if (PickupInteractionComponent && AttributeSet)
 	{
 		const float NewRadius = AttributeSet->GetPickupRadius();
-		MagnetManager->SetMagnetRadius(NewRadius);
+		PickupInteractionComponent->SetPickupRadius(NewRadius);
 	}
 }
 
@@ -268,6 +256,6 @@ void ADrgPlayerCharacter::OnAttributeChanged(FGameplayTag Channel, const FDrgAtt
 {
 	if (Message.AttributeType == EAttributeType::PickupRadius)
 	{
-		UpdateMagnetRadius();
+		UpdatePickupRadius();
 	}
 }

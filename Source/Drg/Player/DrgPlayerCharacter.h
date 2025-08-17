@@ -9,7 +9,7 @@
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "DrgPlayerCharacter.generated.h"
 
-class ADrgMagnetManager;
+class UDrgPickupInteractionComponent;
 class UDrgSkillSelectionWidget;
 class UCameraComponent;
 class USpringArmComponent;
@@ -61,9 +61,8 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UDrgSkillSelectionWidget> SkillSelectionWidget;
 
-	// 아이템 자석 효과 매니저 클래스
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|MagnetManager")
-	TSubclassOf<ADrgMagnetManager> MagnetManagerClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Components")
+	TObjectPtr<UDrgPickupInteractionComponent> PickupInteractionComponent;
 
 private:
 	UFUNCTION()
@@ -75,10 +74,8 @@ private:
 	FTimerHandle LevelUpTimerHandle;
 	bool bIsLevelUpSequence = false;
 
-	// 아이템 자석
-	UPROPERTY()
-	TObjectPtr<ADrgMagnetManager> MagnetManager;
-	void UpdateMagnetRadius();
+	// 아이템 자석 획득
+	void UpdatePickupRadius();
 	void OnAttributeChanged(FGameplayTag Channel, const FDrgAttributeChangeMessage& Message);
 	FGameplayMessageListenerHandle AttributeChangedListenerHandle;
 };

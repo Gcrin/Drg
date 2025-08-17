@@ -8,6 +8,7 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "DrgDropManagerSubsystem.generated.h"
 
+class AInstancedPickupManager;
 class UDropRegistryDataAsset;
 /**
  * @brief 월드에 단 하나만 존재하며 모든 아이템 드롭 로직을 중앙에서 관리하는 서브시스템.
@@ -58,4 +59,7 @@ private:
 	 * 서브시스템을 캐싱하여 반복적인 조회를 피하고, 종료 시 안전하게 접근하기 위해 사용.
 	 */
 	TWeakObjectPtr<UGameplayMessageSubsystem> CachedMessageSubsystem;
+
+	UPROPERTY()
+	TMap<TObjectPtr<UDrgPickupDataAsset>, TObjectPtr<AInstancedPickupManager>> InstancedManagers;
 };

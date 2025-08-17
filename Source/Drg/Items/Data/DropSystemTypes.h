@@ -6,8 +6,8 @@
 #include "GameplayTagContainer.h"
 #include "DropSystemTypes.generated.h"
 
+class UDrgPickupDataAsset;
 class UDropTableDataAsset;
-class ADrgPickupBase;
 
 /**
  * @brief 드롭될 개별 아이템의 정보 (스폰할 클래스, 확률, 개수)를 정의
@@ -17,9 +17,9 @@ struct FDrgDropItemInfo
 {
 	GENERATED_BODY()
 
-	// 드롭될 픽업 블루프린트의 클래스
+	// 드롭될 아이템의 정보를 담은 데이터 애셋
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Drop")
-	TSoftClassPtr<ADrgPickupBase> PickupClass;
+	TSoftObjectPtr<UDrgPickupDataAsset> PickupDataAsset;
 
 	// 이 아이템이 드롭될 확률 (0.0 = 0%, 1.0 = 100%)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Drop", meta = (UIMin = "0.0", UIMax = "1.0"))
@@ -48,7 +48,7 @@ public:
  * @brief 드롭 레지스트리 데이터 에셋
  */
 UCLASS()
-class DRG_API UDropRegistryDataAsset  : public UDataAsset
+class DRG_API UDropRegistryDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
 

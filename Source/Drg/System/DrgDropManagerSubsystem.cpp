@@ -5,7 +5,8 @@
 
 #include "DrgGameplayTags.h"
 #include "Drg/Interfaces/DroppableInterface.h"
-#include "Drg/Items/DrgPickupBase.h"
+#include "Drg/Items/Data/DrgPickupDataAsset.h"
+#include "Drg/Items/InstancedPickupManager.h"
 
 void UDrgDropManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -108,21 +109,68 @@ void UDrgDropManagerSubsystem::OnActorDeathMessageReceived(FGameplayTag Channel,
 
 void UDrgDropManagerSubsystem::SpawnItems(const FDrgDropItemInfo& DropInfo, const FVector& Location, UWorld* World)
 {
-	// 드롭 개수 범위(Min/Max) 내에서 실제 스폰할 개수 랜덤 결정.
-	const int32 NumToSpawn = FMath::RandRange(DropInfo.DropCount.X, DropInfo.DropCount.Y);
-	if (NumToSpawn <= 0) return;
-
-	// 소프트 클래스 포인터로부터 실제 스폰할 블루프린트 클래스 로드 및 유효성 검사.
-	if (TSubclassOf<ADrgPickupBase> PickupClass = DropInfo.PickupClass.LoadSynchronous())
+	// 드롭 정보에서 데이터 애셋을 로드
+	UDrgPickupDataAsset* PickupData = DropInfo.PickupDataAsset.LoadSynchronous();
+	if (!PickupData)
 	{
-		for (int32 i = 0; i < NumToSpawn; ++i)
-		{
-			// 아이템이 한 점에 겹치지 않도록, 원래 위치 주변에 랜덤한 오프셋을 추가.
-			const float SpawnRadius = 75.f; // 아이템이 흩어질 반경
-			const FVector RandomOffset = FMath::VRand() * FMath::FRandRange(0.f, SpawnRadius);
-			const FVector SpawnLocationWithOffset = Location + RandomOffset;
+		UE_LOG(LogTemp, Warning, TEXT("DropManager: DropInfo에 PickupDataAsset이 설정되지 않았습니다."));
+		return;
+	}
 
-			World->SpawnActor<ADrgPickupBase>(PickupClass, SpawnLocationWithOffset, FRotator::ZeroRotator);
+	// 해당 데이터 애셋을 처리하는 InstancedPickupManager가 이미 있는지 확인
+	AInstancedPickupManager* Manager;
+	TObjectPtr<AInstancedPickupManager>* FoundManager = InstancedManagers.Find(PickupData);
+
+	if (FoundManager)
+	{
+		Manager = *FoundManager;
+	}
+	else
+	{
+		FActorSpawnParameters SpawnParams;
+		Manager = World->SpawnActor<AInstancedPickupManager>(
+			AInstancedPickupManager::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			SpawnParams);
+		Manager->Initialize(PickupData);
+		InstancedManagers.Add(PickupData, Manager);
+	}
+
+	check(Manager);
+
+	// 드롭 개수만큼 인스턴스를 추가하도록 Manager에게 요청.
+	const int32 NumToSpawn = FMath::RandRange(DropInfo.DropCount.X, DropInfo.DropCount.Y);
+	for (int32 i = 0; i < NumToSpawn; ++i)
+	{
+		const float SpawnRadius = 75.f;
+		const FVector RandomOffset = FMath::VRand() * FMath::FRandRange(0.f, SpawnRadius);
+		const FVector BaseSpawnLocation = Location + RandomOffset;
+
+		// === 바닥 찾기 LineTrace ===
+		FVector GroundLocation = BaseSpawnLocation;
+        
+		FHitResult HitResult;
+		FVector TraceStart = BaseSpawnLocation + FVector(0, 0, 500.0f);
+		FVector TraceEnd = BaseSpawnLocation - FVector(0, 0, 500.0f);
+        
+		FCollisionQueryParams QueryParams;
+		QueryParams.bTraceComplex = false;
+		QueryParams.bReturnPhysicalMaterial = false;
+        
+		if (World->LineTraceSingleByChannel(
+			HitResult, 
+			TraceStart, 
+			TraceEnd, 
+			ECC_WorldStatic, 
+			QueryParams))
+		{
+			GroundLocation = HitResult.Location;
 		}
+
+		FTransform FinalTransform = PickupData->LocalTransform;
+		FinalTransform.AddToTranslation(GroundLocation);
+
+		Manager->AddInstance(FTransform(FinalTransform));
 	}
 }
