@@ -156,6 +156,11 @@ struct FDrgProjectileParams
 		meta = (DisplayName = "발사 이펙트 스케일", EditCondition = "MuzzleVFX != nullptr"))
 	FVector MuzzleScale = FVector::OneVector;
 
+	// 발사 이펙트의 재생 속도를 조절 (1.0 = 100%)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Muzzle",
+		meta = (DisplayName = "발사 이펙트 속도", EditCondition = "MuzzleVFX != nullptr", ClampMin = "0.01", UIMin = "0.01"))
+	float MuzzleVFXSpeed = 1.0f;
+
 	// 충돌 시 재생할 사운드
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact",
 		meta = (DisplayName = "충돌 사운드"))
@@ -170,6 +175,11 @@ struct FDrgProjectileParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact",
 		meta = (DisplayName = "충돌 이펙트 스케일", EditCondition = "ImpactVFX != nullptr"))
 	FVector ImpactScale = FVector::OneVector;
+
+	// 충돌 이펙트의 재생 속도를 조절 (1.0 = 100%)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact",
+		meta = (DisplayName = "충돌 이펙트 속도", EditCondition = "ImpactVFX != nullptr", ClampMin = "0.01", UIMin = "0.01"))
+	float ImpactVFXSpeed = 1.0f;
 
 	// 충돌 이펙트의 초기 회전 방식을 결정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drg|Projectile|Effects|Impact",

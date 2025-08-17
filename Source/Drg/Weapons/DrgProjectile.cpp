@@ -295,12 +295,20 @@ void ADrgProjectile::BeginPlay()
 
 	if (ProjectileParams.MuzzleVFX)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		UNiagaraComponent* MuzzleVFXComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			this,
 			ProjectileParams.MuzzleVFX,
 			StartTransform.GetLocation(),
 			StartTransform.GetRotation().Rotator(),
-			ProjectileParams.MuzzleScale);
+			ProjectileParams.MuzzleScale,
+			true
+		);
+
+		if (MuzzleVFXComponent)
+		{
+			MuzzleVFXComponent->SetRelativeScale3D(ProjectileParams.MuzzleScale);
+			MuzzleVFXComponent->SetCustomTimeDilation(ProjectileParams.MuzzleVFXSpeed);
+		}
 	}
 
 	if (ProjectileParams.MuzzleSound)
@@ -720,8 +728,19 @@ void ADrgProjectile::PlayImpactEffects(const FVector& Location, const FRotator& 
 {
 	if (ProjectileParams.ImpactVFX)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ProjectileParams.ImpactVFX, Location, Rotation,
-		                                               ProjectileParams.ImpactScale);
+		UNiagaraComponent* ImpactVFXComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			this,
+			ProjectileParams.ImpactVFX,
+			Location,
+			Rotation,
+			ProjectileParams.ImpactScale,
+			true
+		);
+
+		if (ImpactVFXComponent)
+		{
+			ImpactVFXComponent->SetCustomTimeDilation(ProjectileParams.ImpactVFXSpeed);
+		}
 	}
 	if (ProjectileParams.ImpactSound)
 	{
