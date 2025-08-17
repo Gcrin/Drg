@@ -178,7 +178,11 @@ bool UDrgAbilityTask_FireProjectile::CalculateSpawnTransform(ACharacter* Charact
 		const FVector TangentDirection = DirectionFromCenter.RotateAngleAxis(Params.ProjectileParams.bClockwise ? -90.f : 90.f, FVector::UpVector);
 		const FRotator SpawnRotation = TangentDirection.Rotation();
 
-		OutSpawnTransform = FTransform(SpawnRotation, SpawnLocation);
+		FTransform BaseTransform(SpawnRotation, SpawnLocation);
+
+		BaseTransform.SetScale3D(Params.ProjectileLocalTransform.GetScale3D());
+
+		OutSpawnTransform = BaseTransform;
 		
 		return true;
 	}
