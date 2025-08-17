@@ -89,7 +89,7 @@ void ADrgPlayerState::SetCurrentWaveNumber(int32 NewWaveNumber)
 	if (CurrentWaveNumber != NewWaveNumber)
 	{
 		CurrentWaveNumber = NewWaveNumber;
-		OnKillCountChanged.Broadcast(CurrentWaveNumber);
+		OnWaveNumberChanged.Broadcast(CurrentWaveNumber);
 	}
 }
 

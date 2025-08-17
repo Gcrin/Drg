@@ -207,3 +207,15 @@ void ADrgPlayerCharacter::PossessedBy(AController* NewController)
 		AttributeSet->OnLevelUp.AddUObject(this, &ADrgPlayerCharacter::HandleOnLevelUp);
 	}
 }
+
+void ADrgPlayerCharacter::InitializeAttributes()
+{
+	Super::InitializeAttributes();
+
+	if (AttributeSet && MaxExperienceDataTable)
+	{
+		float InitialMaxExperience =
+			AttributeSet->GetMaxExperienceForLevel(MaxExperienceDataTable, 1.0f);
+		AttributeSet->SetMaxExperience(InitialMaxExperience);
+	}
+}

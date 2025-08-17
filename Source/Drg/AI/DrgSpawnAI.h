@@ -71,4 +71,9 @@ protected:
 	TObjectPtr<class ADrgAICharacter> SpawnAIFromPool();
 	// 스폰 후 ActiveAIPool에 추가. 타이머에서 실행될 함수
 	void SpawnAILoop();
+
+	// 웨이브 타이머 (초) / 디폴트 60초 = 1분
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
+	float WaveChangeTime = 60.0f;
+	FTimerHandle NextWaveTimerHandle;
 };

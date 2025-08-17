@@ -42,6 +42,8 @@ void ADrgSpawnAI::BeginPlay()
 	Super::BeginPlay();
 	InitializePool();
 	SetNextWave();
+
+	GetWorldTimerManager().SetTimer(NextWaveTimerHandle, this, &ADrgSpawnAI::SetNextWave, WaveChangeTime, true);
 }
 
 void ADrgSpawnAI::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -60,7 +62,8 @@ void ADrgSpawnAI::InitializePool()
 			// SpawnLocation 로그 출력
 			UE_LOG(LogTemp, Warning, TEXT("DrgSpawnAI:: 스폰 위치: %s"), *SpawnLocation.ToString());
 			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			SpawnParams.SpawnCollisionHandlingOverride =
+				ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 			ADrgAICharacter* SpawnedAI = GetWorld()->SpawnActor<ADrgAICharacter>(
 				AICharacterClass,
