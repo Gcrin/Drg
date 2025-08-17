@@ -11,6 +11,9 @@ ADrgAICharacter::ADrgAICharacter()
 {
 	CachedAIController = nullptr;
 	bIsAIControlled = true;
+
+	// 화면에 보이지 않는 Mesh는 애니메이션 Tick을 멈춰 CPU 최적화
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 }
 
 FGameplayTag ADrgAICharacter::GetDropTag() const
