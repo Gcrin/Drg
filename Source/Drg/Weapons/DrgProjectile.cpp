@@ -232,8 +232,31 @@ void ADrgProjectile::BeginPlay()
 
 	StartTransform = GetActorTransform();
 
-	// 오버랩 이벤트가 발생하면 OnSphereOverlap 함수를 호출하도록 바인딩
-	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgProjectile::OnSphereOverlap);
+	// 반복 피해 검사
+	if (ProjectileParams.bAllowRepeatDamage)
+	{
+		SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgProjectile::OnCollisionBeginOverlap);
+		SphereComponent->OnComponentEndOverlap.AddDynamic(this, &ADrgProjectile::OnCollisionEndOverlap);
+
+		GetWorld()->GetTimerManager().SetTimer(
+			PeriodicDamageTimerHandle,
+			this,
+			&ADrgProjectile::ApplyPeriodicDamage,
+			0.05f,
+			true
+		);
+	}
+	else
+	{
+		SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ADrgProjectile::OnCollisionBeginOverlap);
+	}
+	// 초기 오버랩 검사
+	TArray<AActor*> InitialOverlaps;
+	SphereComponent->GetOverlappingActors(InitialOverlaps, AActor::StaticClass());
+	for (AActor* OverlappingActor : InitialOverlaps)
+	{
+		TryProcessTarget(OverlappingActor, FHitResult());
+	}
 
 	ProjectileState = EProjectileState::FlyingStraight;
 
@@ -286,6 +309,7 @@ void ADrgProjectile::BeginPlay()
 
 void ADrgProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	GetWorld()->GetTimerManager().ClearTimer(PeriodicDamageTimerHandle);
 	// 회전 타입일 경우, 서브시스템에서 자신을 등록 해제
 	if (ProjectileParams.MovementType == EProjectileMovementType::Orbit)
 	{
@@ -301,90 +325,101 @@ void ADrgProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void ADrgProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                     const FHitResult& SweepResult)
+void ADrgProjectile::OnCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                             UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                                             const FHitResult& SweepResult)
 {
-	// 유효성 검사
+	TryProcessTarget(OtherActor, SweepResult);
+}
 
-	if (!IsValid(OtherActor) || OtherActor == this || OtherActor == GetOwner())
+void ADrgProjectile::OnCollisionEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                           UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (ProjectileParams.bAllowRepeatDamage)
+	{
+		TargetNextDamageTimeMap.Remove(OtherActor);
+	}
+}
+
+void ADrgProjectile::ApplyPeriodicDamage()
+{
+	if (!DamageEffectSpecHandle.IsValid() || TargetNextDamageTimeMap.IsEmpty())
 	{
 		return;
 	}
 
-	if (ProjectileParams.bAllowRepeatDamage)
+	UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
+	if (!SourceAsc)
 	{
-		// --- 반복 피해 로직 ---
-		if (const float* NextDamageTime = DamagedTargetsForRepeatableHit.Find(OtherActor))
+		return;
+	}
+
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	int32 DamageAppliedThisTick = 0;
+
+	// 안전한 순회를 위해 키만 복사
+	TArray<AActor*> ActorsToProcess;
+	for (const auto& Pair : TargetNextDamageTimeMap)
+	{
+		ActorsToProcess.Add(Pair.Key);
+	}
+
+	// 각 대상에게 지속 피해 적용
+	for (AActor* TargetActor : ActorsToProcess)
+	{
+		if (float* NextDamageTime = TargetNextDamageTimeMap.Find(TargetActor))
 		{
-			// 쿨타임 중인지 확인
-			if (GetWorld()->GetTimeSeconds() < *NextDamageTime)
+			// 순간이동 등으로 벗어났는지 범위 체크
+			const float Distance = FVector::Dist(GetActorLocation(), TargetActor->GetActorLocation());
+			const float OverlapRadius = SphereComponent->GetScaledSphereRadius();
+
+			TArray<AActor*> CurrentOverlappingActors;
+			SphereComponent->GetOverlappingActors(CurrentOverlappingActors);
+			if (!CurrentOverlappingActors.Contains(TargetActor))
 			{
-				return;
+				// 범위를 벗어났으면 제거
+				TargetNextDamageTimeMap.Remove(TargetActor);
+				continue;
+			}
+
+			// 쿨타임 체크
+			if (IsValid(TargetActor) && CurrentTime >= *NextDamageTime)
+			{
+				UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(
+					TargetActor);
+				if (TargetAsc)
+				{
+					// 피해 적용
+					SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
+
+					// 이펙트 재생
+					FHitResult HitResult;
+					HitResult.ImpactPoint = TargetActor->GetActorLocation();
+					HitResult.ImpactNormal = (GetActorLocation() - TargetActor->GetActorLocation()).GetSafeNormal();
+					ProcessImpact(HitResult, true);
+
+					// 다음 피해 시간 갱신
+					*NextDamageTime = CurrentTime + ProjectileParams.DamageCooldown;
+					DamageAppliedThisTick++;
+				}
 			}
 		}
 	}
-	else
+
+	// 모든 피해 적용 후 관통 체크
+	if (!ProjectileParams.bInfinitePierce && DamageAppliedThisTick > 0)
 	{
-		// --- 단일 피해 로직 ---
-		if (DamagedTargetsForSingleHit.Contains(OtherActor))
-		{
-			return;
-		}
-	}
-
-	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
-
-	// 지형지물 또는 ASC가 없는 액터와 충돌한 경우
-	if (!TargetAsc)
-	{
-		ProcessImpact(SweepResult, bFromSweep);
-		DestroyProjectile();
-		return;
-	}
-
-	// 팀 태그가 같을 경우
-	if (UDrgGameplayStatics::AreTeamsFriendly(OwnerTeamTag, TargetAsc))
-	{
-		return;
-	}
-
-	// 캐릭터가 죽음 상태일 경우
-	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(OtherActor);
-	if (TargetCharacter && TargetCharacter->IsDead()) return;
-
-	// --- 유효한 적 대상에 대한 로직 ---
-
-	// 중복 피해 목록에 추가(반복 피해 구분)
-	if (ProjectileParams.bAllowRepeatDamage)
-	{
-		DamagedTargetsForRepeatableHit.Add(OtherActor, GetWorld()->GetTimeSeconds() + ProjectileParams.DamageCooldown);
-	}
-	else
-	{
-		DamagedTargetsForSingleHit.Add(OtherActor);
-	}
-
-	ProcessImpact(SweepResult, bFromSweep);
-
-	// 단일 피해 적용 여부
-	// 일반탄이거나, 또는 폭발탄이면서 '직격 시 추가 피해' 옵션이 켜진 경우
-	const bool bShouldApplyDirectDamage = !ProjectileParams.bEnableAoeOnImpact ||
-		ProjectileParams.bApplyBaseDamageToInitialTarget;
-
-	UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
-
-	if (SourceAsc && bShouldApplyDirectDamage && DamageEffectSpecHandle.IsValid())
-	{
-		SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
-	}
-
-	// 관통 및 파괴 처리
-	if (!ProjectileParams.bInfinitePierce)
-	{
-		ProjectileParams.MaxTargetHits--;
+		ProjectileParams.MaxTargetHits -= DamageAppliedThisTick;
 		if (ProjectileParams.MaxTargetHits <= 0)
 		{
+			// 마지막 피해 위치를 기준으로 이펙트 재생
+			FHitResult HitResult;
+			if (AActor* LastTarget = TargetNextDamageTimeMap.begin().Key())
+			{
+				HitResult.ImpactPoint = LastTarget->GetActorLocation();
+				HitResult.ImpactNormal = (GetActorLocation() - LastTarget->GetActorLocation()).GetSafeNormal();
+			}
+			ProcessImpact(HitResult, true);
 			DestroyProjectile();
 		}
 	}
@@ -519,19 +554,89 @@ void ADrgProjectile::DetectTarget()
 
 void ADrgProjectile::DestroyProjectile()
 {
-	if (bIsDestroy)
-	{
-		return;
-	}
+	if (bIsDestroy) return;
 	bIsDestroy = true;
 	GetWorld()->GetTimerManager().ClearTimer(DetectTargetTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(PeriodicDamageTimerHandle);
 
 	ProjectileMovementComponent->StopMovementImmediately();
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	TargetNextDamageTimeMap.Empty();
+	DamagedTargetsForSingleHit.Empty();
+
 	if (PointLightComponent) PointLightComponent->SetVisibility(false);
 	if (TrailComponent) TrailComponent->Deactivate();
 	SetLifeSpan(0.2f);
+}
+
+void ADrgProjectile::TryProcessTarget(AActor* TargetActor, const FHitResult& SweepResult)
+{
+	if (!IsValid(TargetActor) || TargetActor == this || TargetActor == GetOwner())
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* TargetAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+	if (!TargetAsc)
+	{
+		ProcessImpact(SweepResult, true);
+		DestroyProjectile();
+		return;
+	}
+
+	if (UDrgGameplayStatics::AreTeamsFriendly(OwnerTeamTag, TargetAsc)) return;
+
+	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(TargetActor);
+	if (TargetCharacter && TargetCharacter->IsDead()) return;
+
+	// 투사체 종류에 따라
+	if (ProjectileParams.bAllowRepeatDamage)
+	{
+		// 반복 피해 처리
+		if (!TargetNextDamageTimeMap.Contains(TargetActor))
+		{
+			// 첫 피해는 즉시 적용
+			UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
+			if (SourceAsc && DamageEffectSpecHandle.IsValid())
+			{
+				SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
+			}
+
+			// 다음 피해 시간을 설정
+			const float NextDamageTime = GetWorld()->GetTimeSeconds() + ProjectileParams.DamageCooldown;
+			TargetNextDamageTimeMap.Add(TargetActor, NextDamageTime);
+
+			// 첫 피해 시에도 관통 처리 및 이펙트 재생이 필요할 수 있음
+			ProcessImpact(SweepResult, true);
+		}
+	}
+	else
+	{
+		// 단일 피해 처리
+		if (DamagedTargetsForSingleHit.Contains(TargetActor))
+		{
+			return;
+		}
+		DamagedTargetsForSingleHit.Add(TargetActor);
+
+		UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
+		if (SourceAsc && DamageEffectSpecHandle.IsValid())
+		{
+			SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
+		}
+
+		ProcessImpact(SweepResult, true);
+
+		if (!ProjectileParams.bInfinitePierce)
+		{
+			ProjectileParams.MaxTargetHits--;
+			if (ProjectileParams.MaxTargetHits <= 0)
+			{
+				DestroyProjectile();
+			}
+		}
+	}
 }
 
 void ADrgProjectile::ProcessImpact(const FHitResult& HitResult, bool bFromSweep)

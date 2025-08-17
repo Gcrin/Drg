@@ -222,8 +222,12 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION()
-	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	void OnCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	                     int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void OnCollisionEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	void ApplyPeriodicDamage();
 
 	void StartProjectileArc();
 	void DetectTarget();
@@ -246,6 +250,7 @@ protected:
 	virtual void DestroyProjectile();
 
 private:
+	void TryProcessTarget(AActor* TargetActor, const FHitResult& SweepResult);
 	// 충돌 처리 로직을 총괄하는 함수
 	void ProcessImpact(const FHitResult& HitResult, bool bFromSweep);
 	// 충돌 이펙트와 사운드를 재생하는 함수
@@ -264,8 +269,9 @@ private:
 
 	// 반복 피해가 비활성화되었을 때 이미 피해를 입힌 대상을 기록
 	TSet<TObjectPtr<AActor>> DamagedTargetsForSingleHit;
-	// 반복 피해가 활성화되었을 때 대상별 다음 피해 가능 시간을 기록
-	TMap<TObjectPtr<AActor>, float> DamagedTargetsForRepeatableHit;
+	UPROPERTY()
+	TMap<TObjectPtr<AActor>, float> TargetNextDamageTimeMap;
+	FTimerHandle PeriodicDamageTimerHandle;
 
 	bool bIsDestroy = false;
 };
