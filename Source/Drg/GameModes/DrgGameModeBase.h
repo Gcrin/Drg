@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "GameplayTagContainer.h"
 #include "DrgGameStateManagerSubsystem.h"
 #include "DrgGameModeBase.generated.h"
 
@@ -19,4 +20,7 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "Drg|Rule")
 	EGameResult EvaluateGameEndCondition(AActor* DeadActor);
+
+private:
+	FGameplayTag BossTag;
 };

@@ -2,7 +2,8 @@
 
 
 #include "DrgGameModeBase.h"
-
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
 #include "Drg/UI/DrgHUD.h"
 #include "Engine/Engine.h"
@@ -11,6 +12,8 @@ ADrgGameModeBase::ADrgGameModeBase()
 {
 	// HUD 클래스 설정
 	HUDClass = ADrgHUD::StaticClass();
+
+	BossTag = FGameplayTag::RequestGameplayTag(FName("Team.Enemy.Boss"));
 }
 
 EGameResult ADrgGameModeBase::EvaluateGameEndCondition(AActor* DeadActor)
@@ -28,10 +31,11 @@ EGameResult ADrgGameModeBase::EvaluateGameEndCondition(AActor* DeadActor)
 		}
 	}
 
-	// if (Cast<보스>(DeadActor))
-	// {
-	// 	return EGameResult::Victory;
-	// }
+	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(DeadActor);
+	if (ASC && BossTag.IsValid() && ASC->HasMatchingGameplayTag(BossTag))
+	{
+		return EGameResult::Victory;
+	}
 
 	return EGameResult::None;
 }
