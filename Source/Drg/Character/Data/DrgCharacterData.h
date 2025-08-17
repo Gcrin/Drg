@@ -51,6 +51,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 
+	// 캐릭터가 시작 시점에 보유할 기본 이펙트 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|GAS")
+	TArray<TSubclassOf<UGameplayEffect>> DefaultEffects;
+	
 	// 캐릭터가 사용할 어빌리티별 애님 몽타주 목록 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|Animation")
 	TMap<FGameplayTag, TObjectPtr<UAnimMontage>> AbilityMontages;
