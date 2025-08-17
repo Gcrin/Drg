@@ -412,14 +412,6 @@ void ADrgProjectile::ApplyPeriodicDamage()
 		ProjectileParams.MaxTargetHits -= DamageAppliedThisTick;
 		if (ProjectileParams.MaxTargetHits <= 0)
 		{
-			// 마지막 피해 위치를 기준으로 이펙트 재생
-			FHitResult HitResult;
-			if (AActor* LastTarget = TargetNextDamageTimeMap.begin().Key())
-			{
-				HitResult.ImpactPoint = LastTarget->GetActorLocation();
-				HitResult.ImpactNormal = (GetActorLocation() - LastTarget->GetActorLocation()).GetSafeNormal();
-			}
-			ProcessImpact(HitResult, true);
 			DestroyProjectile();
 		}
 	}
