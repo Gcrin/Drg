@@ -222,11 +222,12 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION()
-	void OnCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	                     int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void OnCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                             UPrimitiveComponent* OtherComp,
+	                             int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
 	void OnCollisionEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	                           UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	void ApplyPeriodicDamage();
 
 	void StartProjectileArc();
@@ -249,7 +250,20 @@ protected:
 
 	virtual void DestroyProjectile();
 
+	/** 이 투사체가 적중 시 적용할 디버프 게임플레이 이펙트 클래스 배열입니다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Damage")
+	TArray<TSubclassOf<UGameplayEffect>> DebuffGameplayEffectClasses;
+
 private:
+	/**
+	 * 지정된 대상에게 설정된 모든 디버프 게임플레이 이펙트를 적용합니다.
+	 * @param SourceAsc 이펙트를 적용하는 주체의 어빌리티 시스템 컴포넌트
+	 * @param TargetAsc 이펙트를 적용받는 대상의 어빌리티 시스템 컴포넌트
+	 * @param ContextHandle 이펙트에 전달할 컨텍스트 핸들
+	 */
+	void ApplyDebuffEffectsToTarget(UAbilitySystemComponent* SourceAsc, UAbilitySystemComponent* TargetAsc,
+	                                const FGameplayEffectContextHandle& ContextHandle);
+
 	void TryProcessTarget(AActor* TargetActor, const FHitResult& SweepResult);
 	// 충돌 처리 로직을 총괄하는 함수
 	void ProcessImpact(const FHitResult& HitResult, bool bFromSweep);

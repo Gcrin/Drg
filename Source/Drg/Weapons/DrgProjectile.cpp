@@ -125,6 +125,8 @@ void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactCenter)
 
 			// 데미지 이펙트 적용
 			SourceAsc->ApplyGameplayEffectSpecToTarget(*AoeDamageEffectSpecHandle.Data.Get(), TargetAsc);
+
+			ApplyDebuffEffectsToTarget(SourceAsc, TargetAsc, DamageEffectSpecHandle.Data->GetContext());
 		}
 	}
 }
@@ -370,9 +372,6 @@ void ADrgProjectile::ApplyPeriodicDamage()
 		if (float* NextDamageTime = TargetNextDamageTimeMap.Find(TargetActor))
 		{
 			// 순간이동 등으로 벗어났는지 범위 체크
-			const float Distance = FVector::Dist(GetActorLocation(), TargetActor->GetActorLocation());
-			const float OverlapRadius = SphereComponent->GetScaledSphereRadius();
-
 			TArray<AActor*> CurrentOverlappingActors;
 			SphereComponent->GetOverlappingActors(CurrentOverlappingActors);
 			if (!CurrentOverlappingActors.Contains(TargetActor))
@@ -391,6 +390,8 @@ void ADrgProjectile::ApplyPeriodicDamage()
 				{
 					// 피해 적용
 					SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
+
+					ApplyDebuffEffectsToTarget(SourceAsc, TargetAsc, DamageEffectSpecHandle.Data->GetContext());
 
 					// 이펙트 재생
 					FHitResult HitResult;
@@ -562,6 +563,31 @@ void ADrgProjectile::DestroyProjectile()
 	SetLifeSpan(0.2f);
 }
 
+void ADrgProjectile::ApplyDebuffEffectsToTarget(UAbilitySystemComponent* SourceAsc, UAbilitySystemComponent* TargetAsc,
+                                                const FGameplayEffectContextHandle& ContextHandle)
+{
+	if (!SourceAsc || !TargetAsc || DebuffGameplayEffectClasses.IsEmpty())
+	{
+		return;
+	}
+
+	for (const TSubclassOf<UGameplayEffect>& DebuffEffectClass : DebuffGameplayEffectClasses)
+	{
+		if (!DebuffEffectClass)
+		{
+			continue;
+		}
+
+		FGameplayEffectSpecHandle DebuffSpecHandle = SourceAsc->
+			MakeOutgoingSpec(DebuffEffectClass, 1.0f, ContextHandle);
+		if (DebuffSpecHandle.IsValid())
+		{
+			// 대상에게 디버프 이펙트를 적용
+			SourceAsc->ApplyGameplayEffectSpecToTarget(*DebuffSpecHandle.Data.Get(), TargetAsc);
+		}
+	}
+}
+
 void ADrgProjectile::TryProcessTarget(AActor* TargetActor, const FHitResult& SweepResult)
 {
 	if (!IsValid(TargetActor) || TargetActor == this || TargetActor == GetOwner())
@@ -582,6 +608,10 @@ void ADrgProjectile::TryProcessTarget(AActor* TargetActor, const FHitResult& Swe
 	ADrgBaseCharacter* TargetCharacter = Cast<ADrgBaseCharacter>(TargetActor);
 	if (TargetCharacter && TargetCharacter->IsDead()) return;
 
+	// 기본 피해를 적용할지 결정하는 조건 변수
+	const bool bShouldApplyBaseDamageToCurrentTarget = !ProjectileParams.bEnableAoeOnImpact
+		|| ProjectileParams.bApplyBaseDamageToInitialTarget;
+
 	// 투사체 종류에 따라
 	if (ProjectileParams.bAllowRepeatDamage)
 	{
@@ -592,7 +622,11 @@ void ADrgProjectile::TryProcessTarget(AActor* TargetActor, const FHitResult& Swe
 			UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
 			if (SourceAsc && DamageEffectSpecHandle.IsValid())
 			{
-				SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
+				if (bShouldApplyBaseDamageToCurrentTarget)
+				{
+					SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
+					ApplyDebuffEffectsToTarget(SourceAsc, TargetAsc, DamageEffectSpecHandle.Data->GetContext());
+				}
 			}
 
 			// 다음 피해 시간을 설정
@@ -615,7 +649,11 @@ void ADrgProjectile::TryProcessTarget(AActor* TargetActor, const FHitResult& Swe
 		UAbilitySystemComponent* SourceAsc = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
 		if (SourceAsc && DamageEffectSpecHandle.IsValid())
 		{
-			SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
+			if (bShouldApplyBaseDamageToCurrentTarget)
+			{
+				SourceAsc->ApplyGameplayEffectSpecToTarget(*DamageEffectSpecHandle.Data.Get(), TargetAsc);
+				ApplyDebuffEffectsToTarget(SourceAsc, TargetAsc, DamageEffectSpecHandle.Data->GetContext());
+			}
 		}
 
 		ProcessImpact(SweepResult, true);
