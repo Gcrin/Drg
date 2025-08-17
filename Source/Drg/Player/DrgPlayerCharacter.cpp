@@ -8,9 +8,11 @@
 #include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "GameFramework/SpringArmComponent.h"
-// UI 관련 include 추가
+#include "DrgMagnetManager.h"
+#include "MovieSceneTracksComponentTypes.h"
 #include "Drg/UI/LevelUp/DrgSkillSelectionWidget.h"
 #include "Drg/AbilitySystem/Abilities/Data/DrgUpgradeChoice.h"
+#include "Drg/System/DrgGameplayTags.h"
 
 ADrgPlayerCharacter::ADrgPlayerCharacter()
 {
@@ -74,7 +76,8 @@ void ADrgPlayerCharacter::ActivateCharacter()
 	}
 }
 
-void ADrgPlayerCharacter::SetCharacterAppearance(USkeletalMesh* NewMesh, const TArray<UMaterialInterface*>& NewMaterials)
+void ADrgPlayerCharacter::SetCharacterAppearance(USkeletalMesh* NewMesh,
+                                                 const TArray<UMaterialInterface*>& NewMaterials)
 {
 	USkeletalMeshComponent* CharacterMesh = GetMesh();
 	if (CharacterMesh && NewMesh)
@@ -98,13 +101,13 @@ void ADrgPlayerCharacter::BeginPlay()
 		if (APlayerController* PC = GetController<APlayerController>())
 		{
 			SkillSelectionWidget = CreateWidget<UDrgSkillSelectionWidget>(PC, SkillSelectionWidgetClass);
-			
+
 			if (SkillSelectionWidget)
 			{
 				// 컴포넌트의 선택지 준비 완료 → UI 표시
 				AbilityUpgradeComponent->OnLevelUpChoiceReady.AddDynamic(
 					SkillSelectionWidget, &UDrgSkillSelectionWidget::ShowUpgradeChoices);
-				
+
 				// UI의 스킬 선택 완료 → 캐릭터 처리  
 				SkillSelectionWidget->OnSkillSelected.AddDynamic(
 					this, &ADrgPlayerCharacter::OnSkillSelected);
@@ -127,6 +130,38 @@ void ADrgPlayerCharacter::BeginPlay()
 	{
 		ensureAlwaysMsgf(false, TEXT("ADrgPlayerCharacter: SkillSelectionWidgetClass가 설정되지 않았습니다! 블루프린트에서 설정하세요!"));
 	}
+
+	if (GetWorld() && MagnetManagerClass)
+	{
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.Owner = this;
+		MagnetManager = GetWorld()->SpawnActor<ADrgMagnetManager>(
+			MagnetManagerClass, GetActorLocation(), GetActorRotation(), SpawnParameters);
+		if (MagnetManager)
+		{
+			MagnetManager->AttachToComponent(
+				RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+			UpdateMagnetRadius();
+		}
+	}
+
+	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+	AttributeChangedListenerHandle = MessageSubsystem.RegisterListener(
+		DrgGameplayTags::Event_Broadcast_AttributeChanged,
+		this,
+		&ADrgPlayerCharacter::OnAttributeChanged
+	);
+}
+
+void ADrgPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (AttributeChangedListenerHandle.IsValid())
+	{
+		UGameplayMessageSubsystem::Get(GetWorld()).UnregisterListener(AttributeChangedListenerHandle);
+	}
+	
+	Super::EndPlay(EndPlayReason);
 }
 
 void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
@@ -142,10 +177,10 @@ void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
 		PlayerController->bShowMouseCursor = false;
 		PlayerController->SetInputMode(FInputModeGameOnly());
 	}
-	
+
 	// UI에서 현재 선택지 가져오기
 	TArray<FDrgUpgradeChoice> CurrentChoices = SkillSelectionWidget->GetCurrentUpgradeChoices();
-	
+
 	if (CurrentChoices.IsValidIndex(SkillIndex))
 	{
 		// 선택된 스킬 적용
@@ -157,7 +192,7 @@ void ADrgPlayerCharacter::OnSkillSelected(int32 SkillIndex)
 	if (UpgradeCount > 0)
 	{
 		GetWorld()->GetTimerManager().SetTimer(LevelUpTimerHandle, this,
-			&ADrgPlayerCharacter::CheckLevelUp, 0.5f, false);
+		                                       &ADrgPlayerCharacter::CheckLevelUp, 0.5f, false);
 	}
 	else
 	{
@@ -217,5 +252,22 @@ void ADrgPlayerCharacter::InitializeAttributes()
 		float InitialMaxExperience =
 			AttributeSet->GetMaxExperienceForLevel(MaxExperienceDataTable, 1.0f);
 		AttributeSet->SetMaxExperience(InitialMaxExperience);
+	}
+}
+
+void ADrgPlayerCharacter::UpdateMagnetRadius()
+{
+	if (MagnetManager && AttributeSet)
+	{
+		const float NewRadius = AttributeSet->GetPickupRadius();
+		MagnetManager->SetMagnetRadius(NewRadius);
+	}
+}
+
+void ADrgPlayerCharacter::OnAttributeChanged(FGameplayTag Channel, const FDrgAttributeChangeMessage& Message)
+{
+	if (Message.AttributeType == EAttributeType::PickupRadius)
+	{
+		UpdateMagnetRadius();
 	}
 }

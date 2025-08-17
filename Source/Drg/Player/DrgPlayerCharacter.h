@@ -4,8 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Drg/Character/DrgBaseCharacter.h"
+#include "GameplayTagContainer.h"
+#include "Drg/GameModes/DrgMessageTypes.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "DrgPlayerCharacter.generated.h"
 
+class ADrgMagnetManager;
 class UDrgSkillSelectionWidget;
 class UCameraComponent;
 class USpringArmComponent;
@@ -34,6 +38,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void InitializeAttributes() override;
 
@@ -56,6 +61,10 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UDrgSkillSelectionWidget> SkillSelectionWidget;
 
+	// 아이템 자석 효과 매니저 클래스
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drg|MagnetManager")
+	TSubclassOf<ADrgMagnetManager> MagnetManagerClass;
+
 private:
 	UFUNCTION()
 	void OnSkillSelected(int32 SkillIndex);
@@ -65,4 +74,11 @@ private:
 	int32 UpgradeCount = 0;
 	FTimerHandle LevelUpTimerHandle;
 	bool bIsLevelUpSequence = false;
+
+	// 아이템 자석
+	UPROPERTY()
+	TObjectPtr<ADrgMagnetManager> MagnetManager;
+	void UpdateMagnetRadius();
+	void OnAttributeChanged(FGameplayTag Channel, const FDrgAttributeChangeMessage& Message);
+	FGameplayMessageListenerHandle AttributeChangedListenerHandle;
 };
