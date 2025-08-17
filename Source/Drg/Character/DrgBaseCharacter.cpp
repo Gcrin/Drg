@@ -4,6 +4,7 @@
 #include "DrgBaseCharacter.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
+#include "NiagaraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Data/DrgCharacterData.h"
 #include "Drg/AbilitySystem/DrgAbilitySystemComponent.h"
@@ -294,6 +295,15 @@ void ADrgBaseCharacter::OnDeathCleanup()
 	}
 	// 1. 캐릭터 숨김
 	SetActorHiddenInGame(true);
+
+	// 1. 활성화된 모든 게임플레이 큐(Gameplay Cue) 제거
+	AbilitySystemComponent->RemoveAllGameplayCues();
+	if (UNiagaraComponent* NiagaraEffectComponent = FindComponentByClass<UNiagaraComponent>())
+	{
+		NiagaraEffectComponent->SetAsset(nullptr); 
+	}
+
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 
 	// 2. 모든 Active Gameplay Effect 제거
 	FGameplayEffectQuery Query;
