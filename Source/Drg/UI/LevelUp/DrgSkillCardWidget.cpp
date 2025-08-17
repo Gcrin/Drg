@@ -86,7 +86,18 @@ void UDrgSkillCardWidget::SetUpgradeChoice(const FDrgUpgradeChoice& InUpgradeCho
 			UIData.Description = LevelData.AbilityDescription;
 			Icon = LevelData.AbilityIcon;
 		}
+
+		//진화인경우
+		if (UIData.ChoiceType == EChoiceType::Evolution)
+		{
+			if ( InUpgradeChoice.EvolutionRecipe.EvolvedAbilityAsset->GetLevelData(1, LevelData))
+			{
+				Icon = LevelData.AbilityIcon;
+			}
+		}
+			
 	}
+	
 	LoadSkillIconAsync(Icon);
 	OnUpdateSkillCardDisplay(UIData);
 }
