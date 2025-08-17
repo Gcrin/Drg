@@ -54,6 +54,7 @@ void UDrgPickupInteractionComponent::ProcessPickupManager(AInstancedPickupManage
 	if (!Manager) return;
 
 	const int32 InstanceCount = Manager->GetInstanceCount();
+	const float PickupRadiusSq = PickupRadius * PickupRadius;
 
 	for (int32 i = InstanceCount - 1; i >= 0; --i)
 	{
@@ -62,7 +63,13 @@ void UDrgPickupInteractionComponent::ProcessPickupManager(AInstancedPickupManage
 			continue;
 
 		const FVector InstanceLocation = InstanceTransform.GetLocation();
-		const float Distance = FVector::Dist(OwnerLocation, InstanceLocation);
+		
+		const float DistanceSq = FVector::DistSquared(OwnerLocation, InstanceLocation);
+		// 범위 밖이면 바로 스킵
+		if (DistanceSq > PickupRadiusSq) continue;
+      
+		// 범위 내 아이템만 처리 (정확한 거리 계산)
+		const float Distance = FMath::Sqrt(DistanceSq);
 
 		if (Distance <= CollectionRadius)
 		{
@@ -73,9 +80,6 @@ void UDrgPickupInteractionComponent::ProcessPickupManager(AInstancedPickupManage
 		else if (Distance <= PickupRadius)
 		{
 			// 자석 효과 플레이어 쪽으로 끌어당기기
-			const FVector Direction = (OwnerLocation - InstanceLocation).GetSafeNormal();
-
-			// 거리에 따른 속도 조절 (가까울수록 빠르게)
 			const float DistanceRatio = (PickupRadius - Distance) / PickupRadius;
 			const float AcceleratedSpeed = PullSpeed * (1.0f + DistanceRatio * MagnetAcceleration);
 
