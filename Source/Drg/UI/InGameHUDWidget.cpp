@@ -1,4 +1,9 @@
 #include "InGameHUDWidget.h"
+
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Kismet/GameplayStatics.h"
+#include "Animation/WidgetAnimation.h"
 #include "Components/ProgressBar.h"
 #include "Components/HorizontalBox.h"
 #include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
@@ -6,6 +11,7 @@
 #include "Drg/Player/DrgPlayerCharacter.h"
 #include "Drg/UI/LevelUp/DrgSkillWidget.h"
 #include "Drg/UI/DrgSkillInformation.h"
+#include "Drg/UI/DrgDamageWidget.h"
 #include "Drg/AbilitySystem/Attributes/DrgAttributeSet.h"
 #include "Drg/GameModes/DrgPlayerState.h"
 
@@ -19,6 +25,13 @@ void UInGameHUDWidget::NativeConstruct()
 		this,
 		&UInGameHUDWidget::OnAttributeChangedReceived
 	);
+	DamagedActorMessageListenerHandle = MessageSubsystem.RegisterListener(
+		DrgGameplayTags::Event_Broadcast_ActorDamaged,
+		this,
+		&UInGameHUDWidget::OnDamagedActor
+	);
+
+	InitializeDamageWidgetPool();
 
 	if (ADrgPlayerState* DrgPlayerState = GetOwningPlayerState<ADrgPlayerState>())
 	{
@@ -93,6 +106,7 @@ void UInGameHUDWidget::NativeDestruct()
 	{
 		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 		MessageSubsystem.UnregisterListener(AttributeChangeMessageListenerHandle);
+		MessageSubsystem.UnregisterListener(DamagedActorMessageListenerHandle);
 	}
 	if (ADrgPlayerState* DrgPlayerState = GetOwningPlayerState<ADrgPlayerState>())
 	{
@@ -188,6 +202,14 @@ void UInGameHUDWidget::OnAttributeChangedReceived(FGameplayTag Channel, const FD
 	{
 		CurrentPickupRadius = Message.NewValue;
 		OnPickupRadiusChanged(CurrentPickupRadius);
+	}
+}
+
+void UInGameHUDWidget::OnDamagedActor(FGameplayTag Channel, const FDrgDamageMessage& Message)
+{
+	if (Message.DamagedActor && Message.DamagedActor != GetOwningPlayerPawn())
+	{
+		ShowDamage(Message.DamageAmount, Message.DamagedActor->GetActorLocation());
 	}
 }
 
@@ -298,4 +320,71 @@ void UInGameHUDWidget::UpdateStaminaBar(float Stamina, float MaxStamina)
 void UInGameHUDWidget::UpdateExperienceBar(float Exp, float MaxExp)
 {
 	if (ExperienceBar && MaxExp > 0.0f) ExperienceBar->SetPercent(Exp / MaxExp);
+}
+
+void UInGameHUDWidget::ShowDamage(float Damage, FVector WorldLocation)
+{
+	if (!DamageFontCanvas) return;
+
+	UDrgDamageWidget* WidgetToShow = nullptr;
+	if (InactiveDamageWidgetPool.Num() > 0)
+	{
+		WidgetToShow = InactiveDamageWidgetPool.Pop();
+	}
+	else if (ActiveDamageWidgetPool.Num() > 0)
+	{
+		WidgetToShow = ActiveDamageWidgetPool[0];
+		ActiveDamageWidgetPool.RemoveAt(0);
+	}
+
+	if (WidgetToShow)
+	{
+		FVector2D ScreenPosition;
+		if (UGameplayStatics::ProjectWorldToScreen(GetOwningPlayer(), WorldLocation, ScreenPosition))
+		{
+			WidgetToShow->RemoveFromParent();
+			DamageFontCanvas->AddChildToCanvas(WidgetToShow);
+
+			if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(WidgetToShow->Slot))
+			{
+				CanvasSlot->SetPosition(ScreenPosition);
+				CanvasSlot->SetAlignment(FVector2D(0.5f, 0.5f));
+				CanvasSlot->SetAutoSize(true);
+			}
+
+			WidgetToShow->SetDamageText(Damage);
+			if (UWidgetAnimation* Anim = WidgetToShow->GetFadeAndRiseAnimation())
+			{
+				WidgetToShow->PlayAnimation(Anim);
+				FTimerHandle ReturnTimer;
+				FTimerDelegate ReturnDelegate = FTimerDelegate::CreateUObject(
+					this, &UInGameHUDWidget::ReturnDamgeWidgetToPool, WidgetToShow);
+				GetWorld()->GetTimerManager().SetTimer(ReturnTimer, ReturnDelegate, Anim->GetEndTime(), false);
+				ActiveDamageWidgetPool.Add(WidgetToShow);
+			}
+		}
+		else InactiveDamageWidgetPool.Add(WidgetToShow);
+	}
+}
+
+void UInGameHUDWidget::InitializeDamageWidgetPool()
+{
+	if (DamageWidgetClass)
+	{
+		for (int32 i = 0; i < DamageWidgetPoolSize; i++)
+		{
+			UDrgDamageWidget* NewWidget = CreateWidget<UDrgDamageWidget>(this, DamageWidgetClass);
+			if (NewWidget) InactiveDamageWidgetPool.Add(NewWidget);
+		}
+	}
+}
+
+void UInGameHUDWidget::ReturnDamgeWidgetToPool(UDrgDamageWidget* WidgetToReturn)
+{
+	if (WidgetToReturn)
+	{
+		WidgetToReturn->RemoveFromParent();
+		ActiveDamageWidgetPool.Remove(WidgetToReturn);
+		InactiveDamageWidgetPool.Add(WidgetToReturn);
+	}
 }
