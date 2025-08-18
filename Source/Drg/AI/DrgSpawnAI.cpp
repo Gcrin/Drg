@@ -43,7 +43,9 @@ void ADrgSpawnAI::BeginPlay()
 	// 웨이브 스폰 카운트 배열 초기화
 	TArray<FDrgWaveTableRow*> Rows;
 	WaveDataTable->GetAllRows<FDrgWaveTableRow>(TEXT("WaveTableContext"), Rows);
-	CurrentWaveSpawnCount.SetNum(Rows.Num());
+	LastWaveNumber = Rows.Num();
+	CurrentWaveSpawnCount.SetNum(LastWaveNumber + 1);
+
 	InitializePool();
 	SetNextWave();
 
@@ -103,18 +105,39 @@ void ADrgSpawnAI::ReturnAIToPool(class ADrgAICharacter* DeadAI)
 	}
 }
 
+void ADrgSpawnAI::DeactivateAll()
+{
+	TArray<ADrgAICharacter*> AIToDeactivate = ActiveAIPool;
+	for (auto AI : AIToDeactivate)
+	{
+		AI->DeactivateCharacter();
+		AI->OnDeathCleanup();
+	}
+}
+
 void ADrgSpawnAI::StartSpawnTimer()
 {
 	CurrentWaveSpawnCount[CurrentWaveNumber].Empty();
+
+	// 마지막 웨이브(보스전) 시작 전에 활성화되어있는 몬스터 정리
+	if (CurrentWaveNumber == LastWaveNumber)
+	{
+		DeactivateAll();
+	}
+
 	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	if (!CurrentWaveRow) return;
+
+	// 웨이브 데이터의 스폰 인터벌이 0이면 스폰을 반복하지 않음
+	bool bIsLoop = true;
+	if (FMath::IsNearlyZero(CurrentWaveRow->SpawnInterval)) bIsLoop = false;
 
 	GetWorldTimerManager().SetTimer(
 		SpawnTimerHandle,
 		this,
 		&ADrgSpawnAI::SpawnAILoop,
 		CurrentWaveRow->SpawnInterval,
-		true,
+		bIsLoop,
 		1.0f
 	);
 	UE_LOG(LogTemp, Warning,

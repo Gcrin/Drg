@@ -40,6 +40,7 @@ protected:
 	int32 MaxTryCount = 30;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
 	int32 CurrentWaveNumber = 0;
+	int32 LastWaveNumber = 0;
 	// 웨이브별 현재 스폰 수
 	TArray<TArray<TWeakObjectPtr<class ADrgAICharacter>>> CurrentWaveSpawnCount;
 
@@ -71,6 +72,8 @@ protected:
 	TObjectPtr<class ADrgAICharacter> SpawnAIFromPool();
 	// 스폰 후 ActiveAIPool에 추가. 타이머에서 실행될 함수
 	void SpawnAILoop();
+	// 활성화되어있는 몬스터 전부 정리
+	void DeactivateAll();
 
 	// 웨이브 타이머 (초) / 디폴트 60초 = 1분
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
