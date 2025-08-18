@@ -182,27 +182,9 @@ bool ADrgSpawnAI::FindSafeRandomPointInNav(FVector& ResultLocation)
 		FNavLocation NavLocation;
 		if (NavSys->ProjectPointToNavigation(TestLocation, NavLocation))
 		{
-			FVector Start = NavLocation.Location + FVector(0, 0, 1000.0f);
-			FVector End = NavLocation.Location - FVector(0, 0, 1000.0f);
-
-			FHitResult HitResult;
-			FCollisionQueryParams QueryParams;
-			QueryParams.bTraceComplex = true;
-			QueryParams.bReturnPhysicalMaterial = false;
-
-			bool bHit = GetWorld()->LineTraceSingleByChannel(
-				HitResult,
-				Start,
-				End,
-				ECC_Visibility,
-				QueryParams
-			);
-
-			if (bHit && HitResult.bBlockingHit)
-			{
-				ResultLocation = HitResult.Location;
-				return true;
-			}
+			// NavMesh 위 값 저장
+			ResultLocation = NavLocation.Location;
+			return true;
 		}
 	}
 	return false;
