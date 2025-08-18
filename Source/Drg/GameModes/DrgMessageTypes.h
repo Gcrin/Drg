@@ -74,3 +74,17 @@ struct FDrgAttributeChangeMessage
 	UPROPERTY(BlueprintReadWrite, Category = "Drg|Message")
 	float NewValue = 0.f;
 };
+
+/**
+ * @brief 피해를 입었을 경우, 발신되는 메시지 구조체
+ */
+USTRUCT(BlueprintType)
+struct FDrgDamageMessage
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "Drg|Message")
+	AActor* DamagedActor = nullptr;
+	UPROPERTY(BlueprintReadWrite, Category = "Drg|Message")
+	float DamageAmount = 0.f;
+};

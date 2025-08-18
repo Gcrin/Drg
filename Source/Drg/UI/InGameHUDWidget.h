@@ -6,6 +6,8 @@
 #include "Drg/GameModes/DrgMessageTypes.h"
 #include "InGameHUDWidget.generated.h"
 
+class UDrgDamageWidget;
+class UCanvasPanel;
 class UProgressBar;
 class UTextBlock;
 class UHorizontalBox;
@@ -53,6 +55,9 @@ public:
 	void OnTimerUpdated(int32 Minutes, int32 Seconds);
 	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
 	void OnWaveNumberChanged(int32 NewWaveNumber);
+
+	UFUNCTION()
+	void ShowDamage(float Damage, FVector WorldLocation);
 
 protected:
 	// === 경험치바 관련 ===
@@ -115,6 +120,14 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UWidget> EffectTitle;
 
+	// 데미지
+	UPROPERTY(EditDefaultsOnly, Category = "Drg|HUD")
+	TSubclassOf<UDrgDamageWidget> DamageWidgetClass;
+	UPROPERTY(EditDefaultsOnly, Category = "Drg|HUD")
+	int32 DamageWidgetPoolSize = 20;
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	TObjectPtr<UCanvasPanel> DamageFontCanvas;
+	
 private:
 	// 타이머 관련
 	UFUNCTION()
@@ -145,6 +158,9 @@ private:
 	void OnAttributeChangedReceived(FGameplayTag Channel, const FDrgAttributeChangeMessage& Message);
 	FGameplayMessageListenerHandle AttributeChangeMessageListenerHandle;
 
+	void OnDamagedActor(FGameplayTag Channel, const FDrgDamageMessage& Message);
+	FGameplayMessageListenerHandle DamagedActorMessageListenerHandle;
+
 	float CurrentHealth = 0.0f;
 	float CurrentMaxHealth = 0.0f;
 
@@ -162,4 +178,12 @@ private:
 	float CurrentAttackSpeed = 0.0f;
 	float CurrentMoveSpeed = 0.0f;
 	float CurrentPickupRadius = 0.0f;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UDrgDamageWidget>> InactiveDamageWidgetPool;
+	UPROPERTY()
+	TArray<TObjectPtr<UDrgDamageWidget>> ActiveDamageWidgetPool;
+	
+	void InitializeDamageWidgetPool();
+	void ReturnDamgeWidgetToPool(UDrgDamageWidget* WidgetToReturn);
 };
