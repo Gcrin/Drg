@@ -40,6 +40,12 @@ void ADrgSpawnAI::SetNextWave()
 void ADrgSpawnAI::BeginPlay()
 {
 	Super::BeginPlay();
+	// 웨이브 스폰 카운트 배열 초기화
+	TArray<FDrgWaveTableRow*> Rows;
+	WaveDataTable->GetAllRows<FDrgWaveTableRow>(TEXT("WaveTableContext"), Rows);
+	LastWaveNumber = Rows.Num();
+	CurrentWaveSpawnCount.SetNum(LastWaveNumber + 1);
+
 	InitializePool();
 	SetNextWave();
 
@@ -90,7 +96,7 @@ void ADrgSpawnAI::ReturnAIToPool(class ADrgAICharacter* DeadAI)
 	{
 		ActiveAIPool.Remove(DeadAI);
 		InActiveAIPool.Add(DeadAI);
-		CurrentSpawnCount--;
+		CurrentWaveSpawnCount[CurrentWaveNumber].Remove(DeadAI);
 	}
 	else
 	{
@@ -99,11 +105,39 @@ void ADrgSpawnAI::ReturnAIToPool(class ADrgAICharacter* DeadAI)
 	}
 }
 
+void ADrgSpawnAI::DeactivateAll()
+{
+	TArray<ADrgAICharacter*> AIToDeactivate = ActiveAIPool;
+	for (auto AI : AIToDeactivate)
+	{
+		if (ActiveAIPool.Contains(AI))
+		{
+			AI->DeactivateCharacter();
+			AI->OnDeathCleanup();
+		}
+	}
+}
+
 void ADrgSpawnAI::StartSpawnTimer()
 {
-	CurrentSpawnCount = 0;
 	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	if (!CurrentWaveRow) return;
+
+	CurrentWaveSpawnCount[CurrentWaveNumber].Empty();
+
+	// 마지막 웨이브(보스전) 시작 전에 활성화되어있는 몬스터 정리
+	if (CurrentWaveNumber == LastWaveNumber)
+	{
+		// 웨이브 타이머 clear
+		if (NextWaveTimerHandle.IsValid())
+		{
+			GetWorld()->GetTimerManager().ClearTimer(NextWaveTimerHandle);
+			NextWaveTimerHandle.Invalidate();
+			UE_LOG(LogTemp, Warning,
+			       TEXT("DrgSpawnAI:: 웨이브 타이머 종료"));
+		}
+		DeactivateAll();
+	}
 
 	GetWorldTimerManager().SetTimer(
 		SpawnTimerHandle,
@@ -148,27 +182,9 @@ bool ADrgSpawnAI::FindSafeRandomPointInNav(FVector& ResultLocation)
 		FNavLocation NavLocation;
 		if (NavSys->ProjectPointToNavigation(TestLocation, NavLocation))
 		{
-			FVector Start = NavLocation.Location + FVector(0, 0, 1000.0f);
-			FVector End = NavLocation.Location - FVector(0, 0, 1000.0f);
-
-			FHitResult HitResult;
-			FCollisionQueryParams QueryParams;
-			QueryParams.bTraceComplex = true;
-			QueryParams.bReturnPhysicalMaterial = false;
-
-			bool bHit = GetWorld()->LineTraceSingleByChannel(
-				HitResult,
-				Start,
-				End,
-				ECC_Visibility,
-				QueryParams
-			);
-
-			if (bHit && HitResult.bBlockingHit)
-			{
-				ResultLocation = HitResult.Location;
-				return true;
-			}
+			// NavMesh 위 값 저장
+			ResultLocation = NavLocation.Location;
+			return true;
 		}
 	}
 	return false;
@@ -227,6 +243,7 @@ TObjectPtr<class ADrgAICharacter> ADrgSpawnAI::SpawnAIFromPool()
 		}
 		ADrgAICharacter* SpawnedAI = InActiveAIPool.Pop();
 		ActiveAIPool.Add(SpawnedAI);
+		CurrentWaveSpawnCount[CurrentWaveNumber].Add(SpawnedAI);
 		SpawnedAI->SetCharacterData(GetRandomAICharacterData());
 		SpawnedAI->SetActorLocation(
 			SpawnLocation + FVector(0, 0, SpawnedAI->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
@@ -254,14 +271,10 @@ void ADrgSpawnAI::SpawnAILoop()
 	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	for (int32 i = 0; i < CurrentWaveRow->SpawnCount; i++)
 	{
-		if (CurrentSpawnCount >= CurrentWaveRow->MaxSpawnCount)
+		if (CurrentWaveSpawnCount[CurrentWaveNumber].Num() >= CurrentWaveRow->MaxSpawnCount)
 		{
 			break;
 		}
 		ADrgAICharacter* SpawnedAI = SpawnAIFromPool();
-		if (SpawnedAI)
-		{
-			CurrentSpawnCount++;
-		}
 	}
 }

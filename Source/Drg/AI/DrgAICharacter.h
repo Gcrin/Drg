@@ -25,6 +25,8 @@ public:
 	virtual void ActivateCharacter() override;
 	virtual void OnDeathCleanup() override;
 
+	int32 WaveNumber;
+
 protected:
 	virtual void BeginPlay() override;
 
