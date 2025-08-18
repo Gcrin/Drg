@@ -30,6 +30,22 @@ void UDrgAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMod
 	// 이번에 변경된 Attribute가 Health인지 확인
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
+		if (Data.EvaluatedData.Magnitude < 0.f)
+		{
+			FDrgDamageMessage Message;
+			Message.DamageAmount = FMath::Abs(Data.EvaluatedData.Magnitude);
+			Message.DamagedActor = GetOwningActor();
+
+			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+			{
+				UGameplayMessageSubsystem::Get(ASC->GetWorld()).BroadcastMessage(
+					DrgGameplayTags::Event_Broadcast_ActorDamaged,
+					Message
+				);
+			}
+		}
+
+
 		// 체력이 0.0f 이하로 떨어졌는지 확인
 		if (GetHealth() <= 0.0f)
 		{
