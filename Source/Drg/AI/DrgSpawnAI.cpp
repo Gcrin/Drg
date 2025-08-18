@@ -117,6 +117,9 @@ void ADrgSpawnAI::DeactivateAll()
 
 void ADrgSpawnAI::StartSpawnTimer()
 {
+	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
+	if (!CurrentWaveRow) return;
+
 	CurrentWaveSpawnCount[CurrentWaveNumber].Empty();
 
 	// 마지막 웨이브(보스전) 시작 전에 활성화되어있는 몬스터 정리
@@ -124,9 +127,6 @@ void ADrgSpawnAI::StartSpawnTimer()
 	{
 		DeactivateAll();
 	}
-
-	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
-	if (!CurrentWaveRow) return;
 
 	// 웨이브 데이터의 스폰 인터벌이 0이면 스폰을 반복하지 않음
 	bool bIsLoop = true;
