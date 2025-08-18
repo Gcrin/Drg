@@ -33,15 +33,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
 	float MaxDistance;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
-	TArray<class ADrgAICharacter*> ActiveAIPool;
+	TArray<TObjectPtr<class ADrgAICharacter>> ActiveAIPool;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
-	TArray<class ADrgAICharacter*> InActiveAIPool;
+	TArray<TObjectPtr<class ADrgAICharacter>> InActiveAIPool;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|Spawning", meta = (ClampMin = "10"))
 	int32 MaxTryCount = 30;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drg|Spawning")
 	int32 CurrentWaveNumber = 0;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drg|Spawning")
-	int32 CurrentSpawnCount = 0;
+	// 웨이브별 현재 스폰 수
+	TArray<TArray<TWeakObjectPtr<class ADrgAICharacter>>> CurrentWaveSpawnCount;
 
 	FTimerHandle SpawnTimerHandle;
 

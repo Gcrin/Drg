@@ -40,6 +40,10 @@ void ADrgSpawnAI::SetNextWave()
 void ADrgSpawnAI::BeginPlay()
 {
 	Super::BeginPlay();
+	// 웨이브 스폰 카운트 배열 초기화
+	TArray<FDrgWaveTableRow*> Rows;
+	WaveDataTable->GetAllRows<FDrgWaveTableRow>(TEXT("WaveTableContext"), Rows);
+	CurrentWaveSpawnCount.SetNum(Rows.Num());
 	InitializePool();
 	SetNextWave();
 
@@ -90,7 +94,7 @@ void ADrgSpawnAI::ReturnAIToPool(class ADrgAICharacter* DeadAI)
 	{
 		ActiveAIPool.Remove(DeadAI);
 		InActiveAIPool.Add(DeadAI);
-		CurrentSpawnCount--;
+		CurrentWaveSpawnCount[CurrentWaveNumber].Remove(DeadAI);
 	}
 	else
 	{
@@ -101,7 +105,7 @@ void ADrgSpawnAI::ReturnAIToPool(class ADrgAICharacter* DeadAI)
 
 void ADrgSpawnAI::StartSpawnTimer()
 {
-	CurrentSpawnCount = 0;
+	CurrentWaveSpawnCount[CurrentWaveNumber].Empty();
 	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	if (!CurrentWaveRow) return;
 
@@ -227,6 +231,7 @@ TObjectPtr<class ADrgAICharacter> ADrgSpawnAI::SpawnAIFromPool()
 		}
 		ADrgAICharacter* SpawnedAI = InActiveAIPool.Pop();
 		ActiveAIPool.Add(SpawnedAI);
+		CurrentWaveSpawnCount[CurrentWaveNumber].Add(SpawnedAI);
 		SpawnedAI->SetCharacterData(GetRandomAICharacterData());
 		SpawnedAI->SetActorLocation(
 			SpawnLocation + FVector(0, 0, SpawnedAI->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
@@ -254,14 +259,10 @@ void ADrgSpawnAI::SpawnAILoop()
 	FDrgWaveTableRow* CurrentWaveRow = GetCurrentWaveDataRow(CurrentWaveNumber);
 	for (int32 i = 0; i < CurrentWaveRow->SpawnCount; i++)
 	{
-		if (CurrentSpawnCount >= CurrentWaveRow->MaxSpawnCount)
+		if (CurrentWaveSpawnCount[CurrentWaveNumber].Num() >= CurrentWaveRow->MaxSpawnCount)
 		{
 			break;
 		}
 		ADrgAICharacter* SpawnedAI = SpawnAIFromPool();
-		if (SpawnedAI)
-		{
-			CurrentSpawnCount++;
-		}
 	}
 }
