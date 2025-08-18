@@ -110,8 +110,11 @@ void ADrgSpawnAI::DeactivateAll()
 	TArray<ADrgAICharacter*> AIToDeactivate = ActiveAIPool;
 	for (auto AI : AIToDeactivate)
 	{
-		AI->DeactivateCharacter();
-		AI->OnDeathCleanup();
+		if (ActiveAIPool.Contains(AI))
+		{
+			AI->DeactivateCharacter();
+			AI->OnDeathCleanup();
+		}
 	}
 }
 
@@ -125,19 +128,23 @@ void ADrgSpawnAI::StartSpawnTimer()
 	// 마지막 웨이브(보스전) 시작 전에 활성화되어있는 몬스터 정리
 	if (CurrentWaveNumber == LastWaveNumber)
 	{
+		// 웨이브 타이머 clear
+		if (NextWaveTimerHandle.IsValid())
+		{
+			GetWorld()->GetTimerManager().ClearTimer(NextWaveTimerHandle);
+			NextWaveTimerHandle.Invalidate();
+			UE_LOG(LogTemp, Warning,
+			       TEXT("DrgSpawnAI:: 웨이브 타이머 종료"));
+		}
 		DeactivateAll();
 	}
-
-	// 웨이브 데이터의 스폰 인터벌이 0이면 스폰을 반복하지 않음
-	bool bIsLoop = true;
-	if (FMath::IsNearlyZero(CurrentWaveRow->SpawnInterval)) bIsLoop = false;
 
 	GetWorldTimerManager().SetTimer(
 		SpawnTimerHandle,
 		this,
 		&ADrgSpawnAI::SpawnAILoop,
 		CurrentWaveRow->SpawnInterval,
-		bIsLoop,
+		true,
 		1.0f
 	);
 	UE_LOG(LogTemp, Warning,
