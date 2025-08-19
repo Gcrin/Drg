@@ -1,9 +1,12 @@
 #include "InGameHUDWidget.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "DrgBossWidget.h"
 #include "DrgHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/ProgressBar.h"
 #include "Components/HorizontalBox.h"
+#include "Components/WidgetComponent.h"
 #include "Drg/AbilitySystem/Abilities/DrgUpgradeComponent.h"
 #include "Drg/System/DrgGameplayTags.h"
 #include "Drg/Player/DrgPlayerCharacter.h"
@@ -16,6 +19,7 @@ void UInGameHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	BossTag = FGameplayTag::RequestGameplayTag(FName("Team.Enemy.Boss"));
 	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 	AttributeChangeMessageListenerHandle = MessageSubsystem.RegisterListener(
 		DrgGameplayTags::Event_Broadcast_AttributeChanged,
@@ -211,6 +215,45 @@ void UInGameHUDWidget::OnDamagedActor(FGameplayTag Channel, const FDrgDamageMess
 				GetOwningPlayer(), Message.DamagedActor->GetActorLocation(), ScreenPosition))
 			{
 				HUD->RequestDamageNumber(Message.DamageAmount, Message.DamagedActor->GetActorLocation());
+			}
+		}
+	}
+
+	if (Message.DamagedActor)
+	{
+		UAbilitySystemComponent* ASC =
+			UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Message.DamagedActor);
+		if (ASC && ASC->HasMatchingGameplayTag(BossTag))
+		{
+			UWidgetComponent* HealthBarComponent = Message.DamagedActor->FindComponentByClass<UWidgetComponent>();
+			if (!BossWidgetClass) return;
+			if (!HealthBarComponent)
+			{
+				HealthBarComponent = NewObject<UWidgetComponent>(Message.DamagedActor);
+				if (HealthBarComponent)
+				{
+					HealthBarComponent->SetWidgetClass(BossWidgetClass);
+					HealthBarComponent->SetVisibility(true);
+					HealthBarComponent->SetRelativeLocation(FVector(0, 0, 250));
+					HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
+					HealthBarComponent->SetDrawAtDesiredSize(true);
+					HealthBarComponent->RegisterComponent();
+					HealthBarComponent->AttachToComponent(
+						Message.DamagedActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+				}
+			}
+			if (HealthBarComponent)
+			{
+				if (UDrgBossWidget* BossWidgetInstance =
+					Cast<UDrgBossWidget>(HealthBarComponent->GetUserWidgetObject()))
+				{
+					const UDrgAttributeSet* BossAttributes = ASC->GetSet<UDrgAttributeSet>();
+					if (BossAttributes)
+					{
+						float HealthPercentage = BossAttributes->GetHealth() / BossAttributes->GetMaxHealth();
+						BossWidgetInstance->UpdateBossHealth(HealthPercentage);
+					}
+				}
 			}
 		}
 	}
