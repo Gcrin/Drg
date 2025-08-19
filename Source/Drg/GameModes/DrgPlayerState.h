@@ -40,8 +40,6 @@ public:
 	// 생존 시간
 	UFUNCTION(BlueprintPure, Category = "Drg|PlayerState")
 	float GetSurvivalTime() const { return SurvivalTimeSeconds; }
-	UFUNCTION()
-	void StopSurvivalTimer();
 
 	// 현재 웨이브
 	UFUNCTION(BlueprintPure, Category = "Drg|PlayerState")
