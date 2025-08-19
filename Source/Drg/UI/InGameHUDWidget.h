@@ -54,7 +54,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
 	void OnTimerUpdated(int32 Minutes, int32 Seconds);
 	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
-	void OnWaveNumberChanged(int32 NewWaveNumber);
+	void OnWaveNumberChanged(int32 NewWaveNumber, bool bIsLastWave);
 
 protected:
 	// === 경험치바 관련 ===
@@ -134,7 +134,7 @@ private:
 
 	// 웨이브 관련
 	UFUNCTION()
-	void HandleWaveNumberChanged(int32 NewWaveNumber);
+	void HandleWaveNumberChanged(int32 NewWaveNumber, bool bIsLastWave);
 	FDelegateHandle WaveNumberChangedHandle;
 
 	// 어빌리티, 이펙트 관련

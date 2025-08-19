@@ -84,13 +84,23 @@ void ADrgPlayerState::UpdateKillCount()
 	OnKillCountChanged.Broadcast(KillCount);
 }
 
+void ADrgPlayerState::StopSurvivalTimer()
+{
+	GetWorld()->GetTimerManager().ClearTimer(SurvivalTimerHandle);
+}
+
 void ADrgPlayerState::SetCurrentWaveNumber(int32 NewWaveNumber)
 {
 	if (CurrentWaveNumber != NewWaveNumber)
 	{
 		CurrentWaveNumber = NewWaveNumber;
-		OnWaveNumberChanged.Broadcast(CurrentWaveNumber);
+		OnWaveNumberChanged.Broadcast(CurrentWaveNumber, bIsLastWave);
 	}
+}
+
+void ADrgPlayerState::SetbIsLastWave(bool LastWaveCheck)
+{
+	bIsLastWave = LastWaveCheck;
 }
 
 void ADrgPlayerState::OnActorDeath(FGameplayTag Channel, const FDrgActorDeathMessage& Message)

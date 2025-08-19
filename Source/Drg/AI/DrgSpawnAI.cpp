@@ -26,6 +26,8 @@ void ADrgSpawnAI::SetCurrentWaveNumber(int32 NewWaveNumber)
 		if (ADrgPlayerState* PlayerState = PlayerController->GetPlayerState<ADrgPlayerState>())
 		{
 			PlayerState->SetCurrentWaveNumber(CurrentWaveNumber);
+			bool bIsLast = (CurrentWaveNumber >= LastWaveNumber);
+			PlayerState->SetbIsLastWave(bIsLast);
 		}
 	}
 	StopSpawnTimer();

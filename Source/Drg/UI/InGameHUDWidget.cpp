@@ -37,7 +37,7 @@ void UInGameHUDWidget::NativeConstruct()
 		HandleTimeUpdated(DrgPlayerState->GetSurvivalTime());
 		TimeUpdatedHandle = DrgPlayerState->OnTimeUpdated.AddUObject(this, &UInGameHUDWidget::HandleTimeUpdated);
 
-		HandleWaveNumberChanged(DrgPlayerState->GetCurrentWaveNumber());
+		HandleWaveNumberChanged(DrgPlayerState->GetCurrentWaveNumber(), DrgPlayerState->GetbIsLastWave());
 		WaveNumberChangedHandle = DrgPlayerState->OnWaveNumberChanged.AddUObject(
 			this, &UInGameHUDWidget::HandleWaveNumberChanged);
 	}
@@ -221,9 +221,9 @@ void UInGameHUDWidget::HandleKillCountChanged(int32 NewKillCount)
 	OnUpdateKillCount(NewKillCount);
 }
 
-void UInGameHUDWidget::HandleWaveNumberChanged(int32 NewWaveNumber)
+void UInGameHUDWidget::HandleWaveNumberChanged(int32 NewWaveNumber, bool bIsLastWave)
 {
-	OnWaveNumberChanged(NewWaveNumber);
+	OnWaveNumberChanged(NewWaveNumber, bIsLastWave);
 }
 
 void UInGameHUDWidget::HandleEquippedSkillsChanged()
