@@ -6,12 +6,14 @@
 #include "Drg/GameModes/DrgMessageTypes.h"
 #include "InGameHUDWidget.generated.h"
 
+class UDrgBossWidget;
 class UDrgDamageWidget;
 class UCanvasPanel;
 class UProgressBar;
 class UTextBlock;
 class UHorizontalBox;
 class UDrgSkillWidget;
+class UWidgetComponent;
 
 /**
  * 인게임 HUD UI 위젯
@@ -120,6 +122,11 @@ protected:
 	// 데미지
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UCanvasPanel> DamageFontCanvas;
+
+	// 보스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drg|UI")
+	TSubclassOf<UUserWidget> BossWidgetClass;
+	FGameplayTag BossTag;
 	
 private:
 	// 타이머 관련

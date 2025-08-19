@@ -25,9 +25,9 @@ void ADrgSpawnAI::SetCurrentWaveNumber(int32 NewWaveNumber)
 	{
 		if (ADrgPlayerState* PlayerState = PlayerController->GetPlayerState<ADrgPlayerState>())
 		{
-			PlayerState->SetCurrentWaveNumber(CurrentWaveNumber);
 			bool bIsLast = (CurrentWaveNumber >= LastWaveNumber);
 			PlayerState->SetbIsLastWave(bIsLast);
+			PlayerState->SetCurrentWaveNumber(CurrentWaveNumber);
 		}
 	}
 	StopSpawnTimer();
@@ -128,7 +128,7 @@ void ADrgSpawnAI::StartSpawnTimer()
 	CurrentWaveSpawnCount[CurrentWaveNumber].Empty();
 
 	// 마지막 웨이브(보스전) 시작 전에 활성화되어있는 몬스터 정리
-	if (CurrentWaveNumber == LastWaveNumber)
+	if (CurrentWaveNumber >= LastWaveNumber)
 	{
 		// 웨이브 타이머 clear
 		if (NextWaveTimerHandle.IsValid())
