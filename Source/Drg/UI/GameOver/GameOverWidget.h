@@ -34,7 +34,7 @@ protected:
 	void OnMainMenuClicked();
 
 	// UMG 위젯과 바인딩될 UI 요소들
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY()
 	TObjectPtr<UButton> RestartButton;
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> MainMenuButton;
