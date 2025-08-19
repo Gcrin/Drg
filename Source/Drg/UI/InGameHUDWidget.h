@@ -54,10 +54,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
 	void OnTimerUpdated(int32 Minutes, int32 Seconds);
 	UFUNCTION(BlueprintImplementableEvent, Category = "Drg|HUD")
-	void OnWaveNumberChanged(int32 NewWaveNumber);
-
-	UFUNCTION()
-	void ShowDamage(float Damage, FVector WorldLocation);
+	void OnWaveNumberChanged(int32 NewWaveNumber, bool bIsLastWave);
 
 protected:
 	// === 경험치바 관련 ===
@@ -121,10 +118,6 @@ protected:
 	TObjectPtr<UWidget> EffectTitle;
 
 	// 데미지
-	UPROPERTY(EditDefaultsOnly, Category = "Drg|HUD")
-	TSubclassOf<UDrgDamageWidget> DamageWidgetClass;
-	UPROPERTY(EditDefaultsOnly, Category = "Drg|HUD")
-	int32 DamageWidgetPoolSize = 20;
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UCanvasPanel> DamageFontCanvas;
 	
@@ -141,7 +134,7 @@ private:
 
 	// 웨이브 관련
 	UFUNCTION()
-	void HandleWaveNumberChanged(int32 NewWaveNumber);
+	void HandleWaveNumberChanged(int32 NewWaveNumber, bool bIsLastWave);
 	FDelegateHandle WaveNumberChangedHandle;
 
 	// 어빌리티, 이펙트 관련
@@ -178,12 +171,4 @@ private:
 	float CurrentAttackSpeed = 0.0f;
 	float CurrentMoveSpeed = 0.0f;
 	float CurrentPickupRadius = 0.0f;
-
-	UPROPERTY()
-	TArray<TObjectPtr<UDrgDamageWidget>> InactiveDamageWidgetPool;
-	UPROPERTY()
-	TArray<TObjectPtr<UDrgDamageWidget>> ActiveDamageWidgetPool;
-	
-	void InitializeDamageWidgetPool();
-	void ReturnDamgeWidgetToPool(UDrgDamageWidget* WidgetToReturn);
 };
