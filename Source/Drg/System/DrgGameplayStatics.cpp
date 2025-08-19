@@ -31,5 +31,17 @@ bool UDrgGameplayStatics::AreTeamsFriendly(const FGameplayTag& TeamTag1, UAbilit
 		return false;
 	}
 
-	return ASC2->HasMatchingGameplayTag(TeamTag1);
+	FGameplayTagContainer TargetTags;
+	ASC2->GetOwnedGameplayTags(TargetTags);
+
+	for (const FGameplayTag& Tag : TargetTags)
+	{
+		// 부모-자식 관계 포함해서 서로 일치하면 아군
+		if (Tag.MatchesTag(TeamTag1) || TeamTag1.MatchesTag(Tag))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

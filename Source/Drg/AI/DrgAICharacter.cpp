@@ -2,10 +2,13 @@
 
 
 #include "DrgAICharacter.h"
+
+#include "Components/CapsuleComponent.h"
 #include "Drg/AI/DrgAIController.h"
 #include "Drg/Character/Data/DrgCharacterData.h"
+#include "Drg/System/DrgGameplayTags.h"
 
-
+#define COLLISION_MONSTER ECC_GameTraceChannel1
 // Sets default values
 ADrgAICharacter::ADrgAICharacter()
 {
@@ -46,6 +49,19 @@ void ADrgAICharacter::DeactivateCharacter()
 void ADrgAICharacter::ActivateCharacter()
 {
 	Super::ActivateCharacter();
+
+	// 몬스터 채널 충돌 설정
+	if (AbilitySystemComponent->HasMatchingGameplayTag(DrgGameplayTags::Team_Enemy_Elite))
+	{
+		// 엘리트 몬스터일 경우 몬스터 충돌 무시
+		GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_MONSTER, ECR_Ignore);
+	}
+	else
+	{
+		// 엘리트 몬스터 아니면 다른 몬스터와 충돌
+		GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_MONSTER, ECR_Block);
+	}
+
 	// 컨트롤러 입력 활성화
 	if (GetController() == nullptr) // AIController가 UnPossess된 상태
 	{

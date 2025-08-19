@@ -21,4 +21,5 @@ namespace DrgGameplayTags
 								   "액터가 피격되면 월드 전체에 공개적으로 방송(Broadcast)합니다. 이 태그를 수신 대기하는 모든 시스템이 반응할 수 있습니다.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Team, "Team", "모든 팀 태그의 부모 태그입니다.");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Team_Player, "Team.Player", "현재 캐릭터의 팀 태그는 플레이어입니다.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Team_Enemy_Elite, "Team.Enemy.Elite", "현재 캐릭터의 팀 태그는 적_엘리트입니다.");
 }

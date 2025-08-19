@@ -17,6 +17,8 @@
 #include "Drg/System/ProjectileOrbitSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
+#define COLLISION_MONSTER ECC_GameTraceChannel1
+
 // Sets default values
 ADrgProjectile::ADrgProjectile()
 {
@@ -28,7 +30,8 @@ ADrgProjectile::ADrgProjectile()
 	SphereComponent->SetCollisionObjectType(ECC_WorldDynamic);
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	SphereComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
-	SphereComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 폰하고만 오버랩 이벤트 발생
+	SphereComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 폰 오버랩 이벤트 발생
+	SphereComponent->SetCollisionResponseToChannel(COLLISION_MONSTER, ECR_Overlap); // 몬스터 오버랩 이벤트 발생
 	SphereComponent->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap); // 벽과도 충돌
 	SphereComponent->SetSphereRadius(10.f);
 
@@ -83,6 +86,7 @@ void ADrgProjectile::ExecuteAoeDamage(const FVector& ImpactCenter)
 	TArray<AActor*> OverlappedActors;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::COLLISION_MONSTER));
 
 	// 탐지 무시 목록
 	TArray<AActor*> IgnoreActors;
@@ -472,9 +476,10 @@ void ADrgProjectile::DetectTarget()
 	IgnoreActors.Add(GetOwner());
 	IgnoreActors.Add(this);
 
-	// 탐색할 오브젝트 타입을 Pawn으로 한정
+	// 탐색할 오브젝트 타입을 Pawn, Monster로 한정
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::COLLISION_MONSTER));
 
 	// 현재 투사체 위치를 중심으로, 지정된 반경 내의 액터들을 탐색
 	bool bHasOverlap = UKismetSystemLibrary::SphereOverlapActors(
